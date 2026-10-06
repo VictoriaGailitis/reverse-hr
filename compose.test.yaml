@@ -1,0 +1,8 @@
+# Explicit test override only. Production Compose does not publish DB/broker ports.
+services:
+  postgres:
+    networks: [backend, edge]
+    ports: ['127.0.0.1:55329:5432']
+  rabbitmq:
+    networks: [backend, edge]
+    ports: ['127.0.0.1:55330:5672']

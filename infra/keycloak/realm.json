@@ -1,0 +1,272 @@
+{
+  "realm": "reverse-hr",
+  "enabled": true,
+  "registrationAllowed": true,
+  "verifyEmail": true,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "candidate"
+      },
+      {
+        "name": "employer"
+      },
+      {
+        "name": "company_moderator",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "requires_mfa"
+          ]
+        }
+      },
+      {
+        "name": "assessment_reviewer",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "requires_mfa"
+          ]
+        }
+      },
+      {
+        "name": "content_admin",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "requires_mfa"
+          ]
+        }
+      },
+      {
+        "name": "technical_admin",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "requires_mfa"
+          ]
+        }
+      },
+      {
+        "name": "requires_mfa"
+      }
+    ]
+  },
+  "defaultRoles": [
+    "candidate"
+  ],
+  "clients": [
+    {
+      "clientId": "reverse-hr-web",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/auth/callback"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "reverse-hr-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "authentication-methods",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-amr-mapper",
+          "config": {
+            "access.token.claim": "true",
+            "id.token.claim": "true"
+          }
+        }
+      ],
+      "protocol": "openid-connect",
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "email",
+        "roles"
+      ],
+      "optionalClientScopes": []
+    }
+  ],
+  "passwordPolicy": "length(12) and digits(1) and lowerCase(1) and upperCase(1)",
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 30,
+  "maxFailureWaitSeconds": 900,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 900,
+  "ssoSessionMaxLifespan": 1800,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+  "rememberMe": false,
+  "browserFlow": "hr-browser",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@reverse-hr.invalid",
+    "fromDisplayName": "Reverse HR demo",
+    "auth": "false",
+    "ssl": "false",
+    "starttls": "false"
+  },
+  "authenticationFlows": [
+    {
+      "alias": "hr-browser",
+      "description": "Password followed by role-required or enrolled OTP; no cookie shortcut",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false,
+          "authenticator": "auth-username-password-form",
+          "authenticatorConfig": "hr-password-reference"
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "authenticatorFlow": true,
+          "userSetupAllowed": false,
+          "flowAlias": "hr-required-mfa"
+        },
+        {
+          "requirement": "CONDITIONAL",
+          "priority": 30,
+          "authenticatorFlow": true,
+          "userSetupAllowed": false,
+          "flowAlias": "hr-enrolled-mfa"
+        }
+      ]
+    },
+    {
+      "alias": "hr-required-mfa",
+      "description": "Privileged roles must enroll and complete OTP",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false,
+          "authenticator": "conditional-user-role",
+          "authenticatorConfig": "hr-privileged-role"
+        },
+        {
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false,
+          "authenticator": "auth-otp-form",
+          "authenticatorConfig": "hr-otp-reference"
+        }
+      ]
+    },
+    {
+      "alias": "hr-enrolled-mfa",
+      "description": "Respect voluntarily enrolled OTP for other users",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false,
+          "authenticator": "conditional-user-role",
+          "authenticatorConfig": "hr-not-privileged-role"
+        },
+        {
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false,
+          "authenticator": "conditional-user-configured"
+        },
+        {
+          "requirement": "REQUIRED",
+          "priority": 30,
+          "authenticatorFlow": false,
+          "userSetupAllowed": false,
+          "authenticator": "auth-otp-form",
+          "authenticatorConfig": "hr-otp-reference"
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "hr-privileged-role",
+      "config": {
+        "condUserRole": "requires_mfa",
+        "negate": "false"
+      }
+    },
+    {
+      "alias": "hr-not-privileged-role",
+      "config": {
+        "condUserRole": "requires_mfa",
+        "negate": "true"
+      }
+    },
+    {
+      "alias": "hr-password-reference",
+      "config": {
+        "default.reference.value": "pwd",
+        "default.reference.maxAge": "900"
+      }
+    },
+    {
+      "alias": "hr-otp-reference",
+      "config": {
+        "default.reference.value": "otp",
+        "default.reference.maxAge": "900"
+      }
+    }
+  ],
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+  "scopeMappings": [
+    {
+      "client": "reverse-hr-web",
+      "roles": [
+        "candidate",
+        "employer",
+        "company_moderator",
+        "assessment_reviewer",
+        "content_admin",
+        "technical_admin"
+      ]
+    }
+  ]
+}

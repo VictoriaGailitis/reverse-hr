@@ -1,0 +1,9 @@
+.venv
+.git
+.env
+__pycache__
+*.db
+backups
+.pytest_cache
+.ruff_cache
+.secrets
