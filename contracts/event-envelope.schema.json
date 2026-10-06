@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "description": "Payload contains references only. Sensitive artifacts stay with their owner.",
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "event_type": {
+      "pattern": "^[a-z][a-z0-9-]*\\.[a-z_]+\\.v1$",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "producer": {
+      "title": "Producer",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "correlation_id": {
+      "format": "uuid",
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "aggregate_id": {
+      "format": "uuid",
+      "title": "Aggregate Id",
+      "type": "string"
+    },
+    "aggregate_version": {
+      "minimum": 1,
+      "title": "Aggregate Version",
+      "type": "integer"
+    },
+    "payload": {
+      "additionalProperties": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "title": "Payload",
+      "type": "object"
+    }
+  },
+  "required": [
+    "event_type",
+    "producer",
+    "correlation_id",
+    "aggregate_id",
+    "aggregate_version",
+    "payload"
+  ],
+  "title": "EventEnvelope",
+  "type": "object"
+}
