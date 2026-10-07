@@ -4,8 +4,9 @@
 Сейчас работают API профиля, организаций, членств, верификации и согласий,
 проверка JWT, идемпотентные команды и каталог Assessment, фиксированные планы,
 последовательное прохождение code/SQL demo-сессий, версии Coding Workspace и
-подготовленный opt-in Code Runner, приватные материалы и ручная demo-проверка в Evaluation,
-неизменяемый каталог тестовых спецификаций code/SQL. Сквозной найм ещё
+opt-in Code Runner со скрытыми тестами, подписанные доказательства в Evaluation,
+механизмы калибровки, human grade review/cooldown и подключаемую LLM-оценку.
+Реальные калибровочные данные и LLM-провайдер ещё не подключены. Сквозной найм ещё
 не реализован. Текущий статус и следующий этап: [docs/progress.md](docs/progress.md).
 
 ## Локальная проверка без Docker
@@ -805,8 +806,8 @@ snapshot nonce protection. Readiness/downgrade учитывают таблицы
 progress, session, cached replies и устаревшие candidate lifecycle events атомарно.
 Оба новых RPC остаются закрыты существующими internal Gateway правилами.
 
-Submitted означает приём demo-артефактов: Evaluation, hidden tests, human review,
-grade/cooldown и воспроизводимая оценка ещё не реализованы. Preflight по-прежнему
+Submitted означает приём demo-артефактов. Evaluation, hidden tests, human review
+и grade/cooldown теперь реализованы как code/SQL механизмы (см. раздел в конце). Preflight по-прежнему
 позволяет готовить черновики, поэтому эта demo-цепочка не заявляется подтверждённой
 процедурой квалификации. Просроченный этап не получает автоматический ноль/успех:
 запись/submit запрещены, владелец может отменить сессию; timeout resolution впереди.
@@ -1292,5 +1293,184 @@ content/stage. Полные test cases/expected outputs этим полем не
 он не является runtime permission. Исчезнувший proof, revoked source processing
 или corrupted pins закрывают экспорт без нулевой оценки. Удаление кандидата удаляет
 session pins вместе с сессией; retained авторство plan/content по-прежнему требует
-restricted ACK. Suite/receipt runtime_validated=false, scoring/grade остаются выключены.
-Далее нужен отдельный purpose-bound запуск submitted snapshot и trusted test_result evidence.
+restricted ACK. Suite/receipt runtime_validated=false: сам по себе suite pin не присваивает grade.
+Purpose-bound submitted execution и grade policy описаны в следующем разделе.
+
+## Проверка submitted code/SQL и решение о грейде (BE-05/06/09, 7 октября)
+
+Этот раздел обновляет статус предыдущих этапов: теперь реализован контур скрытых
+тестов и **механизм** итогового решения для code/SQL. Реального калибровочного корпуса,
+проверенного Linux runtime и подключённого LLM-провайдера в проекте пока нет.
+Все результаты остаются `demo=true`; наличие механизма не означает доказанной точности.
+
+### Отправленный снимок и скрытые тесты
+
+`POST /internal/v1/submitted-tests` выдаёт Code Runner отдельный подписанный допуск
+и private suite material для конкретных candidate/session/stage/workspace/snapshot,
+node и runtime fingerprint. Проверяются завершённая отправка, consent, processing
+кандидата и авторов, private pins и текущая runtime policy. Отдельный
+`POST /internal/v1/submitted-tests-source` выдаёт неизменяемый Workspace manifest,
+проверяя точные snapshot version/digest и suite binding через Assessment.
+Обычный Workspace write/run permit после отправки по-прежнему закрыт.
+
+Signed `assessment.stage_submitted.v1` также создаёт Runner SubmittedJob.
+Opt-in `python -m reverse_hr.worker grade-tests` требует тех же provisioned nsjail,
+стабильного node ID, свежего real probe и execution mode, что и существующий worker.
+Он выполняет по одному скрытому случаю, добавляя в guest только исходники и fixtures;
+expected outputs и reference/mutants не передаются исполняемому коду кандидата.
+До создания процесса коммитится SubmittedAttempt. OS stage/attempt locks защищают
+от параллельного исполнения. Вывод становится доказательством только после cleanup,
+повторной проверки допуска/runtime и сопоставления на host. Восстановление очищает
+процесс и отмечает interrupted; потерянный вывод повторным исполнением не заменяется.
+Пять dependency failures с backoff заканчиваются needs_attention. Внутренняя
+`submitted_runner.retry_job` возобновляет только dependency jobs с подтверждённой
+очисткой; interrupted work требует новой кандидатской попытки.
+
+`POST /internal/v1/submitted-test-result` в Evaluation проверяет две подписи:
+свежий transport request и неизменяемый Runner TestProof. Proof включает snapshot,
+SessionSuitePin, исходный ProbeRecord, полный список case outcomes, attempt IDs,
+input/capture/case hashes; stdout и ожидаемые ответы в него не включаются.
+Evaluation сверяет весь список case keys/criterion keys/hashes с private metadata
+Assessment; неполный набор даже с действующей подписью не даёт баллы. Natural replay
+не заменяет proof и не повторяет исполнение. Для `test_result` применяется доля
+passed cases в пределах баллов критерия; inconclusive оставляет баллы unset.
+
+Reviewer workspace содержит `trusted_test_points` и `test_proof_digest`.
+Ручная stage review с `test_proof_digest` может принять только вычисленные баллы;
+цитата исходника не заменяет test proof. Artifact-критерии по-прежнему требуют
+проверенных file hashes и line ranges. `POST /internal/v1/stage-score` экспортирует
+Assessment свежий signed набор criterion points и immutable review references.
+
+### Калибровка, итог и повторные попытки
+
+Content_admin/MFA создаёт `/v1/grade-policies` для конкретного PlanVersion:
+weights по всем компетенциям (сумма 100), обязательные minimums, pass_score,
+retry_seconds и отдельный grade_change_seconds (по умолчанию 90 дней).
+Политика первоначально draft. Другой content_admin/MFA утверждает её через
+`/v1/grade-policies/{policy_id}/approve`, предоставляя CalibrationData: hash источника,
+held-out cases, нормализованные scores и согласованные независимые expert labels.
+Проверяются уникальность случаев/экспертов, coverage, минимум 20 validation cases,
+не менее пяти примеров каждого класса и заданная точность по каждому классу.
+Эти ограничения — технические проверки входных данных, а не научное обоснование
+достаточного размера выборки. Утверждающий эксперт отвечает за происхождение и
+разделение корпуса; синтетические тестовые fixtures не публикуются в рабочие policies.
+GET policy возвращает данные для проверки; retire с CAS/причиной закрывает применение.
+
+SessionCommand принимает optional `grade_policy_id`. Новая scored сессия закрепляет
+hash утверждённой policy и её calibration; legacy сессии остаются без грейда.
+Смена policy не обходит уже назначенные cooldown. Новая попытка того же уровня
+также запрещена, пока предыдущая scored сессия ожидает решения.
+
+`GET /v1/assessment-sessions/{session_id}/evaluation` показывает кандидату текущий
+итог. `/v1/assessment-grade-reviews/{session_id}` доступен независимому
+assessment_reviewer/MFA. Сумма points/max_points нормализуется по компетенциям,
+затем применяется закреплённая версия weights/thresholds. Пока есть missing evidence,
+итог nullable. Предложение grade само не меняет подтверждённый уровень.
+
+`POST /v1/assessment-grade-reviews/{session_id}/decisions` принимает confirm/reject/
+technical_failure и содержательную причину. Confirm требует совпадающего свежего
+`evidence_digest`, полного набора human stage reviews и прохождения minimums/thresholds.
+Человек может изменить оценки посредством новой stage review или отклонить итог с
+причиной. Decision завершает сессию (`completed`), сохраняет историю доказательств,
+отдельные retry/grade-change deadlines и UUID-only событие. Неудача не понижает уже
+подтверждённый grade; technical_failure не выставляет ноль и не назначает retry cooldown.
+Общий grade хранится в Assessment и проецируется в Candidate через подписанное
+событие и отдельный signed RPC. Подключение Matching остаётся следующим этапом. Media/VCV/whiteboard evidence этим code/SQL этапом не реализуется.
+
+### Будущая LLM-оценка
+
+`evaluation_llm.ModelGateway` — интерфейс провайдера с structured ModelReply.
+Модель возвращает предложение ReviewCommand и token/cost metadata, а не test certificate
+или подтверждённый grade. Prompt version/hash, exact material/source hash, модель,
+длительность, usage/cost и статус хранятся в ModelAttempt. Добавлен настраиваемый Chat Completions gateway;
+`HR_EVALUATION_LLM_ENABLED=false` по умолчанию. Реальные модель/ключ/тарифы пока не настроены.
+
+MFA reviewer может запросить `/v1/evaluation-reviews/stages/{stage_id}/model-attempts`.
+Injected gateway обрабатывается `evaluation_llm.run_one`; один bounded thread и timeout
+до 30 секунд ограничивают зависший вызов. Не более трёх отдельных попыток на stage;
+technical_failure оставляет output/score unset. Endpoint interrupt отбрасывает late reply
+и позволяет создать следующий UUID. После предложения человек явно ссылается на
+`model_attempt_id` в stage review, принимает/меняет баллы и приводит проверяемые цитаты.
+Наличие LLM proposal не заменяет hidden tests, независимую stage review или grade review.
+Grade policy может требовать `required_llm_model` и `required_llm_prompt_digest`:
+без принятого human reviewer предложения ровно этой модели/промпта итог остаётся unset.
+Signed stage-score export перепроверяет ModelAttempt и exact input hash.
+LLM attempts/output, signed test evidence, grades/decision caches удаляются вместе с
+данными кандидата; неочищенные Runner attempts задерживают deleted ACK. Авторство
+policy/calibration/review остаётся restricted и не разрешает новые операции.
+
+Новые migrations: Runner `0011_submitted`, Assessment `0011_grades`, Evaluation
+`0006_tests`/`0007_models`. Они защищают данные до любого downgrade DDL; readiness
+проверяет новые таблицы. Контракты OpenAPI обновлены. Docker/PG/RabbitMQ/Linux и
+реальная LLM-инференс/пилотная калибровка не проверялись.
+
+
+### Подтверждённый грейд в Candidate
+
+Candidate consumer обрабатывает `assessment.grade_decision_recorded.v1`. Событие
+содержит только UUID; детали получаются через подписанный
+`POST /internal/v1/confirmed-grade` Assessment с отдельным purpose/context,
+свежим nonce и точным связыванием candidate/session/decision/reviewer/session version.
+Проверяются текущие ограничения кандидата и авторов, а также assessment consent.
+В ответе только специализация, целевой грейд, статус решения, дата и `demo=true`;
+исходники, баллы, причины, калибровка и скрытые тесты не передаются.
+
+`GET /v1/candidates/me` возвращает подтверждённый грейд для текущей специализации.
+Самостоятельно указанный `declared_grade` не меняет подтверждённый уровень.
+`GET /v1/candidates/me/grade-history` доступен только самому кандидату и показывает
+минимальную историю подтверждений, отказов и технических сбоев по специализациям.
+Профиль можно создать после решения: сохранённая история используется при чтении.
+Повторные event UUID и повторная доставка decision UUID не создают новую запись;
+конфликтующее решение отклоняется. Запоздавшее событие не понижает грейд: Assessment
+сейчас разрешает только повышение. Новые правила понижения/отзыва потребуют отдельного
+версионированного контракта. Изменение видимого подтверждённого грейда увеличивает
+версию профиля для защиты от устаревшего `If-Match`.
+
+Privacy удаляет историю вместе с профилем и command caches. Постоянный tombstone
+блокирует восстановление истории поздним событием. Migration Candidate `0004_candidate`
+и readiness включают таблицу истории; downgrade проверяет данные до DDL. Доставка
+в RabbitMQ требует обновлённой topology из `scripts/configure_events.py`; существующие
+сервисы и брокер автоматически не перезапускались. Matching и реальный LLM provider
+этим этапом не подключены.
+
+
+### Настройка LLM worker
+
+Опциональный `python -m reverse_hr.worker evaluate` работает только в Evaluation.
+Адаптер использует один `POST /v1/chat/completions`, строгую JSON schema,
+`max_completion_tokens`, `store=false`, без tools, streaming, fallback и HTTP retry.
+Формат сверён с [официальным API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create).
+Поддержка этих параметров и точное возвращаемое имя модели должны быть проверены
+для выбранного провайдера; неподдерживаемый или усечённый ответ закрывает попытку.
+
+Настройки в `.env.example`: `EVALUATION_LLM_ENABLED`, `EVALUATION_LLM_MODEL`,
+`EVALUATION_LLM_CONFIG`, `EVALUATION_LLM_TIMEOUT_SECONDS`. Config — JSON с fixed HTTPS
+origin, max_request_bytes, max_input_tokens, max_output_tokens,
+input_microusd_per_million_tokens, output_microusd_per_million_tokens,
+stage_budget_microusd. Тарифы задаёт оператор: в коде нет выбранной модели или
+предполагаемой актуальной цены. Config резервирует верхнюю оценку для всех трёх попыток.
+Каждая новая попытка в одном stage требует той же модели/config, даже после сбоя.
+Input guard ограничивает байты запроса с запасом; он не заменяет tokenizer провайдера.
+Стоимость в ledger — оценка по usage и заданным ставкам, не счёт; неизвестный usage
+после timeout остаётся null, но попытка и её резерв не освобождаются. Строгий денежный
+лимит на стороне провайдера остаётся отдельной настройкой аккаунта.
+
+Ключ читается из `HR_EVALUATION_LLM_KEY_FILE`, максимум 4096 байт. В Compose это
+`.secrets/llm-api-key`, смонтированный только в `evaluation-llm`. Не помещайте ключ в
+JSON config: публичная конфигурация сохраняется в ledger и видна MFA reviewer.
+Необходимо явно включить профиль `llm`; только worker имеет сеть `llm-egress`.
+Evaluation API остаётся в internal backend network. Конфигурация инфраструктуры
+подготовлена, действующие контейнеры и `.env` не изменены.
+
+Pending попытки с несовместимой моделью/config/prompt или отказом source admission
+закрываются как blocked до внешнего вызова. Принятая работа фиксируется как running
+перед запросом. После падения процесса running не отправляется заново: reviewer
+может interrupt и запросить следующий UUID в пределах трёх попыток. Late reply
+после interrupt не сохраняется. Модель не выставляет score/grade сама; проверка
+цитат и явное human review остаются обязательными.
+
+Провайдер получает task/rubric и files с SHA, без candidate/session UUID, consent,
+private suite pins и case metadata. HTTP transport отключает ambient proxies/redirects,
+ограничивает request/response и timeout. Ошибки провайдера не попадают в outbox,
+пользовательские ответы или worker logs. Реальная внешняя инференс в этой реализации
+не запускалась; локальные проверки используют synthetic HTTPS response doubles.

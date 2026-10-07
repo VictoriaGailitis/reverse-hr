@@ -1,14 +1,14 @@
 # Ход реализации
 
-Обновлено: 6 октября 2026 года. Пользователь попросил начать реализацию по этапам;
-Последний инкремент — фиксированные планы и preflight-сессии Assessment; актуальные проверки приведены в конце журнала.
+Обновлено: 7 октября 2026 года. Пользователь попросил начать реализацию по этапам;
+Последний инкремент — submitted hidden tests, signed Evaluation evidence, механизмы калибровки/session grade/cooldown и LLM proposals; актуальные проверки приведены в конце журнала.
 
 | Этап | Состояние | Результат / оставшиеся работы |
 |---|---|---|
 | 1. Проектирование (BE-01/02) | Подготовлен первый набор, ожидает дальнейшей проверки | Границы 17 сервисов, проектные DTO/OpenAPI первой цепочки, envelope, права, статусы и проверки; полные контракты всех функций ещё впереди |
 | 2. Инфраструктура (BE-02) | Начат | FastAPI, health/metrics, миграции, outbox/inbox, signed RabbitMQ transport, retry/DLQ и replay outbox; PostgreSQL и RabbitMQ проверены, полный Compose пока не поднят |
 | 3. Данные и доступ (BE-03/04/16) | Частично реализован | JWT/JWKS, свой профиль, организации, членства, модерация с MFA, согласия, история модерации, отзыв членства, логика разрешений компаниям и каскадный отзыв; подписанные события и координатор удаления; PDF и физическая очистка впереди |
-| 4. Контент и оценка (BE-05/06/09) | Частично реализован | Demo-каталог и immutable версии; последовательные code/SQL сессии и snapshots; private artifact review; trusted suite validation pipeline/queue/runtime policy и private session pins. Candidate test execution, калибровка и грейд впереди |
+| 4. Контент и оценка (BE-05/06/09) | Частично реализован | Demo-каталог и immutable версии; последовательные code/SQL сессии и snapshots; private artifact review; trusted suite validation pipeline/queue/runtime policy и private session pins. Submitted hidden-test execution, grade policy/calibration import, session aggregation/human decision/cooldown и LLM adapter interface реализованы. Реальный corpus, LLM provider, live runtime и media evidence впереди |
 | 5. Обратный найм (BE-10/11) | Запланирован | Подбор, приглашения, разрешённое раскрытие |
 | 6. Практические среды (BE-07/08) | Запланирован | Медиа, доска, Proctoring |
 | 7. Полный процесс (BE-04/11/12) | Запланирован | PDF, вакансии, диалоги, задания компаний, расписания |
@@ -1563,3 +1563,114 @@ Ruff lint/format и runtime OpenAPI comparison проходят. Новых live
 
 Далее — purpose-bound candidate execution для submitted snapshots и test_result evidence
 Evaluation; калибровка/grade policy/session aggregation и остальная цепочка найма впереди.
+
+## Submitted execution, session grades и LLM extension (7 октября, BE-05/06/09)
+
+Реализованы отдельные signed submitted-tests/material и submitted-tests-source grants:
+точные candidate/session/stage/workspace/snapshot/version/digest, SessionSuitePin,
+node/fingerprint, fresh candidate consent, source processing и runtime policy.
+Обычный write permission не расширен. Runner получает signed stage_submitted через
+новую broker binding; opt-in grade-tests worker выполняет hidden cases с host-only
+expected outputs, durable attempts, persistent OS locks, real readiness gate и cleanup.
+Recovery не переисполняет потерянный вывод; bounded dependency retries и безопасный
+internal retry helper не reset interrupted execution. Capture matrix проверяется снова
+перед подписью; source stdout не считается сертификатом прохождения.
+
+Evaluation принимает nested signed TestProof, сверяет snapshot/private suite/criterion
+coverage с текущим signed material, сохраняет immutable evidence и natural replay.
+Reviewer принимает только derived test points с proof digest; technical/inconclusive
+оставляет points unset. Signed stage-score export перепроверяет source citations,
+nested test signatures и review references перед итоговым Assessment decision.
+
+GradePolicy draft/import/independent MFA approval/retirement содержит plan/rules hashes,
+expert-labelled held-out CalibrationData, completeness/class accuracy checks, competency
+weights/minimums и разные retry/grade-change limits. Scored session закрепляет policy hash;
+legacy остаётся uncalibrated. Session aggregation nullable до полного human-reviewed
+набора evidence. Независимый reviewer подтверждает/отклоняет итог с причиной и exact
+current evidence digest. Decision переводит сессию в completed. Неудача сохраняет старый
+grade; технический исход не равен нулю, не назначает retry penalty. Default grade-change
+window 90 дней, policy-configurable. Новая policy не обходит существующий deadline.
+
+Учтена будущая LLM-оценка: provider-neutral gateway, pinned source/rubric input,
+versioned prompt/hash, model attempt ledger, structured proposals/citations, token/cost/
+duration metadata, bounded timeout/thread и максимум три attempt UUID. Явная human stage
+review может принять/изменить предложение с model_attempt_id; модель не подтверждает
+test_result/grade. Interrupt fences late reply. Remote provider не подключён и LLM disabled
+по умолчанию. Настоящих экспертных данных калибровки пока нет (подтверждено пользователем).
+Synthetic calibration используется только в tests; рабочие policies не созданы.
+
+Privacy очищает candidate evidence/model outputs/grades/decision command caches;
+physical cleanup obligations задерживают Runner deleted ACK. Сохранённое authored
+review/policy/calibration ограничено, включая экспертов calibration data. Новые protected
+migrations/readiness и runtime OpenAPI обновлены. Документация перечисляет API и
+границы готовности: code/SQL mechanism; Candidate/Matching projection, media evidence,
+provider integration и live pilot остаются отдельной работой.
+
+Evaluation дополнительно сверяет полную case matrix (key/criterion/hash) с metadata
+Assessment. Grade policy может потребовать конкретный LLM model/prompt hash; proposal
+без этого provenance не позволяет завершить score.
+
+Финальная локальная проверка: **746 passed, 52 skipped** (39 новых cases), Ruff
+lint/format, git diff --check и сравнение runtime OpenAPI проходят. Worker --help
+проверен без запуска сервисов. Полный прогон использовал удаление успешных временных
+pytest fixtures, чтобы не заполнять диск; удалены только артефакты собственных
+завершённых запусков. Docker/PG/RabbitMQ/Linux и реальный LLM не запускались.
+
+
+## Проекция human grade decision в Candidate
+
+Добавлена Candidate migration `0004_candidate` и отдельная таблица минимальной истории
+по специализациям. Signed Assessment event ведёт к fresh signed internal decision RPC;
+все UUID и session version связаны с исходным событием. Nonce replay protection,
+подпись, purpose/context, global restriction/assessment consent проверяются до экспорта.
+Никакие артефакты, причины, баллы или private calibration не копируются в Candidate.
+
+Профиль теперь возвращает confirmed_grade по текущей специализации. Только confirmed
+решение участвует в проекции; rejected/technical_failure сохраняются в приватной истории.
+Повторные доставки не дублируют решения/версии; конфликт natural decision ID отклоняется.
+События не по порядку не понижают уровень. Declared grade независим от confirmed.
+Смена специализации выбирает соответствующую историю, а появление профиля после решения
+не теряет грейд. Смена видимого grade увеличивает profile version. Candidate privacy
+очищает историю до deleted ACK, а tombstone блокирует позднее восстановление.
+
+Добавлены consumer/topology binding, readiness, OpenAPI, тесты signed export и transport,
+повторного nonce, неверных подписей/bindings, отказа consent, retries, событий не по порядку,
+изолированных специализаций, удаления и защищённого migration downgrade. Runtime RPC и
+transport проверены с настоящими Ed25519 и TestClient, без live RabbitMQ/PG/Docker/LLM.
+Matching projection и реальный provider остаются отдельными этапами.
+
+
+Проверка этапа: **758 passed, 52 skipped** (12 новых cases), Ruff lint/format
+(171 Python files), git diff --check и runtime OpenAPI comparison проходят.
+Первый общий запуск был прерван из-за удаления временного каталога другим параллельным
+pytest; повторный последовательный прогон завершился успешно. Live проверки не запускались.
+
+
+## Опциональный Chat Completions LLM worker
+
+Добавлен HTTPS адаптер с strict structured proposal schema, bounded request/response,
+свежим source admission и проверкой локальных citations/rubric. Передаются только
+задача/рубрика/файлы, без UUID/consent/private pins/test-case metadata. Один запрос,
+без retries/fallback/tools/streaming; store=false. Любой отказ/неполный ответ/invalid
+usage приводит к технической неудаче без автоматического score/grade.
+
+Evaluation migration `0008_evaluation` закрепляет public gateway configuration в
+ModelAttempt; credentials читаются только из файла и не попадают в ledger.
+Origin/модель/token limits/operator rates/stage budget закреплены; несовместимый
+pending attempt и denied source переходят в blocked без внешнего вызова.
+Стоимость — оценка по заданным тарифам, не provider invoice; bytes input guard не
+является точным tokenizer. Config резервирует три максимальных попытки, включая
+неизвестные списания после failure. Running после crash не переотправляется:
+нужен explicit reviewer interrupt/new UUID с тем же config и общим лимитом три.
+
+Worker mode evaluate, opt-in Compose profile llm, отдельная сеть egress только у
+worker, безопасные настройки в .env.example; ключ/модель/тарифы не настроены.
+OpenAI Docs использован для сверки протокола, реальная LLM не вызвана. Тесты используют
+synthetic tariff/credential и fake HTTPS responses, настоящие локальные DB migrations
+и reviewer endpoints. Live Compose/PG/RabbitMQ/Linux по-прежнему отложены.
+
+
+Проверка LLM этапа: **783 passed, 52 skipped** (25 новых cases), Ruff lint/format
+(175 Python files), git diff --check, runtime OpenAPI comparison и worker --help
+с mode evaluate проходят. Внешних запросов, настройки реальных credentials,
+перезапуска контейнеров или live calibration не выполнялось.
