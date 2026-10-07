@@ -12,6 +12,7 @@ from test_access import headers
 from test_event_transport import signatures as signatures_fixture
 from test_suite_admission import setup as admission_setup
 
+import reverse_hr.runner_monitor as monitoring
 import reverse_hr.validation_lifecycle as lifecycle
 import reverse_hr.validation_verdict as domain
 from reverse_hr.db import Outbox
@@ -32,6 +33,17 @@ signatures = signatures_fixture
 
 @pytest.fixture
 def setup(service, token, signatures, tmp_path, monkeypatch):
+    class DrainedMonitor(monitoring.StopMonitor):
+        def __exit__(self, *args):
+            result = super().__exit__(*args)
+            # Synthetic executions finish instantly; drain their real signed RPC
+            # before starting the next case or tearing down its service databases.
+            if self.thread:
+                self.thread.join(timeout=5)
+                assert not self.thread.is_alive(), "signed admission check did not finish"
+            return result
+
+    monkeypatch.setattr(monitoring, "StopMonitor", DrainedMonitor)
     s = admission_setup.__wrapped__(service, token, signatures)
     s.engine, s.processing = s.runner.app.state.engine, s.runner.app.state.processing_access
     scratch, groups = tmp_path / "scratch", tmp_path / "groups"
