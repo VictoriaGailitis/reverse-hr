@@ -305,6 +305,10 @@ class RunnerConsumer(SignedConsumer):
             and event.event_type == "coding-workspace.run_requested.v1"
         ):
             return lambda session, event: process_run_request(session, event, self.access)
+        if event.producer == "assessment" and event.event_type == "assessment.stage_submitted.v1":
+            from reverse_hr.submitted_runner import process_submission
+
+            return lambda session, event: process_submission(session, event, self.access)
         if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
             return process_deletion_request
         raise InvalidEvent()

@@ -104,6 +104,304 @@
         }
       }
     },
+    "/v1/evaluation-reviews/stages/{stage_id}/model-attempts": {
+      "post": {
+        "tags": [
+          "evaluation-models"
+        ],
+        "summary": "Request Model",
+        "operationId": "request_model_v1_evaluation_reviews_stages__stage_id__model_attempts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelAttemptView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "evaluation-models"
+        ],
+        "summary": "Attempts",
+        "operationId": "attempts_v1_evaluation_reviews_stages__stage_id__model_attempts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModelAttemptView"
+                  },
+                  "title": "Response Attempts V1 Evaluation Reviews Stages  Stage Id  Model Attempts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/model-attempts/{attempt_id}/interrupt": {
+      "post": {
+        "tags": [
+          "evaluation-models"
+        ],
+        "summary": "Interrupt Attempt",
+        "operationId": "interrupt_attempt_v1_evaluation_reviews_stages__stage_id__model_attempts__attempt_id__interrupt_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Attempt Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelAttemptView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/stage-score": {
+      "post": {
+        "tags": [
+          "internal-session-scores"
+        ],
+        "summary": "Stage Score",
+        "operationId": "stage_score_internal_v1_stage_score_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/submitted-test-result": {
+      "post": {
+        "tags": [
+          "internal-test-results"
+        ],
+        "summary": "Receive Result",
+        "operationId": "receive_result_internal_v1_submitted_test_result_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResultDelivery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/evaluation-reviews/stages/{stage_id}": {
       "get": {
         "tags": [
@@ -632,6 +930,18 @@
             "pattern": "\\S",
             "title": "Reason"
           },
+          "test_proof_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Proof Digest"
+          },
           "citations": {
             "items": {
               "$ref": "#/components/schemas/Citation"
@@ -648,6 +958,56 @@
           "reason"
         ],
         "title": "CriterionDecision"
+      },
+      "CriterionScore": {
+        "properties": {
+          "criterion_key": {
+            "type": "string",
+            "title": "Criterion Key"
+          },
+          "competency": {
+            "type": "string",
+            "title": "Competency"
+          },
+          "max_points": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Points"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "evidence_type": {
+            "type": "string",
+            "enum": [
+              "artifact",
+              "test_result",
+              "timestamped_recording",
+              "board_snapshot"
+            ],
+            "title": "Evidence Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "criterion_key",
+          "competency",
+          "max_points",
+          "evidence_type"
+        ],
+        "title": "CriterionScore"
       },
       "ErrorResponse": {
         "properties": {
@@ -720,6 +1080,77 @@
           "files"
         ],
         "title": "FilesCommand"
+      },
+      "GatewayConfiguration": {
+        "properties": {
+          "origin": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Origin"
+          },
+          "max_request_bytes": {
+            "type": "integer",
+            "maximum": 262144.0,
+            "minimum": 1024.0,
+            "title": "Max Request Bytes",
+            "default": 65536
+          },
+          "max_input_tokens": {
+            "type": "integer",
+            "maximum": 262144.0,
+            "minimum": 1024.0,
+            "title": "Max Input Tokens"
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "maximum": 16384.0,
+            "minimum": 256.0,
+            "title": "Max Output Tokens"
+          },
+          "input_microusd_per_million_tokens": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 1.0,
+            "title": "Input Microusd Per Million Tokens"
+          },
+          "output_microusd_per_million_tokens": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 1.0,
+            "title": "Output Microusd Per Million Tokens"
+          },
+          "stage_budget_microusd": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
+            "title": "Stage Budget Microusd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin",
+          "max_input_tokens",
+          "max_output_tokens",
+          "input_microusd_per_million_tokens",
+          "output_microusd_per_million_tokens",
+          "stage_budget_microusd"
+        ],
+        "title": "GatewayConfiguration"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "HealthResponse": {
         "properties": {
@@ -812,6 +1243,123 @@
         ],
         "title": "IntakeView"
       },
+      "ModelAttemptView": {
+        "properties": {
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Attempt Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "prompt_version": {
+            "type": "string",
+            "title": "Prompt Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "ready",
+              "technical_failure",
+              "interrupted",
+              "blocked"
+            ],
+            "title": "Status"
+          },
+          "gateway_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GatewayConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewCommand"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "cost_microusd": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Microusd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "attempt_id",
+          "stage_id",
+          "number",
+          "model",
+          "prompt_version",
+          "status",
+          "duration_ms",
+          "input_tokens",
+          "output_tokens",
+          "cost_microusd"
+        ],
+        "title": "ModelAttemptView"
+      },
       "PinnedMaterial": {
         "properties": {
           "consent_id": {
@@ -866,6 +1414,14 @@
               }
             ]
           },
+          "test_cases": {
+            "items": {
+              "$ref": "#/components/schemas/TestCaseMetadata"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Test Cases"
+          },
           "demo": {
             "type": "boolean",
             "const": true,
@@ -887,8 +1443,167 @@
         ],
         "title": "PinnedMaterial"
       },
+      "ProbeRecord": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 1.0,
+            "minimum": 1.0,
+            "title": "Version",
+            "default": 1
+          },
+          "node_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Node Id"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "fingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Fingerprint"
+          },
+          "passed": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 12.0,
+            "title": "Passed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "checked_at",
+          "fingerprint",
+          "passed"
+        ],
+        "title": "ProbeRecord"
+      },
+      "ResultDelivery": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "code-runner",
+            "title": "Requester",
+            "default": "code-runner"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "submitted-test-delivery",
+            "title": "Purpose",
+            "default": "submitted-test-delivery"
+          },
+          "proof": {
+            "$ref": "#/components/schemas/TestProof"
+          },
+          "proof_signature": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Proof Signature"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "proof",
+          "proof_signature"
+        ],
+        "title": "ResultDelivery"
+      },
+      "ResultReceipt": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "code-runner",
+            "title": "Requester",
+            "default": "code-runner"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "submitted-test-delivery",
+            "title": "Purpose",
+            "default": "submitted-test-delivery"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "proof_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Proof Digest"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "stage_id",
+          "proof_digest",
+          "allowed"
+        ],
+        "title": "ResultReceipt"
+      },
       "ReviewCommand": {
         "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
           "decisions": {
             "items": {
               "$ref": "#/components/schemas/CriterionDecision"
@@ -981,6 +1696,18 @@
       },
       "ReviewView": {
         "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
           "decisions": {
             "items": {
               "$ref": "#/components/schemas/CriterionDecision"
@@ -1106,6 +1833,31 @@
           },
           "source": {
             "$ref": "#/components/schemas/FilesCommand"
+          },
+          "trusted_test_points": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Trusted Test Points"
+          },
+          "test_proof_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Proof Digest"
           }
         },
         "additionalProperties": false,
@@ -1120,6 +1872,147 @@
           "source"
         ],
         "title": "ReviewWorkspace"
+      },
+      "ScoreReceipt": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "assessment",
+            "title": "Requester",
+            "default": "assessment"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "session-score",
+            "title": "Purpose",
+            "default": "session-score"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StageScore"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "session_id",
+          "stage_id",
+          "workspace_id",
+          "snapshot_id",
+          "allowed"
+        ],
+        "title": "ScoreReceipt"
+      },
+      "ScoreRequest": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "assessment",
+            "title": "Requester",
+            "default": "assessment"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "session-score",
+            "title": "Purpose",
+            "default": "session-score"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "session_id",
+          "stage_id",
+          "workspace_id",
+          "snapshot_id"
+        ],
+        "title": "ScoreRequest"
       },
       "SessionSuitePin": {
         "properties": {
@@ -1188,6 +2081,136 @@
           "stage_id"
         ],
         "title": "SessionSuitePin"
+      },
+      "StageScore": {
+        "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
+          "llm_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Model"
+          },
+          "llm_prompt_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Prompt Digest"
+          },
+          "snapshot_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Snapshot Version"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision Id"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Digest"
+          },
+          "task_key": {
+            "type": "string",
+            "title": "Task Key"
+          },
+          "review_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Id"
+          },
+          "reviewer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Id"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionScore"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Criteria"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_version",
+          "snapshot_digest",
+          "revision_id",
+          "content_digest",
+          "task_key",
+          "review_id",
+          "reviewer_id",
+          "criteria",
+          "evidence_digest"
+        ],
+        "title": "StageScore"
       },
       "SuitePin": {
         "properties": {
@@ -1287,6 +2310,221 @@
           "rubric"
         ],
         "title": "Task"
+      },
+      "TestCaseMetadata": {
+        "properties": {
+          "case_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Case Key"
+          },
+          "criterion_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Criterion Key"
+          },
+          "case_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Case Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_key",
+          "criterion_key",
+          "case_digest"
+        ],
+        "title": "TestCaseMetadata"
+      },
+      "TestOutcome": {
+        "properties": {
+          "case_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Case Key"
+          },
+          "criterion_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Criterion Key"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Attempt Id"
+          },
+          "input_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Input Digest"
+          },
+          "case_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Case Digest"
+          },
+          "capture_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Capture Digest"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "inconclusive"
+            ],
+            "title": "Verdict"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_key",
+          "criterion_key",
+          "attempt_id",
+          "input_digest",
+          "case_digest",
+          "capture_digest",
+          "verdict"
+        ],
+        "title": "TestOutcome"
+      },
+      "TestProof": {
+        "properties": {
+          "producer": {
+            "type": "string",
+            "const": "code-runner",
+            "title": "Producer",
+            "default": "code-runner"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "submitted-test-result",
+            "title": "Purpose",
+            "default": "submitted-test-result"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "snapshot_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Snapshot Version"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/SessionSuitePin"
+          },
+          "probe": {
+            "$ref": "#/components/schemas/ProbeRecord"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/TestOutcome"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Outcomes"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "session_id",
+          "stage_id",
+          "workspace_id",
+          "snapshot_id",
+          "snapshot_version",
+          "snapshot_digest",
+          "binding",
+          "probe",
+          "completed_at",
+          "outcomes"
+        ],
+        "title": "TestProof"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       }
     },
     "securitySchemes": {

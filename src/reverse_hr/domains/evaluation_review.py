@@ -29,6 +29,7 @@ class ReviewRecord(EvaluationBase):
     reviewer_id: Mapped[str] = mapped_column(String(36), index=True)
     number: Mapped[int]
     intake_version: Mapped[int]
+    model_attempt_id: Mapped[str | None] = mapped_column(String(36))
     decisions: Mapped[list] = mapped_column(JSON)
     score: Mapped[int | None]
     reason: Mapped[str] = mapped_column(String(2000))
@@ -57,11 +58,14 @@ class CriterionDecision(Contract):
     criterion_key: str = Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")
     points: int | None = Field(default=None, strict=True, ge=0, le=100)
     reason: str = Field(min_length=1, max_length=2000, pattern=r"\S")
+    test_proof_digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     citations: list[Citation] = Field(default_factory=list, max_length=10)
 
     @model_validator(mode="after")
     def evidence(self):
-        if (self.points is not None) != bool(self.citations):
+        if (self.points is not None) != bool(self.citations or self.test_proof_digest) or (
+            self.citations and self.test_proof_digest
+        ):
             raise ValueError(
                 "Scored criteria require evidence; missing evidence leaves points unset"
             )
@@ -71,6 +75,7 @@ class CriterionDecision(Contract):
 
 
 class ReviewCommand(Contract):
+    model_attempt_id: UUID | None = None
     decisions: list[CriterionDecision] = Field(min_length=1, max_length=20)
     reason: str = Field(min_length=1, max_length=2000, pattern=r"\S")
 
@@ -103,6 +108,8 @@ class ReviewResult(Contract):
 class ReviewWorkspace(ReviewResult):
     material: PinnedMaterial
     source: FilesCommand
+    trusted_test_points: dict[str, int | None] = Field(default_factory=dict)
+    test_proof_digest: str | None = None
 
 
 router = APIRouter(prefix="/v1/evaluation-reviews", tags=["evaluation-review"])
@@ -114,6 +121,7 @@ def review_view(row):
         timestamp = timestamp.replace(tzinfo=UTC)
     return ReviewView(
         review_id=row.review_id,
+        model_attempt_id=row.model_attempt_id,
         reviewer_id=row.reviewer_id,
         number=row.number,
         intake_version=row.intake_version,
@@ -200,8 +208,21 @@ def get_workspace(request: Request, actor: Actor, stage_id: UUID):
     candidate, version = authorize(request, actor, stage_id)
     with Session(request.app.state.engine) as session, session.begin():
         row = guarded(request, actor, stage_id, candidate, version, session)
+        from reverse_hr.domains.evaluation_tests import TestEvidence, test_points
+        from reverse_hr.event_transport import Signatures
+
+        signatures = None
+        if session.get(TestEvidence, row.stage_id):
+            signatures = getattr(
+                request.app.state, "evaluation_signatures", None
+            ) or Signatures.from_settings(request.app.state.settings)
+        points, proof_digest = test_points(session, row, signatures)
         return ReviewWorkspace(
-            **result(session, row).model_dump(), material=row.material, source=row.source
+            **result(session, row).model_dump(),
+            material=row.material,
+            source=row.source,
+            trusted_test_points=points,
+            test_proof_digest=proof_digest,
         )
 
 
@@ -224,7 +245,7 @@ def history(
         ]
 
 
-def validate_decisions(row, body):
+def validate_decisions(row, body, test_scores=None, proof_digest=None):
     material = PinnedMaterial.model_validate(row.material)
     source = FilesCommand.model_validate(row.source)
     criteria = {c.key: c for c in material.task.rubric}
@@ -235,6 +256,17 @@ def validate_decisions(row, body):
         criterion = criteria[decision.criterion_key]
         if decision.points is None:
             continue
+        if criterion.evidence == "test_result":
+            if (
+                decision.citations
+                or decision.test_proof_digest != proof_digest
+                or proof_digest is None
+                or decision.points != (test_scores or {}).get(criterion.key)
+            ):
+                raise HTTPException(409)
+            continue
+        if decision.test_proof_digest is not None:
+            raise HTTPException(409)
         # A source citation cannot substitute for a verified hidden-test result.
         if criterion.evidence != "artifact" or decision.points > criterion.points:
             raise HTTPException(409)
@@ -272,7 +304,30 @@ def record_review(
         row = session.get(EvaluationIntake, str(stage_id))
         if row.version != expected:
             raise HTTPException(409)
-        score = validate_decisions(row, body)
+        from reverse_hr.domains.evaluation_tests import TestEvidence, test_points
+        from reverse_hr.event_transport import Signatures
+
+        signatures = None
+        if session.get(TestEvidence, row.stage_id):
+            signatures = getattr(
+                request.app.state, "evaluation_signatures", None
+            ) or Signatures.from_settings(request.app.state.settings)
+        test_scores, proof_digest = test_points(session, row, signatures)
+        if body.model_attempt_id is not None:
+            from reverse_hr.evaluation_llm import ModelAttempt, ModelInput
+            from reverse_hr.test_suites import digest
+
+            attempt = session.get(ModelAttempt, str(body.model_attempt_id))
+            if (
+                attempt is None
+                or attempt.stage_id != row.stage_id
+                or attempt.candidate_id != row.candidate_id
+                or attempt.status != "ready"
+                or attempt.input_digest
+                != digest(ModelInput(material=row.material, source=row.source))
+            ):
+                raise HTTPException(409, "Current model proposal required")
+        score = validate_decisions(row, body, test_scores, proof_digest)
         row.version += 1
         row.review_number += 1
         row.status, row.score = ("reviewed" if score is not None else "needs_evidence"), score
@@ -281,6 +336,7 @@ def record_review(
             stage_id=row.stage_id,
             candidate_id=row.candidate_id,
             reviewer_id=str(actor.subject),
+            model_attempt_id=str(body.model_attempt_id) if body.model_attempt_id else None,
             number=row.review_number,
             intake_version=row.version,
             decisions=body.model_dump(mode="json")["decisions"],
@@ -301,6 +357,7 @@ def record_review(
                 "points": decisions[criterion.key].points,
                 "snapshot_id": row.snapshot_id,
                 "digest": material.snapshot_digest,
+                "test_proof_digest": decisions[criterion.key].test_proof_digest,
                 "review_id": review.review_id
                 if decisions[criterion.key].points is not None
                 else None,

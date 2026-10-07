@@ -29,6 +29,7 @@ def main():
             "recover",
             "execute",
             "validate",
+            "grade-tests",
             "prepare",
             "collect",
         ],
@@ -53,7 +54,7 @@ def main():
     ):
         parser.error("Diagnostics require Code Runner with execution disabled")
     recovery_executor = None
-    if args.mode in {"recover", "execute", "validate"}:
+    if args.mode in {"recover", "execute", "validate", "grade-tests"}:
         if settings.service_name != "code-runner" or settings.runner_node_id is None:
             parser.error("Recovery requires Code Runner and a stable HR_RUNNER_NODE_ID")
         from reverse_hr.sandbox import NsjailExecutor
@@ -61,7 +62,7 @@ def main():
         recovery_executor = NsjailExecutor(settings)
         try:
             recovery_executor.cleanup_scope()
-            if args.mode in {"execute", "validate"}:
+            if args.mode in {"execute", "validate", "grade-tests"}:
                 from reverse_hr.runner_readiness import require_execution_ready
 
                 require_execution_ready(recovery_executor)
@@ -69,7 +70,7 @@ def main():
             parser.error("Recovery requires a validated, provisioned Linux sandbox")
     signatures = Signatures.from_settings(settings)
     engine = make_engine(settings.database_url.get_secret_value())
-    if args.mode in {"diagnose", "execute", "validate"}:
+    if args.mode in {"diagnose", "execute", "validate", "grade-tests"}:
         from sqlalchemy.orm import Session
 
         from reverse_hr.domains.code_runner import require_runner_mode
@@ -77,7 +78,10 @@ def main():
         try:
             with Session(engine) as session, session.begin():
                 require_runner_mode(
-                    session, "execution" if args.mode in {"execute", "validate"} else "diagnostic"
+                    session,
+                    "execution"
+                    if args.mode in {"execute", "validate", "grade-tests"}
+                    else "diagnostic",
                 )
         except Exception:
             engine.dispose()
@@ -110,6 +114,15 @@ def main():
                     if not prepare_one(engine, access):
                         time.sleep(0.5)
                     continue
+                if args.mode == "grade-tests":
+                    from reverse_hr.submitted_access import SubmittedAccess
+                    from reverse_hr.submitted_runner import run_one as grade_tests
+
+                    access = SubmittedAccess(settings)
+                    access._signatures = signatures
+                    if not grade_tests(engine, access, recovery_executor, signatures):
+                        time.sleep(0.5)
+                    continue
                 if args.mode == "execute":
                     from reverse_hr.runner_exchange import ManifestAccess
                     from reverse_hr.runner_lifecycle import run_one
@@ -138,12 +151,15 @@ def main():
                     continue
                 if args.mode == "recover":
                     from reverse_hr.runner_lifecycle import recover_one
+                    from reverse_hr.submitted_runner import recover_one as recover_submitted
                     from reverse_hr.validation_lifecycle import recover_one as recover_validation
 
-                    if not recover_one(
-                        engine, settings.runner_node_id, recovery_executor
-                    ) and not recover_validation(
-                        engine, settings.runner_node_id, recovery_executor
+                    if (
+                        not recover_submitted(engine, recovery_executor)
+                        and not recover_one(engine, settings.runner_node_id, recovery_executor)
+                        and not recover_validation(
+                            engine, settings.runner_node_id, recovery_executor
+                        )
                     ):
                         time.sleep(0.5)
                     continue

@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import Field
-from sqlalchemy import JSON, DateTime, ForeignKey, String, delete, select, update
+from sqlalchemy import JSON, DateTime, ForeignKey, String, delete, literal, select, update
 from sqlalchemy.orm import Mapped, Session, mapped_column, object_session
 
 from reverse_hr.auth import Actor
@@ -50,6 +50,8 @@ class PracticalSession(AssessmentBase):
     session_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     candidate_id: Mapped[str] = mapped_column(String(36), index=True)
     plan_version_id: Mapped[str] = mapped_column(ForeignKey("plan_versions.plan_version_id"))
+    grade_policy_id: Mapped[str | None] = mapped_column(String(36))
+    grade_policy_digest: Mapped[str | None] = mapped_column(String(64))
     consent_id: Mapped[str] = mapped_column(String(36))
     stages: Mapped[list] = mapped_column(JSON)
     test_pins: Mapped[list | None] = mapped_column(JSON)
@@ -108,6 +110,7 @@ class PlanView(Contract):
 class SessionCommand(Contract):
     plan_version_id: UUID
     assessment_consent_id: UUID
+    grade_policy_id: UUID | None = None
 
 
 class StageView(Contract):
@@ -122,7 +125,7 @@ class StageView(Contract):
 class SessionSummary(Contract):
     session_id: UUID
     plan_version_id: UUID
-    status: Literal["preflight", "in_progress", "submitted", "cancelled"]
+    status: Literal["preflight", "in_progress", "submitted", "cancelled", "completed"]
     current_stage_id: UUID | None = None
     version: int
     demo: Literal[True] = True
@@ -451,6 +454,19 @@ def create_session(request: Request, actor: Actor, body: SessionCommand, idempot
             pins = stored_pins(plan) if plan else []
         except ValueError as exc:
             raise HTTPException(409, "Corrupted plan pins") from exc
+        if body.grade_policy_id:
+            from reverse_hr.domains.assessment_grades import GradePolicy, calibration_owners
+
+            policy = session.get(GradePolicy, str(body.grade_policy_id))
+            if policy is None:
+                raise HTTPException(409)
+            policy_owners = calibration_owners(policy)
+            from reverse_hr.domains.assessment_plan_tests import owner_ids
+
+            all_owners = owner_ids(session, actor.subject, pins) | policy_owners
+            for owner in sorted(all_owners):
+                subject_lock(session, owner)
+                request.app.state.processing_access.check(UUID(owner))
         if pins:
             guard_owners(request, session, actor.subject, pins)
         else:
@@ -494,6 +510,10 @@ def create_session(request: Request, actor: Actor, body: SessionCommand, idempot
             if content is None or content.status != "published":
                 raise HTTPException(409)
         check_pins(request, session, pins, plan.stages, current=True)
+        if body.grade_policy_id is not None:
+            from reverse_hr.domains.assessment_grades import admission, policy_digest
+
+            grade_policy = admission(session, actor.subject, plan, body.grade_policy_id)
         stages = [dict(stage, stage_id=str(uuid4())) for stage in plan.stages]
         session_pins = [
             SessionSuitePin(**pin.model_dump(), stage_id=stages[pin.position]["stage_id"])
@@ -504,6 +524,8 @@ def create_session(request: Request, actor: Actor, body: SessionCommand, idempot
             candidate_id=str(actor.subject),
             plan_version_id=plan.plan_version_id,
             consent_id=str(body.assessment_consent_id),
+            grade_policy_id=str(body.grade_policy_id) if body.grade_policy_id else None,
+            grade_policy_digest=policy_digest(grade_policy) if body.grade_policy_id else None,
             stages=stages,
             test_pins=[pin.model_dump(mode="json") for pin in session_pins],
             test_pins_digest=test_digest(SessionPins(pins=session_pins)),
@@ -537,7 +559,7 @@ def create_session(request: Request, actor: Actor, body: SessionCommand, idempot
         actor.subject,
         "create_assessment_session",
         idempotency,
-        body.model_dump(mode="json"),
+        body.model_dump(mode="json", exclude_defaults=True),
         change,
         201,
         guard=guard,
@@ -641,6 +663,20 @@ def process_deletion_request(session, event):
             raise HTTPException(409)
         first = row.request_id is None
         row.blocked, row.request_id = True, str(event.aggregate_id)
+        from reverse_hr.domains.assessment_grades import (
+            GradeDecision,
+            GradePolicy,
+            calibration_owners,
+            purge,
+        )
+
+        purge(session, subject)
+        operations = select(literal("grade_decision:") + PracticalSession.session_id).where(
+            PracticalSession.candidate_id == subject
+        )
+        session.execute(
+            delete(IdempotencyRecord).where(IdempotencyRecord.operation.in_(operations))
+        )
         session.execute(delete(ValidationIntake).where(ValidationIntake.owner_id == subject))
         session.execute(
             delete(StageState).where(
@@ -661,6 +697,7 @@ def process_deletion_request(session, event):
                 .in_(
                     [
                         "assessment.session_created.v1",
+                        "assessment.grade_decision_recorded.v1",
                         "assessment.session_started.v1",
                         "assessment.session_cancelled.v1",
                         "assessment.session_submitted.v1",
@@ -697,7 +734,25 @@ def process_deletion_request(session, event):
             .limit(1)
         )
         row.status = (
-            "restricted" if retained_content or retained_plans or retained_suites else "deleted"
+            "restricted"
+            if retained_content
+            or retained_plans
+            or retained_suites
+            or session.scalar(
+                select(GradePolicy.policy_id)
+                .where((GradePolicy.created_by == subject) | (GradePolicy.approved_by == subject))
+                .limit(1)
+            )
+            or any(
+                subject in calibration_owners(policy)
+                for policy in session.scalars(select(GradePolicy))
+            )
+            or session.scalar(
+                select(GradeDecision.decision_id)
+                .where(GradeDecision.reviewer_id == subject)
+                .limit(1)
+            )
+            else "deleted"
         )
         if first:
             enqueue(

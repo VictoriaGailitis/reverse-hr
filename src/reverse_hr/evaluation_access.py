@@ -32,6 +32,12 @@ class MaterialRequest(ProcessingRequest):
     snapshot_id: UUID
 
 
+class TestCaseMetadata(Contract):
+    case_key: str = Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")
+    criterion_key: str = Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")
+    case_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
 class PinnedMaterial(Contract):
     consent_id: UUID
     plan_version_id: UUID
@@ -42,10 +48,18 @@ class PinnedMaterial(Contract):
     snapshot_version: int = Field(ge=1, strict=True)
     snapshot_digest: str = Field(pattern=r"^[a-f0-9]{64}$")
     test_suite: SessionSuitePin | None = None
+    test_cases: list[TestCaseMetadata] = Field(default_factory=list, max_length=20)
     demo: Literal[True] = True
 
     @model_validator(mode="after")
     def consistent(self):
+        if self.test_cases and (
+            self.test_suite is None
+            or len({c.case_key for c in self.test_cases}) != len(self.test_cases)
+            or {c.criterion_key for c in self.test_cases}
+            != {c.key for c in self.task.rubric if c.evidence == "test_result"}
+        ):
+            raise ValueError("Invalid test case metadata")
         keys = [item.key for item in self.competencies]
         if (
             self.task.format not in {"code", "sql"}

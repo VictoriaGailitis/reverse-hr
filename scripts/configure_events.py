@@ -175,6 +175,16 @@ bindings.append(
         "arguments": {},
     }
 )
+bindings.append(
+    {
+        "source": "events.assessment",
+        "vhost": "/",
+        "destination": "code-runner.incoming",
+        "destination_type": "queue",
+        "routing_key": "assessment.stage_submitted.v1",
+        "arguments": {},
+    }
+)
 # Deletion fan-out and independently signed acknowledgements to the coordinator.
 for service in SERVICES:
     if service == "privacy":

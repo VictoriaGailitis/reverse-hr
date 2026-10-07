@@ -74,7 +74,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.manifest_access = ManifestAccess(config)
         app.state.suite_admission = SuiteAdmissionAccess(config)
         app.state.verdict_delivery = VerdictDeliveryAccess(config)
+    if config.service_name in {"code-runner", "coding-workspace"}:
+        from reverse_hr.submitted_access import SubmittedAccess
+
+        app.state.submitted_access = SubmittedAccess(config)
     if config.service_name == "assessment":
+        from reverse_hr.grade_access import GradeAccess
+
+        app.state.grade_access = GradeAccess(config)
         from reverse_hr.snapshot_access import SnapshotAccess
 
         app.state.snapshot_access = SnapshotAccess(config)
@@ -116,6 +123,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             )
 
     if config.service_name == "evaluation":
+        from reverse_hr.evaluation_llm import router as model_router
+
+        app.include_router(model_router)
+        from reverse_hr.domains.evaluation_scores import router as stage_scores_router
+
+        app.include_router(stage_scores_router)
+        from reverse_hr.domains.evaluation_tests import router as test_results_router
+
+        app.include_router(test_results_router)
         from reverse_hr.domains.evaluation_review import router as review_router
 
         app.include_router(
@@ -123,6 +139,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             responses={code: {"model": ErrorResponse} for code in (401, 403, 404, 409, 422, 503)},
         )
     if config.service_name == "assessment":
+        from reverse_hr.domains.assessment_grades import router as grade_router
+
+        app.include_router(grade_router)
+        from reverse_hr.domains.assessment_submitted import router as submitted_router
+
+        app.include_router(submitted_router)
         from reverse_hr.domains.assessment_evaluation import router as material_router
         from reverse_hr.domains.assessment_lifecycle import router as lifecycle_router
         from reverse_hr.domains.assessment_suite_admission import router as suite_admission_router
@@ -160,6 +182,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     if config.service_name == "coding-workspace":
+        from reverse_hr.domains.workspace_submitted import router as submitted_source_router
+
+        app.include_router(submitted_source_router)
         from reverse_hr.domains.workspace_evaluation import router as artifact_router
         from reverse_hr.domains.workspace_runner import router as manifest_router
         from reverse_hr.domains.workspace_snapshot import router as snapshot_router
@@ -270,6 +295,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         connection.execute(text("SELECT 1 FROM ownership_recoveries LIMIT 0"))
                     if config.service_name == "assessment":
                         connection.execute(
+                            text(
+                                "SELECT grade_policy_id, grade_policy_digest "
+                                "FROM assessment_sessions LIMIT 0"
+                            )
+                        )
+                        connection.execute(text("SELECT 1 FROM grade_policies LIMIT 0"))
+                        connection.execute(text("SELECT 1 FROM grade_decisions LIMIT 0"))
+                        connection.execute(text("SELECT 1 FROM candidate_grades LIMIT 0"))
+                        connection.execute(
                             text("SELECT test_pins, test_pins_digest FROM plan_versions LIMIT 0")
                         )
                         connection.execute(
@@ -290,6 +324,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         )
                     if config.service_name == "evaluation":
                         connection.execute(text("SELECT 1 FROM evaluation_reviews LIMIT 0"))
+                        connection.execute(
+                            text(
+                                "SELECT gateway_configuration "
+                                "FROM evaluation_model_attempts LIMIT 0"
+                            )
+                        )
+                        connection.execute(text("SELECT 1 FROM evaluation_test_evidence LIMIT 0"))
+                        connection.execute(text("SELECT 1 FROM evaluation_result_nonces LIMIT 0"))
                         connection.execute(
                             text("SELECT score, review_number FROM evaluation_intakes LIMIT 0")
                         )
@@ -314,6 +356,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         connection.execute(text("SELECT 1 FROM validation_captures LIMIT 0"))
                         connection.execute(text("SELECT 1 FROM validation_verdicts LIMIT 0"))
                         connection.execute(text("SELECT 1 FROM validation_work LIMIT 0"))
+                        connection.execute(text("SELECT 1 FROM submitted_jobs LIMIT 0"))
+                        connection.execute(text("SELECT 1 FROM submitted_attempts LIMIT 0"))
                         connection.execute(text("SELECT 1 FROM runner_control LIMIT 0"))
                     if config.service_name == "coding-workspace":
                         connection.execute(text("SELECT 1 FROM workspace_snapshots LIMIT 0"))

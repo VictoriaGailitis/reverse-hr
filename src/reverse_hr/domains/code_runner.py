@@ -491,6 +491,7 @@ def process_deletion_request(session, event):
 
 def finalize_runner_deletion(session, subject):
     """Physical cleanup is required; elapsed time or a dead lease proves nothing."""
+    from reverse_hr.submitted_runner import SubmittedAttempt, SubmittedJob
     from reverse_hr.validation_lifecycle import (
         ValidationAttempt,
         ValidationBatch,
@@ -515,6 +516,19 @@ def finalize_runner_deletion(session, subject):
             ValidationAttempt.state != "cleaned",
         )
         .limit(1)
+    )
+    submitted_pending = session.scalar(
+        select(SubmittedAttempt.attempt_id)
+        .where(
+            SubmittedAttempt.candidate_id == subject.subject, SubmittedAttempt.state != "cleaned"
+        )
+        .limit(1)
+    )
+    session.execute(delete(SubmittedJob).where(SubmittedJob.candidate_id == subject.subject))
+    session.execute(
+        update(SubmittedAttempt)
+        .where(SubmittedAttempt.candidate_id == subject.subject)
+        .values(outcome=None, capture=None)
     )
     # Erase private source immediately; keep metadata until physical cleanup.
     session.execute(
@@ -549,8 +563,11 @@ def finalize_runner_deletion(session, subject):
             ),
         )
     )
-    status = "restricted" if pending or validation_pending else "deleted"
+    status = "restricted" if pending or validation_pending or submitted_pending else "deleted"
     if status == "deleted":
+        session.execute(
+            delete(SubmittedAttempt).where(SubmittedAttempt.candidate_id == subject.subject)
+        )
         session.execute(
             delete(ExecutionAttempt).where(ExecutionAttempt.candidate_id == subject.subject)
         )

@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from reverse_hr.llm_configuration import GatewayConfiguration
 from reverse_hr.runtime_policy import TrustedRuntime
 
 SERVICES = (
@@ -38,7 +39,13 @@ class Settings(BaseSettings):
     oidc_jwks_url: str = "http://localhost:8080/realms/reverse-hr/protocol/openid-connect/certs"
     privacy_api_url: str = "http://privacy:8000"
     assessment_api_url: str = "http://assessment:8000"
+    evaluation_api_url: str = "http://evaluation:8000"
     workspace_api_url: str = "http://coding-workspace:8000"
+    evaluation_llm_enabled: bool = False
+    evaluation_llm_model: str = Field(default="", max_length=200)
+    evaluation_llm_config: GatewayConfiguration | None = None
+    evaluation_llm_key_file: str = ""
+    evaluation_llm_timeout_seconds: int = Field(default=30, ge=1, le=30)
     runner_execution_enabled: bool = False
     assessment_trusted_runtimes: list[TrustedRuntime] = Field(default_factory=list, max_length=32)
     runner_verification_file: str = ""
@@ -63,7 +70,12 @@ class Settings(BaseSettings):
             {item.policy_id for item in entries}
         ) != len(entries):
             raise ValueError("Runtime policies must have unique IDs and node/fingerprint pairs")
-        for origin in (self.privacy_api_url, self.assessment_api_url, self.workspace_api_url):
+        for origin in (
+            self.privacy_api_url,
+            self.assessment_api_url,
+            self.workspace_api_url,
+            self.evaluation_api_url,
+        ):
             self.validate_origin(origin)
         if self.service_name not in SERVICES:
             raise ValueError("Unknown service name")

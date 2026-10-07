@@ -181,18 +181,34 @@ def process_deletion_request(session, event):
 
     def apply(session, event):
         from reverse_hr.domains.evaluation_review import ReviewRecord
+        from reverse_hr.domains.evaluation_tests import TestEvidence
+        from reverse_hr.evaluation_llm import ModelAttempt
 
         candidate = str(event.payload["candidate_id"])
         request_id = str(event.payload["request_id"])
         subject = subject_lock(session, candidate, allow_blocked=True)
         if subject.deletion_request_id not in {None, request_id}:
             raise HTTPException(409)
+        model_interrupts = select(literal("interrupt_model:") + ModelAttempt.attempt_id).where(
+            ModelAttempt.candidate_id == candidate
+        )
+        session.execute(
+            delete(IdempotencyRecord).where(IdempotencyRecord.operation.in_(model_interrupts))
+        )
+        session.execute(delete(ModelAttempt).where(ModelAttempt.candidate_id == candidate))
+        session.execute(delete(TestEvidence).where(TestEvidence.candidate_id == candidate))
         session.execute(delete(ReviewRecord).where(ReviewRecord.candidate_id == candidate))
         operations = select(literal("evaluation_review:") + EvaluationIntake.stage_id).where(
             EvaluationIntake.candidate_id == candidate
         )
         session.execute(
             delete(IdempotencyRecord).where(IdempotencyRecord.operation.in_(operations))
+        )
+        model_operations = select(literal("model_attempt:") + EvaluationIntake.stage_id).where(
+            EvaluationIntake.candidate_id == candidate
+        )
+        session.execute(
+            delete(IdempotencyRecord).where(IdempotencyRecord.operation.in_(model_operations))
         )
         session.execute(delete(EvaluationIntake).where(EvaluationIntake.candidate_id == candidate))
         session.execute(delete(IdempotencyRecord).where(IdempotencyRecord.actor_id == candidate))
@@ -204,6 +220,12 @@ def process_deletion_request(session, event):
                     "evaluation.material_ready.v1",
                     "evaluation.artifact_ready.v1",
                     "evaluation.review_recorded.v1",
+                    "evaluation.test_evidence_received.v1",
+                    "evaluation.model_requested.v1",
+                    "evaluation.model_started.v1",
+                    "evaluation.model_proposal_ready.v1",
+                    "evaluation.model_failed.v1",
+                    "evaluation.model_interrupted.v1",
                 }
                 and row.envelope.get("payload", {}).get("candidate_id") == candidate
             ):
@@ -214,7 +236,9 @@ def process_deletion_request(session, event):
                 select(ReviewRecord.review_id).where(ReviewRecord.reviewer_id == candidate).limit(1)
             )
             is not None
-        )
+        ) or session.scalar(
+            select(ModelAttempt.attempt_id).where(ModelAttempt.requested_by == candidate).limit(1)
+        ) is not None
         previously_restricted = subject.blocked and subject.deleted_at is None
         subject.blocked, subject.deletion_request_id = True, request_id
         subject.deleted_at = None if retained else datetime.now(UTC)

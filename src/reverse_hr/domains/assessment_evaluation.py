@@ -87,7 +87,7 @@ def evaluation_material(
                 and row
                 and stage
                 and row.candidate_id == str(body.candidate_id)
-                and row.status in {"in_progress", "submitted"}
+                and row.status in {"in_progress", "submitted", "completed"}
                 and stage.session_id == row.session_id
                 and stage.status == "submitted"
                 and stage.version == 3
@@ -122,6 +122,22 @@ def evaluation_material(
                 ):
                     raise HTTPException(503)
                 keys = {item.competency for item in task.rubric}
+                binding = next((pin for pin in pins if pin.stage_id == body.stage_id), None)
+                test_cases = []
+                if binding:
+                    from reverse_hr.domains.assessment_tests import TestSuite
+                    from reverse_hr.evaluation_access import TestCaseMetadata
+                    from reverse_hr.test_suites import SuiteDefinition, digest
+
+                    suite = SuiteDefinition.model_validate(
+                        session.get(TestSuite, str(binding.pin.suite_id)).definition
+                    )
+                    test_cases = [
+                        TestCaseMetadata(
+                            case_key=c.key, criterion_key=c.criterion_key, case_digest=digest(c)
+                        )
+                        for c in suite.cases
+                    ]
                 material = PinnedMaterial(
                     consent_id=row.consent_id,
                     plan_version_id=row.plan_version_id,
@@ -131,7 +147,8 @@ def evaluation_material(
                     competencies=[c for c in package.competencies if c.key in keys],
                     snapshot_version=stage.snapshot_version,
                     snapshot_digest=stage.digest,
-                    test_suite=next((pin for pin in pins if pin.stage_id == body.stage_id), None),
+                    test_suite=binding,
+                    test_cases=test_cases,
                 )
             receipt = MaterialReceipt(
                 **(body.model_dump() | {"issued_at": datetime.now(UTC)}),
@@ -188,7 +205,7 @@ def artifact_admission(
                 and row
                 and stage
                 and row.candidate_id == str(body.candidate_id)
-                and row.status in {"in_progress", "submitted"}
+                and row.status in {"in_progress", "submitted", "completed"}
                 and stage.session_id == row.session_id
                 and stage.status == "submitted"
                 and stage.version == 3
