@@ -1,7 +1,7 @@
 # Ход реализации
 
-Обновлено: 7 октября 2026 года. Пользователь попросил начать реализацию по этапам;
-Последний инкремент — submitted hidden tests, signed Evaluation evidence, механизмы калибровки/session grade/cooldown и LLM proposals; актуальные проверки приведены в конце журнала.
+Обновлено: 8 октября 2026 года. Пользователь попросил начать реализацию по этапам;
+Последний инкремент — независимое рассмотрение жалоб и предложения компаний для всех пяти форматов контента; актуальные проверки приведены в конце журнала. Предыдущие разделы сохраняют исторические ограничения на момент соответствующих инкрементов.
 
 | Этап | Состояние | Результат / оставшиеся работы |
 |---|---|---|
@@ -9,9 +9,9 @@
 | 2. Инфраструктура (BE-02) | Начат | FastAPI, health/metrics, миграции, outbox/inbox, signed RabbitMQ transport, retry/DLQ и replay outbox; PostgreSQL и RabbitMQ проверены, полный Compose пока не поднят |
 | 3. Данные и доступ (BE-03/04/16) | Частично реализован | JWT/JWKS, свой профиль, организации, членства, модерация с MFA, согласия, история модерации, отзыв членства, логика разрешений компаниям и каскадный отзыв; подписанные события и координатор удаления; PDF и физическая очистка впереди |
 | 4. Контент и оценка (BE-05/06/09) | Частично реализован | Demo-каталог и immutable версии; последовательные code/SQL сессии и snapshots; private artifact review; trusted suite validation pipeline/queue/runtime policy и private session pins. Submitted hidden-test execution, grade policy/calibration import, session aggregation/human decision/cooldown и LLM adapter interface реализованы. Реальный corpus, LLM provider, live runtime и media evidence впереди |
-| 5. Обратный найм (BE-10/11) | Запланирован | Подбор, приглашения, разрешённое раскрытие |
+| 5. Обратный найм (BE-10/11) | Реализован основной код, live проверка впереди | Signed exports, защищённая проекция грейдов, подбор/snapshots, публикация и удаление; приглашения, принятие/отказ/отзыв, контакты по разрешению Privacy. Диалоги, блокировки, жалобы, очередь модератора с решениями и in-app уведомления реализованы; санкции/апелляции, внешние каналы и ATS впереди |
 | 6. Практические среды (BE-07/08) | Запланирован | Медиа, доска, Proctoring |
-| 7. Полный процесс (BE-04/11/12) | Запланирован | PDF, вакансии, диалоги, задания компаний, расписания |
+| 7. Полный процесс (BE-04/11/12) | Начат | Конструктор/отправка/проверка/публикация предложений компаний: code, SQL, VCV, voice, whiteboard. Назначения/результаты компаний, расписания/подписки, PDF и полная доска вакансий впереди |
 | 8. Доверие и интеграции (BE-13/14/15) | Запланирован | Достижения, адаптеры и принимающий демо-ATS |
 | 9. Приёмка (BE-17 и общий план) | Запланирован | Безопасность, нагрузка, восстановление, доказанный полный прогон |
 
@@ -51,7 +51,7 @@ CI настроен для PostgreSQL 17; удалённый запуск CI н�
 - Добавить межсервисную идентификацию; JWT/JWKS и пользовательские проверки уже есть.
 - Добавить consumer DLQ replay, мониторинг workers и управление backlog Audit.
 - Добавить полноценные OTel traces и сборщик метрик/логов, проверку восстановления копий.
-- Реализовать бизнес-API Hiring с принятием приглашения; signed transport к Privacy уже работает.
+- Проверить Matching/Hiring/Notification на live PostgreSQL/RabbitMQ; затем реализовать назначения/результаты заданий компаний и уведомления во внешних каналах.
 - Добавить отдельное основание ATS, межсервисную проверку разрешений, удаление и очистку проекций.
 - Продолжить BE-04: изолированный импорт резюме/PDF; затем BE-05 — сессии и оценка.
 
@@ -1674,3 +1674,149 @@ synthetic tariff/credential и fake HTTPS responses, настоящие лока
 (175 Python files), git diff --check, runtime OpenAPI comparison и worker --help
 с mode evaluate проходят. Внешних запросов, настройки реальных credentials,
 перезапуска контейнеров или live calibration не выполнялось.
+
+
+## Matching по подтверждённым грейдам и базовый Hiring
+
+Добавлены purpose-bound Ed25519 RPC Candidate/Employer/Privacy/Hiring с nonce,
+свежестью, точными bindings и whitelist вызывающих сервисов. Candidate экспортирует
+только разрешённую опубликованную карточку; подписанный consumer Matching сохраняет
+watermark и inbox, не понижает проекцию поздним событием и очищает её при отзыве согласия.
+Повторное подтверждение того же грейда сохраняет первое доказательство в карточке.
+Самостоятельно заявленный грейд не участвует в подборе.
+
+Hiring владеет критериями найма; Matching сопоставляет специализацию, минимальный
+подтверждённый грейд и обязательные заявленные навыки. Правило ранжирования версионировано,
+результаты сохраняются со snapshot/digest. Страницы ограничены 200 карточками;
+ранжирование внутри страницы. Свежий source admission проверяется при новой выдаче,
+чтении snapshot и повторе команды. Отозванные публикация/членство или ограничение
+Privacy не допускают выдачу старых карточек. Production исключает все текущие demo
+подтверждения; технический сценарий выполняется с явным mode=demo.
+
+Приглашения независимо от вакансии: sent/accepted/declined/revoked/expired,
+обязательные описание/контакт работодателя/RUB salary, optimistic version и idempotence.
+Принятие кандидатом и событие Privacy атомарны; после реальной доставки accepted
+создаётся grant. Контакты вручную сохраняются только в Candidate и раскрываются
+через Hiring после свежих signed membership/permission проверок. Они не кешируются
+в Hiring/Matching. Отзыв разрешения не отменяется поздним повтором принятого события.
+
+Удаление чистит новые Candidate данные, Matching snapshots/projection, Hiring
+needs/invitations и caches, оставляет постоянный tombstone, атомарно создаёт ACK.
+Текущая политика удаляет записи, созданные ограниченным сотрудником; корпоративный
+перенос/retention требует отдельного решения. Глобальная очистка всех 17 владельцев
+по-прежнему не завершена. Добавлены migrations/readiness, topology/worker modes,
+Compose и закрытие внутренних endpoints в Gateway; runtime OpenAPI обновлён.
+
+Проверка: **810 passed, 52 skipped** (27 новых cases), Ruff lint/format
+(190 Python files), git diff --check и runtime OpenAPI comparison проходят.
+Сквозные тесты соединяют настоящие подписанные API пяти сервисов с отдельными SQLite
+БД и управляемой доставкой событий. Проверены подделки/nonce/bindings, повторы и поздние
+события, грейды и навыки, stale snapshots, publication/membership/consent revocation,
+принятие/отказ/отзыв/expiry, контакты, удаление и защищённые миграции.
+
+Live PostgreSQL/RabbitMQ/Linux/Compose остаются отложенными по указанию пользователя;
+новые PG lock races не заявлены проверенными. .env/.secrets/контейнеры не менялись,
+реальная LLM не вызывалась. Полная доска вакансий/модерация, expiry worker, диалоги,
+уведомления, задания компаний, расписания и ATS остаются далее.
+
+
+## Диалоги Hiring и in-app Notification
+
+Accepted invitation атомарно создаёт один диалог с натуральным invitation ID.
+Повтор не создаёт дубль; миграция открывает диалоги для ранее принятых приглашений
+без выдуманной истории. Messages используют optimistic dialog version,
+монотонный sequence, Idempotency-Key и ограниченную страницу 50 записей.
+Текст доступен участникам только при свежем Privacy grant и актуальном Employer
+членстве; отзыв/недоступность источника блокируют также повтор команд.
+Command cache хранит ссылки без текста сообщений/жалоб.
+
+Кандидат блокирует организацию через диалог: во всех его диалогах с компанией
+закрываются сообщения, контакты и новые приглашения. Блокировка доступна без grant,
+работодатель не может её снять; unblock пока не предусмотрен. Жалоба регистрируется
+идемпотентно с приватной причиной и exact message binding, включая заблокированный
+диалог. Очередь модератора, решения и SLA рассмотрения ещё впереди.
+
+Hiring создаёт UUID-only notification request в транзакции действия. Notification
+проверяет fresh signed Hiring notice export и сохраняет только references/kind,
+без текста сообщений/контактов. Inbox + natural notice ID защищают от дублей.
+Собственный inbox и read command повторно проверяют source admission;
+получатель не видит чужие уведомления. Реализованы предпочтение канала in_app,
+versioned mark-read и cursor pagination; email/SMS/push и реклама не подключены.
+Отключение in_app скрывает список, а не удаляет историю.
+
+Privacy очищает новые Hiring данные и зависимые caches/outbox. Notification erasure
+учитывает recipient, candidate, message author и invitation creator; очищает также
+связанные read caches другой стороны. Жалобы, ссылающиеся на удаляемые сообщения
+сотрудника, очищаются вместе с derived caches/outbox, даже когда диалог сохраняется.
+Команды блокируют связанные subject fences в общем порядке, чтобы локальное удаление
+не обгоняло создание жалобы или read cache. Tombstones блокируют поздние события даже
+при удалении Notification раньше Hiring. Корпоративные записи при удалении автора
+приглашения очищаются согласно текущей политике предыдущего инкремента.
+
+Добавлены Hiring 0003_hiring / Notification 0002_notification, readiness, подписанный
+consumer, publisher, topology и Gateway; Notification API включён в основной Compose,
+workers — в all. Конфигурации .env/.secrets и запущенные контейнеры не менялись.
+Live PostgreSQL/RabbitMQ/Linux/Compose по-прежнему отложены пользователем.
+
+
+Финальная проверка: **830 passed, 52 skipped** (20 новых cases), Ruff lint/format
+(195 Python files), runtime OpenAPI comparison, git diff --check и статическая
+проверка Compose проходят. Сквозные тесты используют настоящий Ed25519 и API пяти
+основных сервисов плюс Notification с отдельными SQLite БД. Проверены повторы/versions,
+разрешения/отзыв/недоступность, блокировка/жалобы, preferences/read, source bindings,
+transport ACK после commit, retry/подделка, migration round-trip/backfill,
+удаление чужих caches и производных жалоб, creator erasure и late delivery.
+Live сервисы и внешняя доставка уведомлений не запускались.
+
+
+## Независимая модерация жалоб и предложения компаний всех форматов
+
+Hiring получил queue summaries, ограниченный просмотр доказательства и immutable
+ручное решение upheld/dismissed с actor/time/reason/version. Role company_moderator
+с MFA, optimistic version и idempotence обязательны. Fresh signed Employer affiliation
+исключает автора и действующих сотрудников компании, даже при отклонённой верификации.
+Закрытые материалы не выдаются компании/кандидату; автор видит статус собственной жалобы.
+После терминального решения новые POST запрещены; апелляции/санкции/SLA впереди.
+
+Privacy удаляет дела/решения/caches/outbox вместе с жалобой и при удалении модератора.
+Hiring 0004_hiring backfill создаёт open дела старых жалоб без искусственной истории.
+Subject fences и fresh processing checks закрывают чтение и команды после ограничения.
+
+Assessment получил конструктор company-task-proposals и независимый bank admission:
+draft/edit/submit/review/withdraw, private list/queue, неизменный digest после submit,
+Idempotency-Key/If-Match и current signed owner/recruiter/technical_expert access.
+Авторство контента сохраняется: редактировать draft может автор, отправить —
+действующий сотрудник компании. Автор/сотрудник не может быть независимым reviewer.
+Approval content_admin с MFA создаёт одну published ContentRevision; reject не
+публикует, withdraw переводит связанную версию банка в retired. Source metadata
+задаёт сервер; command caches не копируют пакет и ответы на задания.
+
+По уточнению пользователя поддержаны **все пять форматов**: code, SQL, VCV, voice,
+whiteboard, включая смешанные пакеты. Использованы существующие manifest/rubric/
+evidence/duration validators; структурная проверка не подменяет runtime validation,
+калибровку или среды записи/доски. Пока только demo=true, реальные rubric/corpus
+по-прежнему отсутствуют. Company approval не выставляет подтверждённый грейд.
+
+Assessment 0012_assessment/readiness/OpenAPI обновлены. Privacy очищает приватные
+предложения и чужие связанные caches. Опубликованная версия банка остаётся restricted
+с честным restricted ACK по текущей политике Assessment; все авторы проверяются
+перед чтением/командами версии. Назначения и результаты компаний, расписания/подписки,
+частотные ограничения и выполнение media evidence остаются следующим этапом.
+
+.env/.secrets/контейнеры и внешний LLM не менялись. Live PG/RabbitMQ/Linux/Compose
+по-прежнему отложены пользователем.
+
+
+Финальная проверка инкремента: **859 passed, 52 skipped**, Ruff lint/format
+(201 Python file), runtime OpenAPI comparison и git diff --check проходят.
+29 новых cases покрывают пять форматов и смешанный пакет, несовместимые evidence,
+независимый review/MFA/affiliation, версии/digest/idempotence, retirement,
+очередь жалоб/точечное доказательство/решения и Privacy cleanup.
+Новая Assessment migration проверяет существующие данные до первого DDL при
+rollback, сохраняя готовность сервиса при отклонённом downgrade.
+В fixture verdict мгновенные synthetic executions дожидаются завершения реальной
+фоновой signed admission проверки перед следующей попыткой; рабочие ограничения
+StopMonitor и fail-closed поведение не изменены. Промежуточный прогон остановился
+из-за заполнения диска временными SQLite БД; удалены только файлы этого прогона,
+итоговый полный набор прошёл с очисткой успешных тестовых каталогов.
+Live PG/RabbitMQ/Linux/Compose, медиа-среды и внешний LLM не проверялись.
