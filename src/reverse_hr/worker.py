@@ -32,11 +32,12 @@ def main():
             "grade-tests",
             "prepare",
             "collect",
+            "evaluate",
         ],
     )
     args = parser.parse_args()
     settings = Settings()
-    if args.mode in {"prepare", "collect"} and settings.service_name != "evaluation":
+    if args.mode in {"prepare", "collect", "evaluate"} and settings.service_name != "evaluation":
         parser.error("Material preparation requires Evaluation")
     consumers = {
         "privacy": PrivacyConsumer,
@@ -68,6 +69,16 @@ def main():
                 require_execution_ready(recovery_executor)
         except Exception:
             parser.error("Recovery requires a validated, provisioned Linux sandbox")
+    model_gateway = None
+    if args.mode == "evaluate":
+        from reverse_hr.llm_gateway import ChatCompletionsGateway
+
+        try:
+            model_gateway = ChatCompletionsGateway(settings)
+        except Exception:
+            parser.error(
+                "Evaluation requires an enabled, configured LLM gateway and credential file"
+            )
     signatures = Signatures.from_settings(settings)
     engine = make_engine(settings.database_url.get_secret_value())
     if args.mode in {"diagnose", "execute", "validate", "grade-tests"}:
@@ -92,6 +103,30 @@ def main():
     try:
         while True:
             try:
+                if args.mode == "evaluate":
+                    from reverse_hr.evaluation_access import MaterialAccess
+                    from reverse_hr.evaluation_artifact_access import ArtifactAccess
+                    from reverse_hr.evaluation_llm import run_one as evaluate_one
+                    from reverse_hr.processing_access import ProcessingAccess
+
+                    material, artifact, processing = (
+                        MaterialAccess(settings),
+                        ArtifactAccess(settings),
+                        ProcessingAccess(settings),
+                    )
+                    material._signatures = artifact._signatures = processing._signatures = (
+                        signatures
+                    )
+                    if not evaluate_one(
+                        engine,
+                        material,
+                        artifact,
+                        processing,
+                        model_gateway,
+                        timeout_seconds=settings.evaluation_llm_timeout_seconds,
+                    ):
+                        time.sleep(0.5)
+                    continue
                 if args.mode == "collect":
                     from reverse_hr.evaluation_access import MaterialAccess
                     from reverse_hr.evaluation_artifact_access import ArtifactAccess

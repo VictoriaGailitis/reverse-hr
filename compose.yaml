@@ -239,6 +239,9 @@ services:
     environment:
       HR_SERVICE_NAME: evaluation
       HR_ROOT_PATH: /evaluation
+      HR_EVALUATION_LLM_ENABLED: ${EVALUATION_LLM_ENABLED:-false}
+      HR_EVALUATION_LLM_MODEL: ${EVALUATION_LLM_MODEL:-}
+      HR_EVALUATION_LLM_CONFIG: ${EVALUATION_LLM_CONFIG:-null}
       HR_DATABASE_URL: postgresql+psycopg://evaluation:${EVALUATION_DB_PASSWORD:?Generate .env first}@postgres:5432/evaluation
       HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
       HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
@@ -601,9 +604,35 @@ services:
       assessment: {condition: service_healthy}
       coding-workspace: {condition: service_healthy}
       privacy: {condition: service_healthy}
+  evaluation-llm:
+    <<: *app
+    profiles: [llm]
+    healthcheck: {disable: true}
+    networks: [backend, llm-egress]
+    environment:
+      HR_SERVICE_NAME: evaluation
+      HR_DATABASE_URL: postgresql+psycopg://evaluation:${EVALUATION_DB_PASSWORD:?Generate .env first}@postgres:5432/evaluation
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+      HR_EVALUATION_LLM_ENABLED: ${EVALUATION_LLM_ENABLED:-false}
+      HR_EVALUATION_LLM_MODEL: ${EVALUATION_LLM_MODEL:-}
+      HR_EVALUATION_LLM_CONFIG: ${EVALUATION_LLM_CONFIG:-null}
+      HR_EVALUATION_LLM_KEY_FILE: /run/secrets/llm-api-key
+      HR_EVALUATION_LLM_TIMEOUT_SECONDS: ${EVALUATION_LLM_TIMEOUT_SECONDS:-30}
+    volumes:
+      - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+      - ./.secrets/llm-api-key:/run/secrets/llm-api-key:ro
+    command: [python, -m, reverse_hr.worker, evaluate]
+    depends_on:
+      evaluation: {condition: service_healthy}
+      assessment: {condition: service_healthy}
+      coding-workspace: {condition: service_healthy}
+      privacy: {condition: service_healthy}
 networks:
   backend: {internal: true}
   edge: {}
+  llm-egress: {}
 volumes:
   postgres-data: {}
   rabbitmq-data: {}
