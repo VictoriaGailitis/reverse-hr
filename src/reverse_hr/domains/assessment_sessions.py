@@ -671,6 +671,9 @@ def process_deletion_request(session, event):
         )
 
         purge(session, subject)
+        from reverse_hr.domains.company_tasks import purge as purge_company_proposals
+
+        purge_company_proposals(session, subject)
         operations = select(literal("grade_decision:") + PracticalSession.session_id).where(
             PracticalSession.candidate_id == subject
         )

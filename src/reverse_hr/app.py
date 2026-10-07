@@ -145,6 +145,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             responses={code: {"model": ErrorResponse} for code in (401, 403, 404, 409, 422, 503)},
         )
         if config.service_name == "assessment":
+            app.include_router(import_module("reverse_hr.domains.company_tasks").router)
             app.include_router(
                 import_module("reverse_hr.domains.assessment_sessions").router,
                 responses={
@@ -363,6 +364,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         ):
                             connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
                     if config.service_name == "assessment":
+                        connection.execute(text("SELECT 1 FROM company_task_proposals LIMIT 0"))
                         connection.execute(
                             text(
                                 "SELECT grade_policy_id, grade_policy_digest "

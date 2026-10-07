@@ -292,10 +292,7 @@ def new_version(
 def get_revision(request: Request, actor: Actor, revision_id: UUID):
     actor.require("content_admin", mfa=True)
     with Session(request.app.state.engine) as session, session.begin():
-        subject_lock(session, actor.subject)
-        row = session.get(ContentRevision, str(revision_id))
-        if row is None:
-            raise HTTPException(404)
+        row = content_guard(session, request, actor, revision_id)
         return revision_view(row)
 
 
@@ -355,7 +352,7 @@ def transition(request, actor, revision_id, body, idempotency, if_match, *, reti
         idempotency,
         {"body": body.model_dump(mode="json"), "version": expected},
         change,
-        guard=lambda session: subject_lock(session, actor.subject),
+        guard=lambda session: content_guard(session, request, actor, revision_id),
     )
 
 
@@ -389,3 +386,35 @@ def subject_lock(session, subject):
     from reverse_hr.domains.assessment_sessions import subject_lock as lock
 
     return lock(session, subject)
+
+
+def content_guard(session, request, actor, revision_id):
+    from reverse_hr.domains.assessment_sessions import AssessmentSubject
+
+    state = session.get(AssessmentSubject, str(actor.subject))
+    if state is not None and state.blocked:
+        raise HTTPException(409)
+    row = session.get(ContentRevision, str(revision_id))
+    if row is None:
+        raise HTTPException(404)
+
+    def owners(row):
+        return {str(actor.subject), row.created_by} | {
+            value for value in (row.reviewed_by, row.retired_by) if value
+        }
+
+    subjects = owners(row)
+    for subject in sorted(subjects):
+        subject_lock(session, subject)
+        request.app.state.processing_access.check(UUID(subject))
+    row = session.scalar(
+        select(ContentRevision)
+        .where(ContentRevision.revision_id == str(revision_id))
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if row is None:
+        raise HTTPException(404)
+    if not owners(row).issubset(subjects):
+        raise HTTPException(409)
+    return row
