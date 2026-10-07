@@ -316,6 +316,96 @@
         }
       }
     },
+    "/v1/candidates/me/grade-history": {
+      "get": {
+        "tags": [
+          "candidate"
+        ],
+        "summary": "History",
+        "operationId": "history_v1_candidates_me_grade_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryItem"
+                  },
+                  "type": "array",
+                  "title": "Response History V1 Candidates Me Grade History Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/health/live": {
       "get": {
         "summary": "Live",
@@ -423,6 +513,60 @@
           "service"
         ],
         "title": "HealthResponse"
+      },
+      "HistoryItem": {
+        "properties": {
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "target_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "rejected",
+              "technical_failure"
+            ],
+            "title": "Status"
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Decided At"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          },
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "specialization",
+          "target_grade",
+          "status",
+          "decided_at",
+          "decision_id",
+          "session_id"
+        ],
+        "title": "HistoryItem"
       },
       "Profile": {
         "properties": {

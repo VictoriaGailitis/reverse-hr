@@ -66,6 +66,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         from reverse_hr.processing_access import ProcessingAccess
 
         app.state.processing_access = ProcessingAccess(config)
+    if config.service_name == "candidate":
+        from reverse_hr.domains import candidate_grades  # noqa: F401
+
     if config.service_name == "code-runner":
         from reverse_hr.runner_exchange import ManifestAccess
         from reverse_hr.suite_admission import SuiteAdmissionAccess
@@ -142,6 +145,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         from reverse_hr.domains.assessment_grades import router as grade_router
 
         app.include_router(grade_router)
+        from reverse_hr.domains.assessment_confirmed_grade import router as confirmed_router
+
+        app.include_router(confirmed_router)
         from reverse_hr.domains.assessment_submitted import router as submitted_router
 
         app.include_router(submitted_router)
@@ -293,6 +299,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     connection.execute(text(f"SELECT 1 FROM {restriction_table} LIMIT 0"))
                     if config.service_name == "employer":
                         connection.execute(text("SELECT 1 FROM ownership_recoveries LIMIT 0"))
+                    if config.service_name == "candidate":
+                        connection.execute(text("SELECT 1 FROM candidate_grade_history LIMIT 0"))
                     if config.service_name == "assessment":
                         connection.execute(
                             text(

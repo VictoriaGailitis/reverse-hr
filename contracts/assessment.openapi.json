@@ -1780,6 +1780,66 @@
         }
       }
     },
+    "/internal/v1/confirmed-grade": {
+      "post": {
+        "tags": [
+          "internal-confirmed-grade"
+        ],
+        "summary": "Confirmed Grade",
+        "operationId": "confirmed_grade_internal_v1_confirmed_grade_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/v1/submitted-tests": {
       "post": {
         "tags": [
@@ -3963,6 +4023,189 @@
           "reason"
         ],
         "title": "DecisionCommand"
+      },
+      "DecisionReceipt": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "candidate",
+            "title": "Requester",
+            "default": "candidate"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "confirmed-grade",
+            "title": "Purpose",
+            "default": "confirmed-grade"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reviewer Id"
+          },
+          "session_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Session Version"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "decision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DecisionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "session_id",
+          "decision_id",
+          "reviewer_id",
+          "session_version",
+          "allowed"
+        ],
+        "title": "DecisionReceipt"
+      },
+      "DecisionRequest": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "candidate",
+            "title": "Requester",
+            "default": "candidate"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "confirmed-grade",
+            "title": "Purpose",
+            "default": "confirmed-grade"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reviewer Id"
+          },
+          "session_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Session Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "session_id",
+          "decision_id",
+          "reviewer_id",
+          "session_version"
+        ],
+        "title": "DecisionRequest"
+      },
+      "DecisionSummary": {
+        "properties": {
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "target_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "rejected",
+              "technical_failure"
+            ],
+            "title": "Status"
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Decided At"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "specialization",
+          "target_grade",
+          "status",
+          "decided_at"
+        ],
+        "title": "DecisionSummary"
       },
       "ErrorResponse": {
         "properties": {

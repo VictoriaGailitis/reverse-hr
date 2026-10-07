@@ -28,13 +28,15 @@ class CandidateProfile(CandidateBase):
 router = APIRouter(prefix="/v1/candidates", tags=["candidate"])
 
 
-def view(row):
+def view(row, session):
+    from reverse_hr.domains.candidate_grades import current_grade
+
     return Profile(
         candidate_id=row.candidate_id,
         display_name=row.display_name,
         specialization=row.specialization,
         declared_grade=row.declared_grade,
-        confirmed_grade=None,
+        confirmed_grade=current_grade(session, row.candidate_id, row.specialization),
         version=row.version,
     ).model_dump(mode="json")
 
@@ -47,7 +49,7 @@ def get_profile(request: Request, actor: Actor):
         profile = session.get(CandidateProfile, str(actor.subject))
         if profile is None:
             raise HTTPException(404)
-        return view(profile)
+        return view(profile, session)
 
 
 @router.post("/me", response_model=Profile, status_code=201)
@@ -71,7 +73,7 @@ def create_profile(request: Request, actor: Actor, body: ProfileUpdate, idempote
                 payload={"candidate_id": actor.subject},
             ),
         )
-        return view(row)
+        return view(row, session)
 
     return execute(
         request.app.state.engine,
@@ -124,7 +126,7 @@ def update_profile(
                 payload={"candidate_id": actor.subject},
             ),
         )
-        return view(row)
+        return view(row, session)
 
     return execute(
         request.app.state.engine,
@@ -186,6 +188,11 @@ def process_deletion_request(session, event):
             raise HTTPException(409)
         # Repeat the scrub even after inbox replay is assigned a new event ID.
         # Reusing the same request with a new event ID never creates another ACK.
+        from reverse_hr.domains.candidate_grades import CandidateDecision
+
+        session.execute(
+            delete(CandidateDecision).where(CandidateDecision.candidate_id == str(subject))
+        )
         session.execute(
             delete(CandidateProfile).where(CandidateProfile.candidate_id == str(subject))
         )
