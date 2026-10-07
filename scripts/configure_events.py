@@ -195,6 +195,31 @@ bindings.append(
         "arguments": {},
     }
 )
+for event_type in (
+    "candidate.profile_created.v1",
+    "candidate.profile_updated.v1",
+    "privacy.consent_revoked.v1",
+):
+    bindings.append(
+        {
+            "source": "events." + event_type.split(".")[0],
+            "vhost": "/",
+            "destination": "matching.incoming",
+            "destination_type": "queue",
+            "routing_key": event_type,
+            "arguments": {},
+        }
+    )
+bindings.append(
+    {
+        "source": "events.hiring",
+        "vhost": "/",
+        "destination": "notification.incoming",
+        "destination_type": "queue",
+        "routing_key": "hiring.notification_requested.v1",
+        "arguments": {},
+    }
+)
 # Deletion fan-out and independently signed acknowledgements to the coordinator.
 for service in SERVICES:
     if service == "privacy":

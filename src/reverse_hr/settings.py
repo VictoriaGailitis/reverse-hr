@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     privacy_api_url: str = "http://privacy:8000"
     assessment_api_url: str = "http://assessment:8000"
     evaluation_api_url: str = "http://evaluation:8000"
+    candidate_api_url: str = "http://candidate:8000"
+    employer_api_url: str = "http://employer:8000"
+    hiring_api_url: str = "http://hiring:8000"
     workspace_api_url: str = "http://coding-workspace:8000"
     evaluation_llm_enabled: bool = False
     evaluation_llm_model: str = Field(default="", max_length=200)
@@ -75,6 +78,9 @@ class Settings(BaseSettings):
             self.assessment_api_url,
             self.workspace_api_url,
             self.evaluation_api_url,
+            self.candidate_api_url,
+            self.employer_api_url,
+            self.hiring_api_url,
         ):
             self.validate_origin(origin)
         if self.service_name not in SERVICES:

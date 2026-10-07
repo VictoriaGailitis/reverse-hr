@@ -346,3 +346,57 @@ class EvaluationConsumer(SignedConsumer):
         if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
             return process_deletion_request
         raise InvalidEvent()
+
+
+class MatchingConsumer(SignedConsumer):
+    service = "matching"
+
+    def __init__(self, engine, signatures, settings):
+        super().__init__(engine, signatures, settings)
+        from reverse_hr.market_access import MarketAccess
+
+        self.access = MarketAccess(settings)
+        self.access._signatures = signatures
+
+    def handler(self, event):
+        from reverse_hr.domains.matching import process_deletion_request, process_profile_change
+
+        if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
+            return process_deletion_request
+        if (
+            event.producer == "candidate"
+            and event.event_type in {"candidate.profile_created.v1", "candidate.profile_updated.v1"}
+        ) or (event.producer == "privacy" and event.event_type == "privacy.consent_revoked.v1"):
+            return lambda session, event: process_profile_change(session, event, self.access)
+        raise InvalidEvent()
+
+
+class HiringConsumer(SignedConsumer):
+    service = "hiring"
+
+    def handler(self, event):
+        from reverse_hr.domains.hiring import process_deletion_request
+
+        if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
+            return process_deletion_request
+        raise InvalidEvent()
+
+
+class NotificationConsumer(SignedConsumer):
+    service = "notification"
+
+    def __init__(self, engine, signatures, settings):
+        super().__init__(engine, signatures, settings)
+        from reverse_hr.market_access import MarketAccess
+
+        self.access = MarketAccess(settings)
+        self.access._signatures = signatures
+
+    def handler(self, event):
+        from reverse_hr.domains.notification import process_deletion_request, process_notice
+
+        if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
+            return process_deletion_request
+        if event.producer == "hiring" and event.event_type == "hiring.notification_requested.v1":
+            return lambda session, event: process_notice(session, event, self.access)
+        raise InvalidEvent()

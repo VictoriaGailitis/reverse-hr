@@ -8,6 +8,9 @@ from reverse_hr.event_transport import (
     CandidateConsumer,
     EmployerConsumer,
     EvaluationConsumer,
+    HiringConsumer,
+    MatchingConsumer,
+    NotificationConsumer,
     PrivacyConsumer,
     RunnerConsumer,
     Signatures,
@@ -47,6 +50,9 @@ def main():
         "coding-workspace": WorkspaceConsumer,
         "code-runner": RunnerConsumer,
         "evaluation": EvaluationConsumer,
+        "matching": MatchingConsumer,
+        "hiring": HiringConsumer,
+        "notification": NotificationConsumer,
     }
     if args.mode == "consume" and settings.service_name not in consumers:
         parser.error("Consumer is not implemented for this service")

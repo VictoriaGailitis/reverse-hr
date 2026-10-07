@@ -23,7 +23,15 @@ class ProcessingRequest(Contract):
     candidate_id: UUID
     nonce: UUID
     requester: Literal[
-        "candidate", "employer", "assessment", "coding-workspace", "code-runner", "evaluation"
+        "candidate",
+        "employer",
+        "assessment",
+        "coding-workspace",
+        "code-runner",
+        "evaluation",
+        "matching",
+        "hiring",
+        "notification",
     ]
     issued_at: datetime
 

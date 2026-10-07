@@ -101,5 +101,8 @@ def process_grade_decision(session, event, access):
         session.flush()
         if profile and before != current_grade(session, candidate, profile.specialization):
             profile.version += 1
+            from reverse_hr.domains.candidate_market import emit_profile
+
+            emit_profile(session, profile, event.correlation_id)
 
     return consume_once(session, "candidate.grade_decision", event, apply)

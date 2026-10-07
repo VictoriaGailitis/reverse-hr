@@ -123,6 +123,9 @@ services:
       coding-workspace: {condition: service_healthy}
       code-runner: {condition: service_healthy}
       evaluation: {condition: service_healthy}
+      matching: {condition: service_healthy}
+      hiring: {condition: service_healthy}
+      notification: {condition: service_healthy}
   identity:
     <<: *app
     profiles: [all]
@@ -251,19 +254,27 @@ services:
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   matching:
     <<: *app
-    profiles: [all]
     environment:
       HR_SERVICE_NAME: matching
       HR_ROOT_PATH: /matching
       HR_DATABASE_URL: postgresql+psycopg://matching:${MATCHING_DB_PASSWORD:?Generate .env first}@postgres:5432/matching
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/matching.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   hiring:
     <<: *app
-    profiles: [all]
     environment:
       HR_SERVICE_NAME: hiring
       HR_ROOT_PATH: /hiring
       HR_DATABASE_URL: postgresql+psycopg://hiring:${HIRING_DB_PASSWORD:?Generate .env first}@postgres:5432/hiring
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/hiring.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   achievements:
     <<: *app
@@ -283,11 +294,15 @@ services:
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   notification:
     <<: *app
-    profiles: [all]
     environment:
       HR_SERVICE_NAME: notification
       HR_ROOT_PATH: /notification
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
       HR_DATABASE_URL: postgresql+psycopg://notification:${NOTIFICATION_DB_PASSWORD:?Generate .env first}@postgres:5432/notification
+    volumes:
+      - ./.secrets/notification.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   audit:
     <<: *app
@@ -604,6 +619,108 @@ services:
       assessment: {condition: service_healthy}
       coding-workspace: {condition: service_healthy}
       privacy: {condition: service_healthy}
+  matching-outbox:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: matching
+      HR_DATABASE_URL: postgresql+psycopg://matching:${MATCHING_DB_PASSWORD:?Generate .env first}@postgres:5432/matching
+      HR_AMQP_URL: amqp://matching:${MATCHING_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/matching.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, publish]
+    depends_on:
+      matching: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  matching-consumer:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: matching
+      HR_DATABASE_URL: postgresql+psycopg://matching:${MATCHING_DB_PASSWORD:?Generate .env first}@postgres:5432/matching
+      HR_AMQP_URL: amqp://matching:${MATCHING_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/matching.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, consume]
+    depends_on:
+      matching: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  hiring-outbox:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: hiring
+      HR_DATABASE_URL: postgresql+psycopg://hiring:${HIRING_DB_PASSWORD:?Generate .env first}@postgres:5432/hiring
+      HR_AMQP_URL: amqp://hiring:${HIRING_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/hiring.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, publish]
+    depends_on:
+      hiring: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  hiring-consumer:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: hiring
+      HR_DATABASE_URL: postgresql+psycopg://hiring:${HIRING_DB_PASSWORD:?Generate .env first}@postgres:5432/hiring
+      HR_AMQP_URL: amqp://hiring:${HIRING_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/hiring.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, consume]
+    depends_on:
+      hiring: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  notification-outbox:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: notification
+      HR_DATABASE_URL: postgresql+psycopg://notification:${NOTIFICATION_DB_PASSWORD:?Generate .env first}@postgres:5432/notification
+      HR_AMQP_URL: amqp://notification:${NOTIFICATION_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/notification.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, publish]
+    depends_on:
+      notification: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  notification-consumer:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: notification
+      HR_DATABASE_URL: postgresql+psycopg://notification:${NOTIFICATION_DB_PASSWORD:?Generate .env first}@postgres:5432/notification
+      HR_AMQP_URL: amqp://notification:${NOTIFICATION_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/notification.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, consume]
+    depends_on:
+      notification: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
   evaluation-llm:
     <<: *app
     profiles: [llm]

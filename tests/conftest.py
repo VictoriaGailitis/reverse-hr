@@ -36,6 +36,9 @@ def service(tmp_path, keys):
             "coding-workspace",
             "code-runner",
             "evaluation",
+            "matching",
+            "hiring",
+            "notification",
         }:
             app.state.processing_access = SimpleNamespace(
                 check=lambda *_: None, check_assessment=lambda *_: None

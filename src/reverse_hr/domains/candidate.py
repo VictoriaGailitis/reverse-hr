@@ -196,6 +196,10 @@ def process_deletion_request(session, event):
         session.execute(
             delete(CandidateProfile).where(CandidateProfile.candidate_id == str(subject))
         )
+        from reverse_hr.domains.candidate_market import Contacts, Publication
+
+        session.execute(delete(Publication).where(Publication.candidate_id == str(subject)))
+        session.execute(delete(Contacts).where(Contacts.candidate_id == str(subject)))
         session.execute(delete(IdempotencyRecord).where(IdempotencyRecord.actor_id == str(subject)))
         first = row.deletion_request_id is None
         row.blocked = True

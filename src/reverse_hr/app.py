@@ -62,6 +62,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "coding-workspace",
         "code-runner",
         "evaluation",
+        "matching",
+        "hiring",
+        "notification",
     }:
         from reverse_hr.processing_access import ProcessingAccess
 
@@ -100,6 +103,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         app.state.stage_access = StageAccess(config)
         app.state.artifact_permit_access = ArtifactPermitAccess(config)
+    if config.service_name in {"candidate", "hiring", "matching", "notification", "assessment"}:
+        from reverse_hr.market_access import MarketAccess
+
+        app.state.market_access = MarketAccess(config)
+    if config.service_name == "candidate":
+        from reverse_hr.domains.candidate_market import internal_router as market_router
+
+        app.include_router(market_router)
+    if config.service_name == "privacy":
+        from reverse_hr.domains.privacy_market import router as market_router
+
+        app.include_router(market_router)
+    if config.service_name == "employer":
+        from reverse_hr.domains.employer_market import router as market_router
+
+        app.include_router(market_router)
+    if config.service_name == "hiring":
+        from reverse_hr.domains import hiring_dialogs, hiring_moderation  # noqa: F401
+        from reverse_hr.domains.hiring import internal_router as market_router
+
+        app.include_router(market_router)
     if config.service_name in (
         "candidate",
         "privacy",
@@ -108,6 +132,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "coding-workspace",
         "code-runner",
         "evaluation",
+        "matching",
+        "hiring",
+        "notification",
     ):
         from importlib import import_module
 
@@ -268,6 +295,33 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if current_revision != expected_revision:
                     raise RuntimeError("Migration revision unavailable")
                 connection.execute(text("SELECT event_id FROM outbox LIMIT 0"))
+                if config.service_name == "notification":
+                    for name in (
+                        "notification_subjects",
+                        "notification_notices",
+                        "notification_preferences",
+                    ):
+                        connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
+                if config.service_name in {"matching", "hiring"}:
+                    names = (
+                        ("matching_candidates", "matching_snapshots", "matching_subjects")
+                        if config.service_name == "matching"
+                        else (
+                            "hiring_needs",
+                            "hiring_invitations",
+                            "hiring_subjects",
+                            "hiring_market_nonces",
+                            "hiring_dialogs",
+                            "hiring_messages",
+                            "hiring_employer_blocks",
+                            "hiring_complaints",
+                            "hiring_complaint_cases",
+                            "hiring_complaint_decisions",
+                            "hiring_notices",
+                        )
+                    )
+                    for name in names:
+                        connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
                 if config.service_name in (
                     "candidate",
                     "privacy",
@@ -299,8 +353,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     connection.execute(text(f"SELECT 1 FROM {restriction_table} LIMIT 0"))
                     if config.service_name == "employer":
                         connection.execute(text("SELECT 1 FROM ownership_recoveries LIMIT 0"))
+                        connection.execute(text("SELECT 1 FROM employer_market_nonces LIMIT 0"))
                     if config.service_name == "candidate":
                         connection.execute(text("SELECT 1 FROM candidate_grade_history LIMIT 0"))
+                        for name in (
+                            "candidate_publication",
+                            "candidate_contacts",
+                            "candidate_market_nonces",
+                        ):
+                            connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
                     if config.service_name == "assessment":
                         connection.execute(
                             text(
