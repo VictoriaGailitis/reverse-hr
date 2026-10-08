@@ -1,16 +1,16 @@
 # Ход реализации
 
-Обновлено: 8 октября 2026 года. Пользователь попросил начать реализацию по этапам;
-Последний инкремент — независимое рассмотрение жалоб и предложения компаний для всех пяти форматов контента; актуальные проверки приведены в конце журнала. Предыдущие разделы сохраняют исторические ограничения на момент соответствующих инкрементов.
+Обновлено: 9 октября 2026 года. Пользователь попросил начать реализацию по этапам;
+Последний инкремент — Proctoring: журнал самостоятельности, подписанная история сред, ручная проверка, выдача Evaluation и Privacy cleanup; актуальные проверки приведены в конце журнала. Предыдущие разделы сохраняют исторические ограничения на момент соответствующих инкрементов.
 
 | Этап | Состояние | Результат / оставшиеся работы |
 |---|---|---|
 | 1. Проектирование (BE-01/02) | Подготовлен первый набор, ожидает дальнейшей проверки | Границы 17 сервисов, проектные DTO/OpenAPI первой цепочки, envelope, права, статусы и проверки; полные контракты всех функций ещё впереди |
 | 2. Инфраструктура (BE-02) | Начат | FastAPI, health/metrics, миграции, outbox/inbox, signed RabbitMQ transport, retry/DLQ и replay outbox; PostgreSQL и RabbitMQ проверены, полный Compose пока не поднят |
 | 3. Данные и доступ (BE-03/04/16) | Частично реализован | JWT/JWKS, свой профиль, организации, членства, модерация с MFA, согласия, история модерации, отзыв членства, логика разрешений компаниям и каскадный отзыв; подписанные события и координатор удаления; PDF и физическая очистка впереди |
-| 4. Контент и оценка (BE-05/06/09) | Частично реализован | Demo-каталог и immutable версии; последовательные code/SQL сессии и snapshots; private artifact review; trusted suite validation pipeline/queue/runtime policy и private session pins. Submitted hidden-test execution, grade policy/calibration import, session aggregation/human decision/cooldown и LLM adapter interface реализованы. Реальный corpus, LLM provider, live runtime и media evidence впереди |
+| 4. Контент и оценка (BE-05/06/09) | Частично реализован | Demo-каталог и immutable версии; сессии всех пяти форматов, private snapshots/review; trusted hidden tests и private pins. Grade policy/calibration import, session aggregation/human decision/cooldown и LLM adapter реализованы; temporal/object evidence добавлены. Реальный corpus, провайдеры и live runtime впереди |
 | 5. Обратный найм (BE-10/11) | Реализован основной код, live проверка впереди | Signed exports, защищённая проекция грейдов, подбор/snapshots, публикация и удаление; приглашения, принятие/отказ/отзыв, контакты по разрешению Privacy. Диалоги, блокировки, жалобы, очередь модератора с решениями и in-app уведомления реализованы; санкции/апелляции, внешние каналы и ATS впереди |
-| 6. Практические среды (BE-07/08) | Запланирован | Медиа, доска, Proctoring |
+| 6. Практические среды (BE-07/08) | Основной механизм реализован | Media: private filesystem blobs, возобновление/сборка, full decode, recording consent, transcription worker/gateway и закрытая выдача reviewer; Whiteboard: операции/восстановление/immutable снимки; browser controls, Assessment submit и human/LLM review. S3/ClamAV/isolated decoder и managed backup cleanup реализованы; live S3/IAM/KMS/ClamAV/Compose, реальный speech-провайдер, браузерные устройства впереди. Proctoring: клиентская телеметрия, серверная история, human integrity review отдельно от score, signed Evaluation summary и удаление реализованы |
 | 7. Полный процесс (BE-04/11/12) | Начат | Конструктор/отправка/проверка/публикация предложений компаний: code, SQL, VCV, voice, whiteboard. Назначения/результаты компаний, расписания/подписки, PDF и полная доска вакансий впереди |
 | 8. Доверие и интеграции (BE-13/14/15) | Запланирован | Достижения, адаптеры и принимающий демо-ATS |
 | 9. Приёмка (BE-17 и общий план) | Запланирован | Безопасность, нагрузка, восстановление, доказанный полный прогон |
@@ -1820,3 +1820,276 @@ StopMonitor и fail-closed поведение не изменены. Проме�
 из-за заполнения диска временными SQLite БД; удалены только файлы этого прогона,
 итоговый полный набор прошёл с очисткой успешных тестовых каталогов.
 Live PG/RabbitMQ/Linux/Compose, медиа-среды и внешний LLM не проверялись.
+
+
+## Практические среды записи и доски
+
+Реализованы service-owned Media/Whiteboard API, собственные миграции и readiness,
+подписанный текущий stage admission и metadata-only receipts. Assessment запускает
+voice/VCV/whiteboard и принимает immutable artifact с серверным deadline/next-stage.
+Media проверяет отдельный recording consent до capture admission и каждой операции.
+Части ограничены 256 KiB, запись 32 MiB; проверены размеры/порядок/повторы/общий
+SHA-256 и контейнерная сигнатура. Полученные части доступны для возобновления.
+Реальные bytes хранятся в Media БД и выдаются кандидату с no-store через auth gateway.
+У Whiteboard server-versioned put/delete, типизированная геометрия, bounded state,
+история и sealed snapshot. Late mutations не меняют отправленный результат.
+
+Browser ES module содержит MediaRecorder controls/preview/upload retries/redo до
+загрузки и canvas/text/state restoration/seal. Host candidate page передаёт
+аутентифицированный API callback; самостоятельный новый кабинет не создавался.
+Evaluation pinned-material admission расширен на все форматы; media/board остаются
+needs_evidence без оценки. Просмотр через code-only review требует source и
+отклоняется до сбора соответствующих доказательств.
+
+Privacy удаляет реальные bytes, операции, snapshots и caches, оставляет tombstone
+и публикует ACK атомарно; подписанные consumers/outbox workers/Gateway/Compose
+настроены статически. Общая deletion topology уже охватывает эти сервисы.
+
+Транскрибация, декодирование/сканирование медиа, object storage и backup purge,
+media/board evaluation с temporal/object citations, реальная камера/микрофон
+в браузере, Proctoring и live PG/RabbitMQ/Compose остаются впереди.
+Файлы окружения/секреты, контейнеры и внешние LLM не менялись.
+
+
+Финальная проверка: **891 passed, 52 skipped** (32 новых Python cases),
+**2 passed** в node:test для browser controls. Ruff lint/format (209 Python files),
+runtime OpenAPI comparison, git diff --check, node --check и статическая проверка
+Compose для API/consumer/publisher проходят. Сквозные tests используют реальные
+Ed25519 запросы Privacy/Assessment/Media/Whiteboard, отдельные SQLite БД и реальные
+сохранённые bytes. Проверены целостность/повторы/возобновление/версии, текущие согласия
+и outage, чужой actor/employer denial, серверный deadline, private receipt nonce/signature/
+binding, erasure/no resurrection, corrupted stored artifacts, readiness/downgrade
+и Evaluation needs_evidence без баллов. JS tests используют искусственные DOM/devices:
+реальная камера/микрофон и live интеграции не проверялись.
+
+## Транскрибация и native evidence для Evaluation
+
+Media finalize ставит durable transcription attempt в очередь. Worker работает
+только при явном включении и настройке операторского HTTPS gateway; контракт
+передаёт байты, MIME, digest и модель, без идентификаторов кандидата/сессии.
+Сегменты расшифровки проверяются по уникальным ключам, порядку, диапазонам и размеру;
+результат связывается с исходной записью, моделью и immutable transcript_id/digest.
+Pending/running/ready/technical_failure/interrupted/blocked доступны владельцу.
+Автоматического повторения платного или неопределённого вызова нет: retry отдельной
+командой, максимум три попытки. Прерванный/просроченный ответ не публикуется;
+зависший поток удерживает единственный слот, ограничивая рост фоновых вызовов.
+После crash running attempt требует явного interrupt, затем отдельного retry.
+Известная стоимость ответа сохраняется; неизвестное списание требует сверки с провайдером.
+
+Подписанный Evaluation artifact export теперь собирает sealed board или ready
+transcript с текущими assessment/recording consent и owner tombstone. Human review
+проверяет temporal citations (снимок/запись/расшифровка/сегмент/диапазон) и object
+citations (снимок/объект/хеш). Reviewer с MFA может читать исходные части записи
+через отдельный подписанный playback RPC; каждый запрос повторяет проверки доступа.
+Отзыв согласия блокирует просмотр и подтверждение. Reviewer collection-retry с
+Idempotency-Key/If-Match восстанавливает исчерпанный сбор после появления расшифровки,
+но не перезаписывает существующие source/review.
+
+LLM prompt v2 и schema поддерживают все пять форматов, считают текст кандидата
+недоверенным и возвращают proposal с теми же проверяемыми ссылками. Proposal
+не становится stage score до подтверждения человеком. Готовые code/SQL proposals
+v1 и прежние сериализации review сохраняют хеши и возможность подтверждения.
+Privacy удаляет transcription attempts/documents вместе с записью; поздний ответ
+после erasure не восстанавливает данные. Добавлены Media migration
+0003_transcription, readiness, opt-in Compose profile и отдельная egress-сеть.
+
+Speech и LLM провайдеры не вызывались, секреты и контейнеры не менялись.
+Качество распознавания и анализа видео, декодирование/сканирование контейнеров,
+object storage/backup purge, реальные устройства, Proctoring и live интеграции
+остаются отдельными этапами. VCV пока оценивается по расшифровке и ручному просмотру;
+автоматический анализ кадров не реализован.
+
+Проверка текущего инкремента: **935 passed, 52 skipped** в полном Python suite,
+**2 passed** в node:test; Ruff lint/format (202 файлов в src/tests/migrations),
+runtime OpenAPI comparison, node --check, git diff --check и статическая проверка
+Compose transcription profile проходят. Добавлены 43 Python cases native evidence/
+transcription и один regression case для готового LLM proposal v1. Проверены реальные
+Ed25519 RPC между отдельными SQLite БД, human score/receipt, корректные и подменённые
+citations, consent revocation, explicit retry/interrupt, late callback/erasure,
+bounded stalled thread, recovery и custom HTTPS wire с подставным transport.
+Speech/LLM ответы в тестах искусственные; это не проверка реального распознавания,
+медиадекодирования, тарификации или live PostgreSQL/RabbitMQ/Compose.
+
+## Закрытое медиахранилище и проверка декодирования (9 октября)
+
+Новые части Media сохраняются в private filesystem blob store: immutable keys,
+0700/0600, atomic link/fsync, bounded read и повторная SHA-256 проверка. В БД
+остаются ссылки/размеры/хеши, legacy LargeBinary остаётся читаемым. Постоянный
+идентификатор тома закрепляется в собственной БД; неправильный том блокирует
+чтение байтов и ACK удаления. Privacy очищает каталог кандидата вместе с orphan writes
+до удаления строк/ACK, не следует symlink и не затрагивает других кандидатов.
+Если очистка не выполнена, транзакция откатывается и ACK отсутствует; retry безопасен.
+
+Finalize теперь требует ffprobe stream validation и полного FFmpeg decode.
+Voice: один аудиопоток; VCV: один аудио- и один видеопоток. Ограничены кодеки,
+каналы/sample rate, размеры и частота видео. Сохраняется серверная длительность
+из decode progress; client timestamps остаются недоверенными. Поддельный контейнер
+и ошибочный stream composition отклоняются без snapshot/transcription attempt.
+После decode повторно проверяются текущие согласия/Privacy admission/deadline;
+отзыв во время декодирования не позволяет опубликовать snapshot. Длительность
+медиапотока не доказывает реальное время записи и не заменяет Proctoring.
+Расшифровка не может превышать декодированную длительность с допуском 250 ms.
+Принудительный demuxer/file protocol исключает автоматическую загрузку playlist/URL;
+общий deadline до 30 s, stdout до 64 KiB, один decoder slot, process-group kill.
+Dockerfile включает FFmpeg; Compose Media имеет CPU/memory/PID ограничения.
+
+Добавлены media migration 0004_storage, own storage identity, общая volume для
+API/Privacy consumer/transcription worker и текущие OpenAPI. Миграция сохраняет
+реальные legacy bytes; populated/tombstone downgrade запрещён. Невалидированная
+legacy запись помечена validation=null. Opt-in конфигурация storage root обязательна
+для новых загрузок; новый store не создаёт публичных ссылок или file server.
+
+Отклонённую запись можно заменить через candidate restart с тем же stage/consent,
+новым manifest, If-Match и Idempotency-Key. Версия увеличивается; старые части
+удаляются. Finalized snapshot неизменяем. Browser redo использует отдельный ключ
+и закреплённую версию restart, восстанавливается после потерянного ответа и
+предотвращает одновременный redo/upload. Capture constraints согласованы с лимитами
+сервера; реальная камера/микрофон по-прежнему не проверялись.
+
+Реальные короткие WebM/Ogg/MP4 генерируются локальным FFmpeg в тестах и полностью
+декодируются, без сети/провайдеров. Отдельно проверены forged headers/playlist,
+wrong streams, decoder timeout/output cap/busy slot/missing binary, file corruption,
+wrong storage volume, erasure outage/retry, symlink/orphan isolation, legacy migration,
+failed-finalize recovery и запрет замены готового снимка.
+
+Это filesystem backend, а не S3. Antivirus, отдельная hardened decoder isolation,
+S3 integration, retention/backup purge и проверки live Compose/PG/RabbitMQ остаются
+впереди. Удаление файлов — обычный unlink, без заявления о физическом стирании.
+Рабочие .env/.secrets, контейнеры, speech/LLM providers не менялись и не запускались.
+
+В общих прогонах обнаружилась нестабильность существующих synthetic Runner tests:
+иногда фоновый signed admission RPC сохранял слот после мгновенного fake execution,
+что приводило к admission_unavailable в следующем сценарии. Расширен прежний test-only
+DrainedMonitor: теперь общий helper завершает проверки в Runner lifecycle fixtures
+и в импортированном alias Submitted worker. Production StopMonitor и его ограничение
+ожидания не менялись; явные stalled-monitor tests продолжают использовать исходный
+класс. Связанные Runner suites после исправления: **93 passed**. Дополнительный
+прогон media/API/native evidence/contracts и исходного failed Runner case: **121 passed**.
+
+Дополнительная диагностика показала также latched stale-check deadline в полном
+наборе: actual signed check завершалась без исключения, но результат тестового
+fake executor успевал получить admission_unavailable по секундному watchdog.
+Для fixture результатов/ledger max_age задан 10 s, RPC errors по-прежнему немедленно
+закрывают допуск. Production limit 1 s не менялся; dedicated stalled-monitor tests
+используют исходный StopMonitor с собственным коротким deadline. Временная
+диагностика удалена, секреты/тела RPC не выводились.
+
+Финальный полный прогон после исправления test-only watchdog: **977 passed,
+52 skipped** (42 новых Python cases), **3 passed** в node:test. Ruff lint/format
+(207 файлов src/tests/migrations), runtime OpenAPI comparison, node --check,
+git diff --check и статическая проверка общего private volume/Compose resource
+limits проходят. Повторно проверены ранее нестабильные Runner cases в общем наборе;
+production Runner code не менялся. Live Compose/PG/RabbitMQ, настоящие устройства,
+антивирус, S3 и внешние speech/LLM вызовы не проверялись.
+
+
+## 9 октября 2026 — S3, antivirus, isolated decoder и backup cleanup
+
+Добавлен S3 adapter с explicit private credentials, SSE, private/versioned bucket
+preflight, immutable conditional writes, bounded SHA-256 reads и identity pinning.
+Privacy erasure удаляет object versions/delete markers/multipart uploads и проверяет
+пустой scope, вместо создания delete marker. Старый FileBlobStore сохраняется;
+переключение заполненного хранилища требует отдельной миграции данных.
+
+ClamD INSTREAM проверяет полные bytes и свежесть базы сигнатур. Clean receipt
+привязан к SHA-256 и сохраняется с результатом full decode. Malware/ошибка/старая
+база не создают snapshot и transcription attempt. Legacy finalized bytes без scan
+receipt закрыты при включённом требовании. Privacy/consent/stage повторно проверяются
+после scan и decode. Оба требования включены по умолчанию; тестовые fixtures явно
+отключают внешние зависимости для синтетического материала.
+
+Decoder — отдельный UDS-only container: network none, read-only root, no privileges,
+no secrets, только socket volume и bounded tmpfs, CPU/RAM/PID limits. FFmpeg/ffprobe
+дополнительно ограничены Landlock ABI ≥ 3: runtime + один input readable, запись/
+создание/truncate запрещены, shared socket volume не доступен child-процессу.
+Перед readiness
+и работой проверяется фактическая Linux/cgroup/seccomp/network isolation. Host transport
+тест отключает attestation явно и не считается live проверкой контейнера.
+
+Общие backups регистрируются с complete subject inventory в S3 archive. Publish
+и restore admission используют независимый живой Privacy ledger. Identity архива
+закрепляется миграцией 0007_privacy. Dedicated `purge-backups` worker очищает целые
+shared snapshots с удаляемым субъектом и все исторические версии, проверяет payload
+до удаления каталога, сохраняет retry metadata в DeletionRequest. Подписанные ACK
+не теряются при storage outage; completion остаётся pending до проверенной очистки.
+Retry через 30 секунд не блокирует другие готовые jobs. API показывает attempts/error/
+retry_at. Внешние неучтённые backups требуют операторской инвентаризации — документация
+не обещает их автоматическое уничтожение.
+
+Оркестрация: основной Compose добавляет decoder/clamav/freshclam/backup worker,
+S3 override подключает отдельные Media/Privacy credentials и storage network.
+Подробный runbook: [media-security.md](media-security.md).
+
+Docker daemon по OrbStack socket недоступен, в том числе вне filesystem sandbox;
+новые контейнеры и реальные cloud buckets не запускались. Результаты локальной
+проверки этого этапа приведены ниже.
+
+
+Проверка этого инкремента:
+
+- Полный backend suite: **1022 passed, 54 skipped**, 3 существующих warnings,
+  231.08 s. Предыдущий полный прогон — 1011/53 до последних защит декодера.
+- После финальных правок identity pinning/process cleanup: профильный набор Media,
+  storage, practical environments/evaluation и Privacy completion — **166 passed,
+  2 skipped**; отдельная проверка orphaned first write без chunk rows — **2 passed**.
+- Реальный FFmpeg через настоящий Unix socket вне host filesystem sandbox повторно
+  прошёл: **1 passed**. На хосте isolation отключён только в этом transport test.
+  Проверка настоящего Landlock kernel на macOS пропущена; runtime policy проверена
+  через syscall adapter и attestation fixtures, live Linux контейнер не проверен.
+- Browser controls: **3 Node tests passed**. Ruff check/format: **214 файлов**;
+  `git diff --check` чистый. Все **17 runtime OpenAPI** совпадают с экспортом.
+- `docker compose config` проверил merged main + S3 override, включая optional
+  transcription profile и ограничения decoder/backup worker. Удалён прежний
+  идентичный дубликат hiring-outbox, который мешал Docker Compose разобрать YAML.
+- `.secrets/media-s3.json` и `.secrets/backup-s3.json` отсутствуют. Docker daemon
+  через OrbStack недоступен. Настройка real buckets/IAM/KMS, реальная ClamAV база,
+  build/live Linux/Landlock и перенос уже существующих старых копий остаются
+  эксплуатационной проверкой; их завершение этим журналом не заявляется.
+
+## Proctoring: журнал самостоятельности и ручное решение (9 октября 2026)
+
+Реализован BE-08: собственный сервис/миграция `0002_proctoring`, admission по
+подписанным Privacy и Assessment для пяти форматов. Клиентские события фокуса,
+вкладки, вставки без содержимого, записи и технических сбоев сохраняются с
+серверным порядком/временем, sequence, клиентским временем и elapsed. Повторы
+идемпотентны, конфликты отклоняются атомарно, пропуски восстанавливаются; отражаются
+расхождения часов/доставки, перезапуски потока, технические интервалы и поздняя
+доставка ранее допущенного потока. Максимум 64 потока и 20000 событий на этап.
+
+Подписанный consumer собирает историю Media/Whiteboard/Coding Workspace. Новые
+события `_observed.v1` не меняют существующий контракт запуска Runner. Проверены
+реальные producer/outbox/verified consumer сценарии для code, SQL, whiteboard,
+voice и VCV с подписанными проверками допуска и согласия. Семантические повторы
+агрегата/версии не раздувают материал, запоздавшие версии не откатывают историю.
+
+Reviewer с MFA подтверждает clear/inconclusive/concern с причиной, digest/версией
+всего материала и ссылками на события; самопроверка запрещена. Новое событие или
+поток делает решение устаревшим. Нет автоматического вывода «использовал ИИ» и
+автоматического изменения компетентности/грейда. Evaluation читает свежую
+подписанную summary через свой reviewer API. Privacy удаляет материал, решения,
+команды/outbox и оставляет tombstone/ACK; удаление reviewer убирает его свободный
+текст и снимает действующий статус проверки, сохраняя события другого кандидата.
+
+Клиентский `mountProctoring` собирает только предусмотренные метаданные, делает
+heartbeat, ограничивает буфер, повторяет неизменные пакеты и показывает технический
+сбой. Media/Whiteboard подключают его автоматически и требуют успешную доставку
+до `onReady`; для code/SQL экспортирован тот же модуль для контроллера активного
+этапа. При перезагрузке неотправленный буфер в памяти теряется; сервер не считает
+клиентскую телеметрию доказанно полной или доверенной.
+
+Проверки:
+
+- общий backend-прогон: **1049 passed, 54 skipped**, 3 прежних warnings;
+- после финальной нормализации timezone и проверки сгенерированной RabbitMQ
+  topology: Proctoring + runtime contracts + Coding Workspace — **44 passed,
+  2 skipped**; Proctoring включает **26** проверок;
+- Node browser-control tests: **6 passed**, включая неизменный retry, ограниченный
+  буфер, отсутствие чтения clipboard и блокировку `onReady` при сбое доставки;
+- Ruff check/format (**220 файлов**), `git diff --check` и экспорт 17 runtime
+  OpenAPI прошли; merged Compose с S3 override и Proctoring API/consumer/outbox
+  валиден на временных синтетических переменных, без чтения/печати credentials.
+
+Живые PostgreSQL/RabbitMQ/Compose, реальные вкладки/устройства браузера и монтаж
+контроллера полного code/SQL интерфейса требуют отдельного прогона/интеграции.
+Настройка topology в действующем RabbitMQ не менялась. Настройки, контракты и
+границы материала: [proctoring.md](proctoring.md). Изменения не коммитились.

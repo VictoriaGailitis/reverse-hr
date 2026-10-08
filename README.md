@@ -1712,3 +1712,196 @@ VCV/voice/whiteboard и их evidence pipeline также остаются от�
 
 Изменения доступны в коде/контрактах; контейнеры, .env/.secrets и внешний LLM не запускались.
 Live PostgreSQL/RabbitMQ/Linux по-прежнему отложены.
+
+### Практические среды Media и Whiteboard
+
+Media принимает записи для активных этапов voice/VCV. До доступа к устройству
+браузерный компонент вызывает `POST /media/v1/recordings/admission`: сервер проверяет
+отдельное действующее согласие `recording`, текущий этап и согласие assessment.
+Подписанные Privacy/Assessment RPC и локальные tombstones повторно проверяются
+при загрузке, чтении и выдаче receipt. Admission не является долговременным пропуском.
+
+`POST /media/v1/recordings` фиксирует session_id/stage_id, recording_consent_id,
+mime, размер, SHA-256 и заявленную клиентом длительность. Для voice разрешены
+`audio/webm`/`audio/ogg`, для VCV — `video/webm`/`video/mp4`. Одна запись на этап,
+не более 32 MiB. `PUT .../{id}/chunks/{number}` принимает base64 части до 256 KiB
+с отдельным SHA-256 и If-Match. Части можно передавать в произвольном порядке;
+`GET .../{id}` возвращает полученные номера для возобновления. Повтор той же части
+не меняет версию, несовпадение данных отклоняется. Команды используют Idempotency-Key;
+кешируются ссылки, а не байты записи.
+
+`POST .../{id}/finalize` проверяет полный набор частей, суммарный размер,
+индивидуальные/общий SHA-256, сигнатуру контейнера и полное декодирование FFmpeg;
+только затем создаёт неизменяемый snapshot_id. Новые байты сохраняются в закрытом
+файловом хранилище, в Media БД остаются ссылки/размеры/хеши. Старые DB chunks
+остаются читаемыми. Сборка и целостность повторно проверяются при выдаче.
+`GET .../{id}/content` доступен только кандидату через авторизованный шлюз с
+`Cache-Control: no-store`, без публичной или заранее подписанной ссылки.
+Это локальное файловое хранилище: S3 backend, антивирусное сканирование и
+доказанное физическое удаление из backups впереди.
+Заявленная длительность/отметки клиента не считаются достоверными; сервер отдельно
+фиксирует получение частей, начало и завершение загрузки.
+
+### Проверка медиапотока и закрытое хранилище
+
+`HR_MEDIA_STORAGE_ROOT` задаёт закрытую директорию Media (права 0700).
+Без неё новая загрузка отклоняется с 503. В Compose API, consumer удаления и
+transcription worker используют общий named volume `media-objects`; HTTP-сервера
+файлов и публичных URLs нет. Файлы имеют права 0600 и неизменяемые ключи,
+производные от subject/recording/номер части/SHA-256. Запись публикуется через
+atomic link после fsync; чтение не следует symlink и проверяет размер/хеш.
+Идентификатор хранилища в `.identity` закрепляется в БД: неправильный том
+блокирует чтение байтов и ACK удаления. `.identity` нужно сохранять при переносе тома.
+
+Privacy удаляет каталог кандидата, включая файлы от незавершённых транзакций,
+до удаления строк и публикации ACK. При сбое файлового удаления транзакция
+откатывается; повтор безопасен, поздние загрузки блокируются tombstone и
+текущим Privacy admission. Обычный unlink не является доказанным стиранием
+из snapshots, backups или физического носителя. Нужна отдельная retention policy.
+
+В finalize `ffprobe` проверяет один аудиопоток; для VCV требуется также один
+видеопоток. Разрешены WebM Opus/Vorbis + VP8/VP9, Ogg Opus/Vorbis,
+MP4 AAC + H.264; звук 8–48 kHz и 1–2 канала, видео до 1920×1080/60 fps.
+FFmpeg декодирует весь поток с остановкой при ошибке. `validation` в RecordingView
+содержит серверную duration_ms, кодеки и параметры; клиентская длительность
+остаётся недоверенной. Расшифровка не может заявлять длительность больше
+декодированной записи с допуском 250 ms. Legacy recordings имеют validation=null
+до отдельной повторной проверки; миграция не объявляет их проверенными.
+Длительность декодированного потока не доказывает время реальной записи и
+не заменяет Proctoring. Перед публикацией снимка повторно проверяются текущие
+согласия, ограничения Privacy и срок активного этапа.
+
+Настройки: `HR_MEDIA_FFPROBE_BINARY`, `HR_MEDIA_FFMPEG_BINARY`,
+`HR_MEDIA_VALIDATION_TIMEOUT_SECONDS` (20 по умолчанию, максимум 30).
+Probe и decode делят общий deadline, один слот на процесс; вывод ограничен 64 KiB,
+при таймауте завершается process group. Вход использует принудительный demuxer и
+только file protocol, без auto-detection playlist/сетевого ввода. Docker image
+включает FFmpeg, Media container ограничен 512 MiB/1 CPU/64 PID.
+Недоступный или занятый decoder возвращает 503 и не создаёт снимок/попытку
+транскрибации. Ошибка содержимого возвращает 422. Это не антивирус и не отдельная
+изоляция от уязвимостей декодера: hardened validation worker остаётся следующим шагом.
+Миграция `0004_storage.py` сохраняет старые DB bytes и добавляет metadata/identity;
+downgrade с данными или tombstones запрещён.
+Отклонённую запись можно заменить до finalize через
+`POST /media/v1/recordings/{id}/restart` с новым RecordingCreate, Idempotency-Key
+и If-Match. Сессия/этап/согласие сохраняются; очищаются прежние части, версия
+увеличивается. После finalize или завершения этапа замена запрещена. Browser
+«Записать заново» поддерживает этот сценарий и повтор команды после потерянного
+ответа; параметры камеры/микрофона ограничены под поддерживаемую сервером запись.
+Описание параметров сверено с [FFprobe](https://ffmpeg.org/ffprobe.html) и
+[FFmpeg](https://ffmpeg.org/ffmpeg.html).
+
+Whiteboard предоставляет `POST /whiteboard/v1/boards`, `GET .../{id}` и
+`POST .../{id}/operations`. Операция имеет UUID, object_id, action put/delete,
+ожидаемую версию и типизированный shape: stroke/rectangle/ellipse/text.
+Геометрия, размер текста, число точек/объектов и общий размер состояния ограничены;
+HTML/SVG не исполняются. Операции хранятся по серверной версии и времени; дубликат
+UUID не изменяет историю, пропуск версии или конфликт содержимого отклоняется.
+До 100 объектов, 500 операций и 256 KiB состояния. `POST .../{id}/seal`
+сохраняет immutable snapshot с SHA-256 и закрывает изменения.
+
+Assessment запускает voice/VCV/whiteboard с серверным deadline и принимает
+пару workspace_id/snapshot_id через существующий submit endpoint. Для Media
+workspace_id означает recording_id, для Whiteboard — board_id. Отдельный подписанный
+metadata-only receipt сверяет владельца, сессию, этап, формат, версию и digest;
+байты не переносятся в Assessment, скрытые рубрики не выдаются кандидату.
+После submit поздние записи/операции запрещены; сервер продвигает следующий этап.
+Evaluation собирает закреплённый снимок доски или расшифровку записи через
+подписанный owner API. До получения доказательств баллы отсутствуют; после сбора
+доступны human review и LLM proposal. Code/SQL продолжают работать через существующие
+Workspace/Runner/коллектор.
+
+Browser ES module доступен через `/media/v1/environment.js` и
+`/whiteboard/v1/environment.js`; исходник — `src/reverse_hr/assets/practical.mjs`.
+`mountRecording(root, {api, sessionId, stageId, recordingConsentId, video, onReady})`
+показывает controls MediaRecorder, preview, повтор записи до загрузки и возобновление
+частей при сетевом сбое. `mountBoard(root, {api, sessionId, stageId, boardId, onReady})`
+восстанавливает состояние, рисует canvas, добавляет текст и фиксирует снимок.
+Host page передаёт callback api с текущей аутентификацией и callback onReady,
+который отправляет ссылку в Assessment. Компонент не сохраняет токены.
+Новая самостоятельная страница входа/кабинета этим модулем не создаётся.
+Реальные камера/микрофон требуют HTTPS или localhost и разрешения браузера.
+
+Миграции `0002_media`/`0002_whiteboard`, readiness, Gateway и workers publish/consume
+в профиле all добавлены. Privacy consumer сначала очищает файловые данные Media,
+затем удаляет строки частей, записей, состояний, снимков, операций, command caches
+и прежний outbox в транзакции с tombstone/ACK. Откат БД не восстанавливает файлы;
+повтор удаления безопасен.
+Рассылка удаления уже предусмотрена общей topology. `.env`, `.secrets`, контейнеры
+и внешние API не менялись; live PG/RabbitMQ/Compose по-прежнему отложены.
+
+### Транскрибация и оценка записей/доски
+
+Media finalize создаёт durable pending attempt. Опциональный worker `transcribe`
+проверяет актуальные права и согласия до вызова провайдера и перед сохранением
+результата. Расшифровка привязана к SHA-256 записи, модели и immutable transcript_id;
+сегменты имеют уникальные ключи и непересекающиеся временные диапазоны.
+`GET /media/v1/recordings/{id}/transcription` возвращает состояние и результат
+владельцу. После ошибки повтор запускается отдельным `POST .../{id}/transcription`,
+не более трёх попыток. `POST .../{id}/transcription/{attempt_id}/interrupt` отменяет
+локальное ожидание; поздний ответ не сохраняется. Отмена не гарантирует отмену
+списания у провайдера. Неопределённые вызовы автоматически не повторяются;
+после перезапуска зависшую running attempt нужно явно прервать.
+
+Worker выключен по умолчанию. Compose profile `transcription` использует отдельную
+egress-сеть и требует `MEDIA_TRANSCRIPTION_ORIGIN`, `MEDIA_TRANSCRIPTION_MODEL` и
+существующий файл `.secrets/media-transcription.key`. Для запуска вне Compose:
+`HR_MEDIA_TRANSCRIPTION_ENABLED=true`, `HR_MEDIA_TRANSCRIPTION_ORIGIN`,
+`HR_MEDIA_TRANSCRIPTION_MODEL`, `HR_MEDIA_TRANSCRIPTION_KEY_FILE`.
+Реализован контракт операторского HTTPS gateway `POST /v1/transcribe`:
+запрос `{model, recording_digest, mime, data_base64, store:false}`;
+ответ `{recording_digest, model, document, cost_microusd}`. `document` содержит
+`duration_ms`, `language`, `segments: [{key, start_ms, end_ms, text}]`.
+Таймаут до 30 секунд, ограничение ответа 256 KiB; redirects и proxy из окружения
+отключены. Это контракт адаптера: конкретный speech-провайдер ещё не подключён.
+Запрет хранения должен также обеспечиваться настройками провайдера; фактическая
+стоимость неизвестного/прерванного вызова требует сверки с его биллингом.
+
+Reviewer с MFA получает `PracticalSource` через существующий review workspace.
+Для voice/VCV решения содержат `recording_citations`: snapshot_id, recording_digest,
+transcript_id/digest, segment_key и start_ms/end_ms внутри соответствующего сегмента.
+Для whiteboard — `board_citations`: snapshot_id/digest, object_id и object_digest.
+Несовпадающие снимки, хеши, объекты или диапазоны отклоняются. Авторизованный reviewer
+может получить исходные части записи через
+`GET /evaluation/v1/evaluation-reviews/stages/{stage_id}/recording/chunks/{number}`;
+каждая выдача заново проверяет согласия и закреплённый снимок, ответ no-store.
+При отзыве recording consent блокируются просмотр, подтверждение review и выдача байтов.
+
+LLM получает ту же закреплённую расшифровку или доску и предлагает решения с
+проверяемыми ссылками. Текст кандидата считается недоверенным содержимым.
+Предложение не публикует баллы без human confirmation; video-анализ движений/кадров
+не реализован. Prompt v2 поддерживает все форматы; уже готовые code/SQL предложения
+v1 и прежние хеши human review сохраняют совместимость.
+Если сбор доказательств исчерпал попытки до готовности расшифровки, reviewer может
+вызвать `POST /evaluation/v1/evaluation-reviews/stages/{stage_id}/collection-retry`
+с Idempotency-Key и If-Match. Команда не перезаписывает готовый source или review.
+Privacy удаляет расшифровки и попытки вместе с записью; поздний ответ после удаления
+не восстанавливает данные. Миграция Media `0003_transcription` добавляет новые таблицы.
+
+Качество распознавания, реальный провайдер, камера/микрофон, декодирование контейнеров
+и live PostgreSQL/RabbitMQ/Compose требуют отдельной проверки. Внешние вызовы,
+секреты и рабочие контейнеры при реализации этого этапа не использовались.
+
+
+### Media security и управляемые backups
+
+Реализованы versioned private S3 adapter, ClamAV INSTREAM перед decode,
+отдельный decoder container без сети/секретов с runtime attestation и cleanup
+общих S3 snapshots перед completion Privacy. Основной Compose включает scanner,
+freshclam и decoder; `compose.media-s3.yaml` подключает настроенные S3 buckets.
+По умолчанию Media требует scanner и isolated decoder. Legacy материал без scan
+receipt при включённом требовании не допускается к чтению/обработке.
+
+Настройки, запуск, условия миграции заполненного file store и границы очистки
+старых копий описаны в [docs/media-security.md](docs/media-security.md).
+
+## Proctoring
+
+Реализован журнал событий самостоятельности: фокус, вкладка, вставка без содержимого,
+состояние записи и технические сбои; подписи истории Media/Whiteboard/Workspace.
+Повторы, пропуски, клиентские часы и поздняя доставка учитываются отдельно.
+Решение reviewer с MFA привязано к версии и доказательствам; новые материалы требуют
+повторного рассмотрения. Evaluation читает свежую подписанную summary, оценка
+компетентности не меняется автоматически. Privacy удаляет журнал с tombstone.
+
+Запуск, контракты и подключение клиентского модуля: [docs/proctoring.md](docs/proctoring.md).
