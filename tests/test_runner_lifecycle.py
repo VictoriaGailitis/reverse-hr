@@ -4,6 +4,7 @@ from uuid import uuid4
 import pytest
 from alembic import command
 from fastapi import HTTPException
+from runner_monitor_support import drain_monitors
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from test_code_runner import accept, deletion
@@ -26,6 +27,7 @@ from reverse_hr.settings import Settings
 
 @pytest.fixture
 def prepared(service, token, tmp_path, monkeypatch):
+    drain_monitors(monkeypatch)
     setup = runner_setup_fixture.__wrapped__(service, token)
     assert accept(setup)
     scratch, groups = tmp_path / "scratch", tmp_path / "cgroups"
