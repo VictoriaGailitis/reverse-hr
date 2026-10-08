@@ -400,3 +400,20 @@ class NotificationConsumer(SignedConsumer):
         if event.producer == "hiring" and event.event_type == "hiring.notification_requested.v1":
             return lambda session, event: process_notice(session, event, self.access)
         raise InvalidEvent()
+
+
+class PracticalConsumer(SignedConsumer):
+    def handler(self, event):
+        if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
+            from importlib import import_module
+
+            return import_module("reverse_hr.domains." + self.service).process_deletion_request
+        raise InvalidEvent()
+
+
+class MediaConsumer(PracticalConsumer):
+    service = "media"
+
+
+class WhiteboardConsumer(PracticalConsumer):
+    service = "whiteboard"

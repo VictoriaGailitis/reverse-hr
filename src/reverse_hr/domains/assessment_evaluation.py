@@ -109,6 +109,20 @@ def evaluation_material(
             if allowed:
                 check_pins(request, session, pins, row.stages, current=False)
                 spec = next(s for s in row.stages if s["stage_id"] == str(body.stage_id))
+                if spec["format"] not in {"code", "sql"}:
+                    artifact = request.app.state.practical_receipt_access.fetch(
+                        body.candidate_id,
+                        body.session_id,
+                        body.stage_id,
+                        body.workspace_id,
+                        body.snapshot_id,
+                        format=spec["format"],
+                    )
+                    if (
+                        artifact.digest != stage.digest
+                        or artifact.snapshot_version != stage.snapshot_version
+                    ):
+                        raise HTTPException(409)
                 revision = session.get(ContentRevision, spec["revision_id"])
                 # Retirement closes new admissions; existing sessions keep their immutable pins.
                 if revision is None or revision.published_at is None:
@@ -202,6 +216,12 @@ def artifact_admission(
             stage = session.get(StageState, str(body.stage_id))
             allowed = bool(
                 not subject.blocked
+                and body.format
+                in {
+                    "coding-workspace": {"code", "sql"},
+                    "media": {"voice", "vcv"},
+                    "whiteboard": {"whiteboard"},
+                }[body.requester]
                 and row
                 and stage
                 and row.candidate_id == str(body.candidate_id)

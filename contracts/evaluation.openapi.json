@@ -6,6 +6,130 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/v1/evaluation-reviews/stages/{stage_id}/recording/chunks/{number}": {
+      "get": {
+        "tags": [
+          "reviewer-recording-playback"
+        ],
+        "summary": "Reviewer Chunk",
+        "operationId": "reviewer_chunk_v1_evaluation_reviews_stages__stage_id__recording_chunks__number__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/collection-retry": {
+      "post": {
+        "tags": [
+          "evaluation-recovery"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_v1_evaluation_reviews_stages__stage_id__collection_retry_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/evaluations/stages/{stage_id}": {
       "get": {
         "tags": [
@@ -797,6 +921,57 @@
   },
   "components": {
     "schemas": {
+      "BoardCitation": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "object_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Id"
+          },
+          "object_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Object Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "snapshot_digest",
+          "object_id",
+          "object_digest"
+        ],
+        "title": "BoardCitation"
+      },
+      "BoardDocument": {
+        "properties": {
+          "state": {
+            "items": {
+              "$ref": "#/components/schemas/Shape"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "BoardDocument"
+      },
       "Citation": {
         "properties": {
           "path": {
@@ -949,6 +1124,22 @@
             "type": "array",
             "maxItems": 10,
             "title": "Citations"
+          },
+          "recording_citations": {
+            "items": {
+              "$ref": "#/components/schemas/RecordingCitation"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Recording Citations"
+          },
+          "board_citations": {
+            "items": {
+              "$ref": "#/components/schemas/BoardCitation"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Board Citations"
           }
         },
         "additionalProperties": false,
@@ -1443,6 +1634,104 @@
         ],
         "title": "PinnedMaterial"
       },
+      "Point": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Y"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "Point"
+      },
+      "PracticalSource": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "voice",
+              "vcv",
+              "whiteboard"
+            ],
+            "title": "Format"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Digest"
+          },
+          "board": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoardDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcript_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Id"
+          },
+          "transcript_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Digest"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TranscriptDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "format",
+          "digest"
+        ],
+        "title": "PracticalSource"
+      },
       "ProbeRecord": {
         "properties": {
           "version": {
@@ -1483,6 +1772,59 @@
           "passed"
         ],
         "title": "ProbeRecord"
+      },
+      "RecordingCitation": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "recording_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Recording Digest"
+          },
+          "transcript_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Transcript Id"
+          },
+          "transcript_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Transcript Digest"
+          },
+          "segment_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Segment Key"
+          },
+          "start_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 0.0,
+            "title": "Start Ms"
+          },
+          "end_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 1.0,
+            "title": "End Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "recording_digest",
+          "transcript_id",
+          "transcript_digest",
+          "segment_key",
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "RecordingCitation"
       },
       "ResultDelivery": {
         "properties": {
@@ -1589,6 +1931,31 @@
           "allowed"
         ],
         "title": "ResultReceipt"
+      },
+      "RetryView": {
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_id",
+          "status",
+          "version"
+        ],
+        "title": "RetryView"
       },
       "ReviewCommand": {
         "properties": {
@@ -1832,7 +2199,15 @@
             "$ref": "#/components/schemas/PinnedMaterial"
           },
           "source": {
-            "$ref": "#/components/schemas/FilesCommand"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilesCommand"
+              },
+              {
+                "$ref": "#/components/schemas/PracticalSource"
+              }
+            ],
+            "title": "Source"
           },
           "trusted_test_points": {
             "additionalProperties": {
@@ -2014,6 +2389,43 @@
         ],
         "title": "ScoreRequest"
       },
+      "Segment": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Key"
+          },
+          "start_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 0.0,
+            "title": "Start Ms"
+          },
+          "end_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 1.0,
+            "title": "End Ms"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "start_ms",
+          "end_ms",
+          "text"
+        ],
+        "title": "Segment"
+      },
       "SessionSuitePin": {
         "properties": {
           "position": {
@@ -2081,6 +2493,61 @@
           "stage_id"
         ],
         "title": "SessionSuitePin"
+      },
+      "Shape": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "stroke",
+              "rectangle",
+              "ellipse",
+              "text"
+            ],
+            "title": "Kind"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Points"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Text",
+            "default": ""
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "default": "#000000"
+          },
+          "width": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "default": 2
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "points"
+        ],
+        "title": "Shape"
       },
       "StageScore": {
         "properties": {
@@ -2485,6 +2952,38 @@
           "outcomes"
         ],
         "title": "TestProof"
+      },
+      "TranscriptDocument": {
+        "properties": {
+          "duration_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 1.0,
+            "title": "Duration Ms"
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$",
+            "title": "Language"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Segments"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "duration_ms",
+          "language",
+          "segments"
+        ],
+        "title": "TranscriptDocument"
       },
       "ValidationError": {
         "properties": {

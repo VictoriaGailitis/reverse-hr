@@ -136,3 +136,37 @@ def test_llm_disabled_by_default_without_a_provider(setup):
     assert enqueue(setup).status_code == 409
     with pytest.raises(HTTPException):
         run(setup, None)
+
+
+def test_legacy_ready_model_input_remains_verifiable_after_native_evidence_extension(setup):
+    import hashlib
+
+    from reverse_hr.test_suites import digest
+
+    original, target, stage = setup
+    response = enqueue(setup)
+    assert response.status_code == 202
+    attempt_id = response.json()["attempt_id"]
+    with Session(target.app.state.engine) as session, session.begin():
+        attempt = session.get(domain.ModelAttempt, attempt_id)
+        row = session.get(EvaluationIntake, str(stage))
+        attempt.status = "ready"
+        attempt.prompt_version = "artifact-rubric-proposal-v1"
+        attempt.prompt_digest = hashlib.sha256(domain.LEGACY_PROMPT.encode()).hexdigest()
+        attempt.input_digest = digest(domain.LegacyInput(material=row.material, source=row.source))
+        attempt.output = ReviewCommand.model_validate(review_body(original)).model_dump(mode="json")
+        assert (
+            domain.attempt_input_digest(attempt, row.material, row.source) == attempt.input_digest
+        )
+    payload = review_body(original) | {"model_attempt_id": attempt_id}
+    reply = target.client.post(
+        f"/v1/evaluation-reviews/stages/{stage}/reviews",
+        json=payload,
+        headers=headers(original[1], "legacy-human", 3),
+    )
+    assert reply.status_code == 200, reply.text
+    assert reply.json()["score"] == 80
+    assert all(
+        "recording_citations" not in d and "board_citations" not in d
+        for d in reply.json()["latest"]["decisions"]
+    )

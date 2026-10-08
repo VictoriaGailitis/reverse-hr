@@ -26,7 +26,13 @@ def service(tmp_path, keys):
     clients = []
 
     def make(name):
-        settings = Settings(service_name=name, database_url=f"sqlite:///{tmp_path}/{name}.db")
+        settings = Settings(
+            media_antivirus_required=False,
+            media_decoder_required=False,
+            service_name=name,
+            database_url=f"sqlite:///{tmp_path}/{name}.db",
+            media_storage_root=str(tmp_path / "media-objects") if name == "media" else "",
+        )
         command.upgrade(migration_config(settings), "head")
         app = create_app(settings)
         if name in {
@@ -39,6 +45,8 @@ def service(tmp_path, keys):
             "matching",
             "hiring",
             "notification",
+            "media",
+            "whiteboard",
         }:
             app.state.processing_access = SimpleNamespace(
                 check=lambda *_: None, check_assessment=lambda *_: None

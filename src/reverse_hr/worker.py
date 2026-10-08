@@ -10,10 +10,12 @@ from reverse_hr.event_transport import (
     EvaluationConsumer,
     HiringConsumer,
     MatchingConsumer,
+    MediaConsumer,
     NotificationConsumer,
     PrivacyConsumer,
     RunnerConsumer,
     Signatures,
+    WhiteboardConsumer,
     WorkspaceConsumer,
     connect,
     publish_one,
@@ -36,6 +38,8 @@ def main():
             "prepare",
             "collect",
             "evaluate",
+            "transcribe",
+            "purge-backups",
         ],
     )
     args = parser.parse_args()
@@ -53,6 +57,8 @@ def main():
         "matching": MatchingConsumer,
         "hiring": HiringConsumer,
         "notification": NotificationConsumer,
+        "media": MediaConsumer,
+        "whiteboard": WhiteboardConsumer,
     }
     if args.mode == "consume" and settings.service_name not in consumers:
         parser.error("Consumer is not implemented for this service")
@@ -85,8 +91,30 @@ def main():
             parser.error(
                 "Evaluation requires an enabled, configured LLM gateway and credential file"
             )
+    transcription_gateway = None
+    if args.mode == "transcribe":
+        if settings.service_name != "media":
+            parser.error("Transcription requires Media")
+        from reverse_hr.media_transcription import HttpTranscriptionGateway
+
+        try:
+            transcription_gateway = HttpTranscriptionGateway(settings)
+        except Exception:
+            parser.error(
+                "Transcription requires an enabled configured HTTPS gateway and credential file"
+            )
+    if args.mode == "purge-backups" and settings.service_name != "privacy":
+        parser.error("Backup cleanup requires Privacy")
     signatures = Signatures.from_settings(settings)
     engine = make_engine(settings.database_url.get_secret_value())
+    if settings.service_name == "privacy":
+        from reverse_hr.backup_archive import configure as configure_backups
+
+        configure_backups(engine, settings)
+    if settings.service_name == "media":
+        from reverse_hr.media_storage import configure
+
+        configure(engine, settings)
     if args.mode in {"diagnose", "execute", "validate", "grade-tests"}:
         from sqlalchemy.orm import Session
 
@@ -109,6 +137,29 @@ def main():
     try:
         while True:
             try:
+                if args.mode == "purge-backups":
+                    from reverse_hr.backup_archive import run_one as purge_backups_one
+
+                    if not purge_backups_one(engine):
+                        time.sleep(3)
+                    continue
+                if args.mode == "transcribe":
+                    from reverse_hr.media_transcription import run_one as transcribe_one
+                    from reverse_hr.processing_access import ProcessingAccess
+                    from reverse_hr.recording_access import RecordingAccess
+                    from reverse_hr.stage_access import StageAccess
+
+                    processing, recording, stages = (
+                        ProcessingAccess(settings),
+                        RecordingAccess(settings),
+                        StageAccess(settings),
+                    )
+                    processing._signatures = recording._signatures = stages._signatures = signatures
+                    if not transcribe_one(
+                        engine, processing, recording, stages, transcription_gateway
+                    ):
+                        time.sleep(0.5)
+                    continue
                 if args.mode == "evaluate":
                     from reverse_hr.evaluation_access import MaterialAccess
                     from reverse_hr.evaluation_artifact_access import ArtifactAccess

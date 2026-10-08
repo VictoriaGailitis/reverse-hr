@@ -31,7 +31,7 @@ class SnapshotRequest(ProcessingRequest):
 
 class SnapshotReceipt(SnapshotRequest):
     allowed: bool = Field(strict=True)
-    format: Literal["code", "sql"] | None = None
+    format: Literal["code", "sql", "voice", "vcv", "whiteboard"] | None = None
     snapshot_version: int | None = Field(default=None, ge=1, strict=True)
     digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
 

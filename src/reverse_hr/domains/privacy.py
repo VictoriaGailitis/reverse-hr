@@ -27,6 +27,9 @@ from reverse_hr.processing_access import (
     sign,
     verify,
 )
+from reverse_hr.recording_access import REQUEST as RECORDING_REQUEST
+from reverse_hr.recording_access import RESPONSE as RECORDING_RESPONSE
+from reverse_hr.recording_access import RecordingRequest, RecordingStatus
 from reverse_hr.settings import SERVICES
 
 
@@ -411,6 +414,12 @@ router.include_router(consents_router)
 router.include_router(grants_router)
 
 
+class BackupStoreIdentity(PrivacyBase):
+    __tablename__ = "backup_store_identity"
+    name: Mapped[str] = mapped_column(String(16), primary_key=True)
+    fingerprint: Mapped[str] = mapped_column(String(64))
+
+
 class PrivacySubject(PrivacyBase):
     """Durable restriction tombstone; retained for reapplying deletion after restore."""
 
@@ -425,6 +434,9 @@ class DeletionRequest(PrivacyBase):
     candidate_id: Mapped[str] = mapped_column(String(36), unique=True)
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    backup_attempts: Mapped[int] = mapped_column(default=0)
+    backup_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    backup_error: Mapped[str | None] = mapped_column(String(32))
 
 
 class DeletionTarget(PrivacyBase):
@@ -442,6 +454,9 @@ class DeletionView(Contract):
     requested_at: datetime
     completed_at: datetime | None = None
     services: dict[str, Literal["pending", "restricted", "deleted"]]
+    backup_attempts: int = 0
+    backup_error: Literal["archive_unavailable"] | None = None
+    backup_retry_at: datetime | None = None
 
 
 def subject_lock(session, candidate_id, *, allow_blocked=False):
@@ -487,6 +502,9 @@ def deletion_view(session, row):
         else "in_progress",
         requested_at=utc(row.requested_at),
         completed_at=utc(row.completed_at) if row.completed_at else None,
+        backup_attempts=row.backup_attempts,
+        backup_error=row.backup_error,
+        backup_retry_at=utc(row.backup_retry_at) if row.backup_retry_at else None,
         services=targets,
     ).model_dump(mode="json")
 
@@ -718,7 +736,7 @@ def signed_status(
         raise HTTPException(503) from exc
 
 
-def finalize_deletion(session, row, correlation_id):
+def finalize_deletion(session, row, correlation_id, *, purge_backups=False):
     """Caller holds the subject lock; external owners must all confirm deletion.
 
     Keep the restriction/job ledger and deletion protocol outbox. Purge only
@@ -735,6 +753,15 @@ def finalize_deletion(session, row, correlation_id):
     external = set(SERVICES) - {"privacy"}
     if set(targets) != set(SERVICES) or any(targets[name].status != "deleted" for name in external):
         return False
+    from reverse_hr.backup_archive import bind
+
+    archive = bind(session)
+    if archive is not None:
+        # The signed ACK commits promptly. DeletionRequest is the durable cleanup job;
+        # the dedicated worker retries storage failures without losing that ACK.
+        if not purge_backups:
+            return False
+        archive.purge_subject(row.candidate_id)
     session.execute(delete(ContactGrant).where(ContactGrant.candidate_id == row.candidate_id))
     session.execute(delete(ConsentRecord).where(ConsentRecord.candidate_id == row.candidate_id))
     session.execute(
@@ -781,3 +808,25 @@ def finalize_deletion(session, row, correlation_id):
             ),
         )
     return True
+
+
+@router.post("/internal/v1/recording-permission", response_model=RecordingStatus, tags=["internal"])
+def recording_permission(
+    request: Request,
+    body: RecordingRequest,
+    signature: Annotated[str | None, Header(alias="X-HR-Signature", max_length=128)] = None,
+):
+    def allowed(session, body, subject):
+        consent = session.get(ConsentRecord, str(body.consent_id))
+        return bool(
+            (subject is None or not subject.blocked)
+            and consent is not None
+            and consent.candidate_id == str(body.candidate_id)
+            and consent.purpose == "recording"
+            and consent.status == "active"
+            and consent.document_version == "demo-v1"
+        )
+
+    return signed_status(
+        request, body, signature, RECORDING_REQUEST, RECORDING_RESPONSE, RecordingStatus, allowed
+    )

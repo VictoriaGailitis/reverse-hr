@@ -1146,6 +1146,116 @@
         }
       }
     },
+    "/internal/v1/recording-permission": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Recording Permission",
+        "operationId": "recording_permission_internal_v1_recording_permission_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "summary": "Live",
@@ -1469,6 +1579,35 @@
             },
             "type": "object",
             "title": "Services"
+          },
+          "backup_attempts": {
+            "type": "integer",
+            "title": "Backup Attempts",
+            "default": 0
+          },
+          "backup_error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "archive_unavailable"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Error"
+          },
+          "backup_retry_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Retry At"
           }
         },
         "additionalProperties": false,
@@ -1874,7 +2013,9 @@
               "evaluation",
               "matching",
               "hiring",
-              "notification"
+              "notification",
+              "media",
+              "whiteboard"
             ],
             "title": "Requester"
           },
@@ -1917,7 +2058,9 @@
               "evaluation",
               "matching",
               "hiring",
-              "notification"
+              "notification",
+              "media",
+              "whiteboard"
             ],
             "title": "Requester"
           },
@@ -1941,6 +2084,89 @@
           "allowed"
         ],
         "title": "ProcessingStatus"
+      },
+      "RecordingRequest": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "media",
+            "title": "Requester"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "consent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Consent Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "requester",
+          "issued_at",
+          "consent_id"
+        ],
+        "title": "RecordingRequest"
+      },
+      "RecordingStatus": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "media",
+            "title": "Requester"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "consent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Consent Id"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "requester",
+          "issued_at",
+          "consent_id",
+          "allowed"
+        ],
+        "title": "RecordingStatus"
       },
       "ValidationError": {
         "properties": {

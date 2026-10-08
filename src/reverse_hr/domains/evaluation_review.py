@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_serializer, model_validator
 from sqlalchemy import JSON, DateTime, ForeignKey, String, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
@@ -18,6 +18,15 @@ from reverse_hr.domains.coding_workspace import File, FilesCommand
 from reverse_hr.domains.evaluation import EvaluationBase, EvaluationIntake, subject_lock
 from reverse_hr.evaluation_access import PinnedMaterial
 from reverse_hr.events import EventEnvelope
+from reverse_hr.practical_evidence import (
+    BoardCitation,
+    PracticalSource,
+    RecordingCitation,
+    Source,
+    sha,
+    source_digest,
+    source_model,
+)
 
 
 class ReviewRecord(EvaluationBase):
@@ -60,12 +69,26 @@ class CriterionDecision(Contract):
     reason: str = Field(min_length=1, max_length=2000, pattern=r"\S")
     test_proof_digest: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     citations: list[Citation] = Field(default_factory=list, max_length=10)
+    recording_citations: list[RecordingCitation] = Field(default_factory=list, max_length=10)
+    board_citations: list[BoardCitation] = Field(default_factory=list, max_length=10)
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler):
+        result = handler(self)
+        for key in ("recording_citations", "board_citations"):
+            if not result.get(key):
+                result.pop(key, None)
+        return result
 
     @model_validator(mode="after")
     def evidence(self):
-        if (self.points is not None) != bool(self.citations or self.test_proof_digest) or (
-            self.citations and self.test_proof_digest
-        ):
+        evidence = [
+            bool(self.citations),
+            bool(self.recording_citations),
+            bool(self.board_citations),
+            bool(self.test_proof_digest),
+        ]
+        if (self.points is not None) != any(evidence) or sum(evidence) > 1:
             raise ValueError(
                 "Scored criteria require evidence; missing evidence leaves points unset"
             )
@@ -107,7 +130,7 @@ class ReviewResult(Contract):
 
 class ReviewWorkspace(ReviewResult):
     material: PinnedMaterial
-    source: FilesCommand
+    source: Source
     trusted_test_points: dict[str, int | None] = Field(default_factory=dict)
     test_proof_digest: str | None = None
 
@@ -161,9 +184,11 @@ def authorize(request, actor, stage_id):
             raise HTTPException(403)
         if row.status not in {"artifact_ready", "needs_evidence", "reviewed"}:
             raise HTTPException(409)
+        if row.source is None:
+            raise HTTPException(409, "Evidence collection is required before review")
         candidate_id, version = UUID(row.candidate_id), row.version
         material = PinnedMaterial.model_validate(row.material)
-        source = FilesCommand.model_validate(row.source)
+        source = source_model(row.source)
         refs = {
             key: UUID(getattr(row, key))
             for key in ("candidate_id", "session_id", "stage_id", "workspace_id", "snapshot_id")
@@ -200,6 +225,18 @@ def guarded(request, actor, stage_id, candidate_id, authorized_version, session)
     request.app.state.processing_access.check_assessment(
         candidate_id, UUID(row.material["consent_id"])
     )
+    if isinstance(source_model(row.source), PracticalSource):
+        current = request.app.state.artifact_access.fetch(
+            **{
+                k: UUID(getattr(row, k))
+                for k in ("candidate_id", "session_id", "stage_id", "workspace_id", "snapshot_id")
+            },
+            format=row.material["task"]["format"],
+            snapshot_version=row.material["snapshot_version"],
+            digest=row.material["snapshot_digest"],
+        )
+        if current != source_model(row.source):
+            raise HTTPException(409)
     return row
 
 
@@ -247,18 +284,30 @@ def history(
 
 def validate_decisions(row, body, test_scores=None, proof_digest=None):
     material = PinnedMaterial.model_validate(row.material)
-    source = FilesCommand.model_validate(row.source)
+    source = source_model(row.source)
     criteria = {c.key: c for c in material.task.rubric}
     if {d.criterion_key for d in body.decisions} != set(criteria):
         raise HTTPException(409)
-    files = {f.path: f for f in source.files}
+    if source_digest(source) != material.snapshot_digest or (
+        isinstance(source, PracticalSource)
+        and (
+            source.format != material.task.format
+            or str(source.snapshot_id) != getattr(row, "snapshot_id", str(source.snapshot_id))
+        )
+    ):
+        raise HTTPException(409)
+    files = {f.path: f for f in source.files} if isinstance(source, FilesCommand) else {}
     for decision in body.decisions:
         criterion = criteria[decision.criterion_key]
         if decision.points is None:
             continue
+        if decision.points > criterion.points:
+            raise HTTPException(409)
         if criterion.evidence == "test_result":
             if (
                 decision.citations
+                or decision.recording_citations
+                or decision.board_citations
                 or decision.test_proof_digest != proof_digest
                 or proof_digest is None
                 or decision.points != (test_scores or {}).get(criterion.key)
@@ -267,17 +316,60 @@ def validate_decisions(row, body, test_scores=None, proof_digest=None):
             continue
         if decision.test_proof_digest is not None:
             raise HTTPException(409)
-        # A source citation cannot substitute for a verified hidden-test result.
-        if criterion.evidence != "artifact" or decision.points > criterion.points:
-            raise HTTPException(409)
-        for citation in decision.citations:
-            file = files.get(citation.path)
+        if isinstance(source, FilesCommand):
             if (
-                file is None
-                or hashlib.sha256(file.content.encode()).hexdigest() != citation.file_digest
-                or citation.end_line > len(file.content.splitlines())
+                criterion.evidence != "artifact"
+                or not decision.citations
+                or decision.recording_citations
+                or decision.board_citations
             ):
                 raise HTTPException(409)
+            for citation in decision.citations:
+                file = files.get(citation.path)
+                if (
+                    file is None
+                    or hashlib.sha256(file.content.encode()).hexdigest() != citation.file_digest
+                    or citation.end_line > len(file.content.splitlines())
+                ):
+                    raise HTTPException(409)
+        elif source.format == "whiteboard":
+            if (
+                criterion.evidence not in {"board_snapshot", "artifact"}
+                or not decision.board_citations
+                or decision.citations
+                or decision.recording_citations
+            ):
+                raise HTTPException(409)
+            shapes = {str(shape.id): shape for shape in source.board.state}
+            for citation in decision.board_citations:
+                shape = shapes.get(str(citation.object_id))
+                if (
+                    citation.snapshot_id != source.snapshot_id
+                    or citation.snapshot_digest != source.digest
+                    or shape is None
+                    or sha(shape) != citation.object_digest
+                ):
+                    raise HTTPException(409)
+        else:
+            if (
+                criterion.evidence not in {"timestamped_recording", "artifact"}
+                or not decision.recording_citations
+                or decision.citations
+                or decision.board_citations
+            ):
+                raise HTTPException(409)
+            segments = {segment.key: segment for segment in source.transcript.segments}
+            for citation in decision.recording_citations:
+                segment = segments.get(citation.segment_key)
+                if (
+                    citation.snapshot_id != source.snapshot_id
+                    or citation.recording_digest != source.digest
+                    or citation.transcript_id != source.transcript_id
+                    or citation.transcript_digest != source.transcript_digest
+                    or segment is None
+                    or not segment.start_ms <= citation.start_ms < citation.end_ms <= segment.end_ms
+                ):
+                    raise HTTPException(409)
     return (
         sum(d.points for d in body.decisions)
         if all(d.points is not None for d in body.decisions)
@@ -314,8 +406,7 @@ def record_review(
             ) or Signatures.from_settings(request.app.state.settings)
         test_scores, proof_digest = test_points(session, row, signatures)
         if body.model_attempt_id is not None:
-            from reverse_hr.evaluation_llm import ModelAttempt, ModelInput
-            from reverse_hr.test_suites import digest
+            from reverse_hr.evaluation_llm import ModelAttempt, attempt_input_digest
 
             attempt = session.get(ModelAttempt, str(body.model_attempt_id))
             if (
@@ -323,8 +414,7 @@ def record_review(
                 or attempt.stage_id != row.stage_id
                 or attempt.candidate_id != row.candidate_id
                 or attempt.status != "ready"
-                or attempt.input_digest
-                != digest(ModelInput(material=row.material, source=row.source))
+                or attempt.input_digest != attempt_input_digest(attempt, row.material, row.source)
             ):
                 raise HTTPException(409, "Current model proposal required")
         score = validate_decisions(row, body, test_scores, proof_digest)

@@ -39,7 +39,7 @@ def object_schema(properties):
     )
 
 
-def proposal_schema():
+def proposal_schema(practical=False):
     citation = object_schema(
         dict(
             path={"type": "string"},
@@ -56,6 +56,31 @@ def proposal_schema():
             citations={"type": "array", "items": citation},
         )
     )
+    if practical:
+        recording = object_schema(
+            dict(
+                snapshot_id={"type": "string"},
+                recording_digest={"type": "string"},
+                transcript_id={"type": "string"},
+                transcript_digest={"type": "string"},
+                segment_key={"type": "string"},
+                start_ms={"type": "integer"},
+                end_ms={"type": "integer"},
+            )
+        )
+        board = object_schema(
+            dict(
+                snapshot_id={"type": "string"},
+                snapshot_digest={"type": "string"},
+                object_id={"type": "string"},
+                object_digest={"type": "string"},
+            )
+        )
+        criterion["properties"].update(
+            recording_citations={"type": "array", "items": recording},
+            board_citations={"type": "array", "items": board},
+        )
+        criterion["required"] = list(criterion["properties"])
     return object_schema(
         dict(decisions={"type": "array", "items": criterion}, reason={"type": "string"})
     )
@@ -88,17 +113,21 @@ class ChatCompletionsGateway:
         if model != self.model or not 1 <= timeout_seconds <= 30 or inputs.instruction != PROMPT:
             raise ValueError("Unpinned gateway input")
         # Deliberately omit candidate/session IDs, consent, suite pins and case metadata.
-        evidence = dict(
-            task=inputs.material.task.model_dump(mode="json"),
-            files=[
+        from reverse_hr.domains.coding_workspace import FilesCommand
+
+        practical = not isinstance(inputs.source, FilesCommand)
+        evidence = dict(task=inputs.material.task.model_dump(mode="json"))
+        if practical:
+            evidence["practical"] = inputs.source.model_dump(mode="json")
+        else:
+            evidence["files"] = [
                 dict(
                     path=f.path,
                     content=f.content,
                     file_digest=hashlib.sha256(f.content.encode()).hexdigest(),
                 )
                 for f in inputs.source.files
-            ],
-        )
+            ]
         body = dict(
             model=model,
             store=False,
@@ -111,7 +140,9 @@ class ChatCompletionsGateway:
             ],
             response_format=dict(
                 type="json_schema",
-                json_schema=dict(name="rubric_proposal", strict=True, schema=proposal_schema()),
+                json_schema=dict(
+                    name="rubric_proposal", strict=True, schema=proposal_schema(practical)
+                ),
             ),
         )
         wire = json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode()

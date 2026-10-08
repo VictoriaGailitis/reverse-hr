@@ -122,7 +122,13 @@ def start_stage(
         if stage is None or stage.session_id != row.session_id:
             raise HTTPException(404)
         spec = next(s for s in row.stages if s["stage_id"] == str(stage_id))
-        if stage.status != "pending" or spec["format"] not in {"code", "sql"}:
+        if stage.status != "pending" or spec["format"] not in {
+            "code",
+            "sql",
+            "vcv",
+            "voice",
+            "whiteboard",
+        }:
             raise HTTPException(409)
         stage.status, stage.version, stage.started_at = "active", 2, datetime.now(UTC)
         stage.deadline = stage.started_at + timedelta(seconds=spec["duration_seconds"])
@@ -170,10 +176,16 @@ def submit_stage(
             raise HTTPException(404)
         if stage.status != "active" or datetime.now(UTC) >= utc(stage.deadline):
             raise HTTPException(409)
-        receipt = request.app.state.snapshot_access.fetch(
-            actor.subject, session_id, stage_id, body.workspace_id, body.snapshot_id
-        )
         spec = next(s for s in row.stages if s["stage_id"] == str(stage_id))
+        access = (
+            request.app.state.snapshot_access
+            if spec["format"] in {"code", "sql"}
+            else request.app.state.practical_receipt_access
+        )
+        args = {} if spec["format"] in {"code", "sql"} else {"format": spec["format"]}
+        receipt = access.fetch(
+            actor.subject, session_id, stage_id, body.workspace_id, body.snapshot_id, **args
+        )
         if receipt.format != spec["format"] or datetime.now(UTC) >= utc(stage.deadline):
             raise HTTPException(409)
         stage.status, stage.version, stage.submitted_at = "submitted", 3, datetime.now(UTC)

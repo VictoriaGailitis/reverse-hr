@@ -578,7 +578,7 @@ def test_stage_read_permission_cannot_be_reused_as_write_permission(setup):
     assert replay.status_code == 401
 
 
-def test_unimplemented_voice_stage_does_not_pretend_to_start(setup, token):
+def test_voice_stage_starts_with_server_deadline(setup, token):
     import copy
 
     from test_assessment_content import PACKAGE
@@ -609,11 +609,13 @@ def test_unimplemented_voice_stage_does_not_pretend_to_start(setup, token):
         base[1]
         .client.post(path + f"/stages/{stage_id}/start", headers=headers(base[2], "voice-stage", 2))
         .status_code
-        == 409
+        == 200
     )
     with Session(base[1].app.state.engine) as db:
         stage = db.get(StageState, stage_id)
-        assert stage.status == "pending" and stage.started_at is None and stage.deadline is None
+        assert (
+            stage.status == "active" and stage.started_at is not None and stage.deadline is not None
+        )
 
 
 def test_workspace_processing_denial_never_returns_artifact_metadata(setup, monkeypatch):

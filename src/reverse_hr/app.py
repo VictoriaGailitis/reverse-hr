@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from alembic.script import ScriptDirectory
@@ -9,6 +10,7 @@ from fastapi.responses import JSONResponse, Response
 from prometheus_client import CollectorRegistry, Counter, generate_latest
 from pydantic import BaseModel, Field
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException
 
 from reverse_hr.auth import TokenVerifier
@@ -65,10 +67,61 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "matching",
         "hiring",
         "notification",
+        "media",
+        "whiteboard",
     }:
         from reverse_hr.processing_access import ProcessingAccess
 
         app.state.processing_access = ProcessingAccess(config)
+    if config.service_name in {"media", "whiteboard"}:
+        from importlib import import_module
+
+        from reverse_hr.stage_access import StageAccess
+
+        app.state.stage_access = StageAccess(config)
+
+        @app.get("/v1/environment.js", response_class=Response, tags=["practical-ui"])
+        def practical_ui():
+            return Response(
+                content=(Path(__file__).parent / "assets" / "practical.mjs").read_text(),
+                media_type="text/javascript",
+                headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+            )
+
+    if config.service_name in {"media", "whiteboard"}:
+        app.include_router(
+            import_module("reverse_hr.domains." + config.service_name).internal_router
+        )
+        from reverse_hr.evaluation_artifact_access import ArtifactPermitAccess
+        from reverse_hr.practical_export import router as practical_artifact_router
+
+        app.include_router(practical_artifact_router)
+        app.state.artifact_permit_access = ArtifactPermitAccess(config)
+        if config.service_name == "media":
+            from reverse_hr.media_antivirus import ClamdScanner
+            from reverse_hr.media_decoder import IsolatedDecoder
+            from reverse_hr.media_storage import configure
+            from reverse_hr.media_transcription import router as transcription_router
+            from reverse_hr.media_validation import FFmpegValidator
+            from reverse_hr.recording_access import RecordingAccess
+            from reverse_hr.recording_playback import internal_router as playback_internal_router
+
+            configure(engine, config)
+            app.state.media_validator = (
+                IsolatedDecoder(config)
+                if config.media_decoder_required or config.media_decoder_socket
+                else FFmpegValidator(config)
+            )
+            app.state.media_scanner = (
+                ClamdScanner(config) if config.media_antivirus_required else None
+            )
+            app.state.recording_access = RecordingAccess(config)
+            app.include_router(transcription_router)
+            app.include_router(playback_internal_router)
+    if config.service_name == "privacy":
+        from reverse_hr.backup_archive import configure as configure_backups
+
+        configure_backups(engine, config)
     if config.service_name == "candidate":
         from reverse_hr.domains import candidate_grades  # noqa: F401
 
@@ -91,11 +144,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         from reverse_hr.snapshot_access import SnapshotAccess
 
         app.state.snapshot_access = SnapshotAccess(config)
+        from reverse_hr.practical_receipts import PracticalReceiptAccess
+
+        app.state.practical_receipt_access = PracticalReceiptAccess(config)
     if config.service_name == "evaluation":
         from reverse_hr.evaluation_access import MaterialAccess
         from reverse_hr.evaluation_artifact_access import ArtifactAccess
 
         app.state.material_access = MaterialAccess(config)
+        from reverse_hr.recording_playback import PlaybackAccess
+        from reverse_hr.recording_playback import router as playback_router
+
+        app.state.playback_access = PlaybackAccess(config)
+        app.include_router(playback_router)
+        from reverse_hr.evaluation_recovery import router as recovery_router
+
+        app.include_router(recovery_router)
         app.state.artifact_access = ArtifactAccess(config)
     if config.service_name == "coding-workspace":
         from reverse_hr.evaluation_artifact_access import ArtifactPermitAccess
@@ -135,6 +199,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "matching",
         "hiring",
         "notification",
+        "media",
+        "whiteboard",
     ):
         from importlib import import_module
 
@@ -296,6 +362,41 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 if current_revision != expected_revision:
                     raise RuntimeError("Migration revision unavailable")
                 connection.execute(text("SELECT event_id FROM outbox LIMIT 0"))
+                if config.service_name in {"media", "whiteboard"}:
+                    tables = (
+                        (
+                            "media_subjects",
+                            "recordings",
+                            "recording_chunks",
+                            "media_nonces",
+                            "media_transcripts",
+                            "media_transcription_attempts",
+                            "media_storage_identity",
+                        )
+                        if config.service_name == "media"
+                        else (
+                            "board_subjects",
+                            "boards",
+                            "board_operations",
+                            "board_snapshots",
+                            "board_nonces",
+                        )
+                    )
+                    for name in tables:
+                        connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
+                if config.service_name == "media":
+                    if getattr(engine, "media_store", None) is None:
+                        raise RuntimeError("Media storage unavailable")
+                    if config.media_antivirus_required:
+                        app.state.media_scanner.ready()
+                    if config.media_decoder_required:
+                        app.state.media_validator.ready()
+                if config.service_name == "privacy":
+                    connection.execute(text("SELECT 1 FROM backup_store_identity LIMIT 0"))
+                    from reverse_hr.backup_archive import bind as backup_bind
+
+                    with Session(engine) as session, session.begin():
+                        backup_bind(session)
                 if config.service_name == "notification":
                     for name in (
                         "notification_subjects",

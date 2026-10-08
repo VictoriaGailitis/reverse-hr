@@ -62,7 +62,7 @@ class PinnedMaterial(Contract):
             raise ValueError("Invalid test case metadata")
         keys = [item.key for item in self.competencies]
         if (
-            self.task.format not in {"code", "sql"}
+            self.task.format not in {"code", "sql", "voice", "vcv", "whiteboard"}
             or len(set(keys)) != len(keys)
             or set(keys) != {item.competency for item in self.task.rubric}
             or (

@@ -10,6 +10,7 @@ from pydantic import Field, model_validator
 
 from reverse_hr.domains.coding_workspace import FilesCommand
 from reverse_hr.evaluation_access import MaterialRequest
+from reverse_hr.practical_evidence import PracticalSource, Source
 from reverse_hr.processing_access import ProcessingAccess, canonical, fresh, sign, verify
 
 ARTIFACT_REQUEST = b"reverse-hr.evaluation-artifact-request.v1\0"
@@ -21,29 +22,46 @@ MAX_ARTIFACT_BYTES = 2 * 1024 * 1024
 
 class ArtifactRequest(MaterialRequest):
     purpose: Literal["rubric-evidence"] = "rubric-evidence"
-    format: Literal["code", "sql"]
+    format: Literal["code", "sql", "voice", "vcv", "whiteboard"]
     snapshot_version: int = Field(strict=True, ge=1)
     digest: str = Field(pattern=r"^[a-f0-9]{64}$")
 
 
 class ArtifactReceipt(ArtifactRequest):
     allowed: bool = Field(strict=True)
-    manifest: FilesCommand | None = None
+    manifest: Source | None = None
 
     @model_validator(mode="after")
     def complete(self):
         if self.allowed != (self.manifest is not None):
             raise ValueError("Invalid artifact receipt")
-        if self.allowed and (
-            [f.path for f in self.manifest.files] != sorted(f.path for f in self.manifest.files)
-            or hashlib.sha256(canonical(self.manifest)).hexdigest() != self.digest
+        if (
+            self.allowed
+            and self.format in {"code", "sql"}
+            and (
+                not isinstance(self.manifest, FilesCommand)
+                or [f.path for f in self.manifest.files]
+                != sorted(f.path for f in self.manifest.files)
+                or hashlib.sha256(canonical(self.manifest)).hexdigest() != self.digest
+            )
         ):
             raise ValueError("Invalid artifact digest")
+        if (
+            self.allowed
+            and self.format not in {"code", "sql"}
+            and (
+                not isinstance(self.manifest, PracticalSource)
+                or self.manifest.format != self.format
+                or self.manifest.digest != self.digest
+                or self.manifest.snapshot_id != self.snapshot_id
+            )
+        ):
+            raise ValueError("Invalid practical artifact binding")
         return self
 
 
 class ArtifactPermitRequest(ArtifactRequest):
-    requester: Literal["coding-workspace"]
+    requester: Literal["coding-workspace", "media", "whiteboard"]
 
 
 class ArtifactPermit(ArtifactPermitRequest):
@@ -64,7 +82,13 @@ class ArtifactAccess(ProcessingAccess):
             "evaluation-artifact",
             body,
             signature,
-            origin=self.settings.workspace_api_url,
+            origin=(
+                self.settings.workspace_api_url
+                if ArtifactRequest.model_validate_json(body).format in {"code", "sql"}
+                else self.settings.whiteboard_api_url
+                if ArtifactRequest.model_validate_json(body).format == "whiteboard"
+                else self.settings.media_api_url
+            ),
             max_bytes=MAX_ARTIFACT_BYTES,
         )
 
@@ -100,7 +124,17 @@ class ArtifactAccess(ProcessingAccess):
             if len(raw) > MAX_ARTIFACT_BYTES:
                 raise ValueError("Oversized artifact")
             receipt = ArtifactReceipt.model_validate_json(raw)
-            verify(self.signatures, "coding-workspace", signature, ARTIFACT_RESPONSE, receipt)
+            verify(
+                self.signatures,
+                "coding-workspace"
+                if format in {"code", "sql"}
+                else "whiteboard"
+                if format == "whiteboard"
+                else "media",
+                signature,
+                ARTIFACT_RESPONSE,
+                receipt,
+            )
             if raw != canonical(receipt) or not bound(body, receipt):
                 raise ValueError("Invalid artifact binding")
         except Exception as exc:
@@ -124,7 +158,7 @@ class ArtifactPermitAccess(ProcessingAccess):
             **(
                 body.model_dump()
                 | {
-                    "requester": "coding-workspace",
+                    "requester": self.settings.service_name,
                     "nonce": uuid4(),
                     "issued_at": datetime.now(UTC),
                 }

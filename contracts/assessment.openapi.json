@@ -4119,7 +4119,11 @@
           },
           "requester": {
             "type": "string",
-            "const": "coding-workspace",
+            "enum": [
+              "coding-workspace",
+              "media",
+              "whiteboard"
+            ],
             "title": "Requester"
           },
           "issued_at": {
@@ -4157,7 +4161,10 @@
             "type": "string",
             "enum": [
               "code",
-              "sql"
+              "sql",
+              "voice",
+              "vcv",
+              "whiteboard"
             ],
             "title": "Format"
           },
@@ -4208,7 +4215,11 @@
           },
           "requester": {
             "type": "string",
-            "const": "coding-workspace",
+            "enum": [
+              "coding-workspace",
+              "media",
+              "whiteboard"
+            ],
             "title": "Requester"
           },
           "issued_at": {
@@ -4246,7 +4257,10 @@
             "type": "string",
             "enum": [
               "code",
-              "sql"
+              "sql",
+              "voice",
+              "vcv",
+              "whiteboard"
             ],
             "title": "Format"
           },
@@ -6469,7 +6483,11 @@
           },
           "requester": {
             "type": "string",
-            "const": "coding-workspace",
+            "enum": [
+              "coding-workspace",
+              "media",
+              "whiteboard"
+            ],
             "title": "Requester"
           },
           "issued_at": {
@@ -6523,7 +6541,11 @@
           },
           "requester": {
             "type": "string",
-            "const": "coding-workspace",
+            "enum": [
+              "coding-workspace",
+              "media",
+              "whiteboard"
+            ],
             "title": "Requester"
           },
           "issued_at": {
@@ -6560,7 +6582,10 @@
                 "type": "string",
                 "enum": [
                   "code",
-                  "sql"
+                  "sql",
+                  "voice",
+                  "vcv",
+                  "whiteboard"
                 ]
               },
               {

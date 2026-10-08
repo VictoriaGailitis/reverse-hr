@@ -218,16 +218,38 @@ services:
     profiles: [all]
     environment:
       HR_SERVICE_NAME: whiteboard
+      HR_OIDC_JWKS_URL: http://keycloak:8080/realms/reverse-hr/protocol/openid-connect/certs
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
       HR_ROOT_PATH: /whiteboard
       HR_DATABASE_URL: postgresql+psycopg://whiteboard:${WHITEBOARD_DB_PASSWORD:?Generate .env first}@postgres:5432/whiteboard
+    volumes:
+      - ./.secrets/whiteboard.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   media:
     <<: *app
     profiles: [all]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
+    networks: [backend, antivirus]
     environment:
       HR_SERVICE_NAME: media
+      HR_OIDC_JWKS_URL: http://keycloak:8080/realms/reverse-hr/protocol/openid-connect/certs
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
       HR_ROOT_PATH: /media
+      HR_MEDIA_ANTIVIRUS_REQUIRED: "true"
+      HR_MEDIA_DECODER_REQUIRED: "true"
+      HR_MEDIA_DECODER_SOCKET: /run/decoder/decoder.sock
+      HR_MEDIA_STORAGE_ROOT: /var/lib/reverse-hr/media
       HR_DATABASE_URL: postgresql+psycopg://media:${MEDIA_DB_PASSWORD:?Generate .env first}@postgres:5432/media
+    volumes:
+      - decoder-socket:/run/decoder
+      - media-objects:/var/lib/reverse-hr/media
+      - ./.secrets/media.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   proctoring:
     <<: *app
@@ -516,23 +538,6 @@ services:
     depends_on:
       privacy: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
-  hiring-outbox:
-    <<: *app
-    profiles: [all]
-    healthcheck: {disable: true}
-    environment:
-      HR_SERVICE_NAME: hiring
-      HR_DATABASE_URL: postgresql+psycopg://hiring:${HIRING_DB_PASSWORD:?Generate .env first}@postgres:5432/hiring
-      HR_AMQP_URL: amqp://hiring:${HIRING_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
-      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
-      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
-    volumes:
-      - ./.secrets/hiring.key:/run/secrets/signing.key:ro
-      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
-    depends_on:
-      hiring: {condition: service_healthy}
-      rabbitmq: {condition: service_healthy}
   privacy-consumer:
     <<: *app
     profiles: [events, all]
@@ -721,6 +726,99 @@ services:
     depends_on:
       notification: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
+  media-outbox:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: media
+      HR_DATABASE_URL: postgresql+psycopg://media:${MEDIA_DB_PASSWORD:?Generate .env first}@postgres:5432/media
+      HR_AMQP_URL: amqp://media:${MEDIA_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/media.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, publish]
+    depends_on:
+      media: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  media-consumer:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: media
+      HR_MEDIA_STORAGE_ROOT: /var/lib/reverse-hr/media
+      HR_DATABASE_URL: postgresql+psycopg://media:${MEDIA_DB_PASSWORD:?Generate .env first}@postgres:5432/media
+      HR_AMQP_URL: amqp://media:${MEDIA_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - media-objects:/var/lib/reverse-hr/media
+      - ./.secrets/media.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, consume]
+    depends_on:
+      media: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  whiteboard-outbox:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: whiteboard
+      HR_DATABASE_URL: postgresql+psycopg://whiteboard:${WHITEBOARD_DB_PASSWORD:?Generate .env first}@postgres:5432/whiteboard
+      HR_AMQP_URL: amqp://whiteboard:${WHITEBOARD_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/whiteboard.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, publish]
+    depends_on:
+      whiteboard: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  whiteboard-consumer:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: whiteboard
+      HR_DATABASE_URL: postgresql+psycopg://whiteboard:${WHITEBOARD_DB_PASSWORD:?Generate .env first}@postgres:5432/whiteboard
+      HR_AMQP_URL: amqp://whiteboard:${WHITEBOARD_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/whiteboard.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, consume]
+    depends_on:
+      whiteboard: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  media-transcription:
+    <<: *app
+    profiles: [transcription]
+    healthcheck: {disable: true}
+    networks: [backend, transcription-egress]
+    environment:
+      HR_SERVICE_NAME: media
+      HR_MEDIA_STORAGE_ROOT: /var/lib/reverse-hr/media
+      HR_DATABASE_URL: postgresql+psycopg://media:${MEDIA_DB_PASSWORD:?Generate .env first}@postgres:5432/media
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+      HR_MEDIA_TRANSCRIPTION_ENABLED: "true"
+      HR_MEDIA_TRANSCRIPTION_ORIGIN: ${MEDIA_TRANSCRIPTION_ORIGIN:-}
+      HR_MEDIA_TRANSCRIPTION_MODEL: ${MEDIA_TRANSCRIPTION_MODEL:-}
+      HR_MEDIA_TRANSCRIPTION_KEY_FILE: /run/secrets/transcription.key
+    volumes:
+      - media-objects:/var/lib/reverse-hr/media
+      - ./.secrets/media.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+      - ./.secrets/media-transcription.key:/run/secrets/transcription.key:ro
+    command: [python, -m, reverse_hr.worker, transcribe]
+    depends_on:
+      media: {condition: service_healthy}
   evaluation-llm:
     <<: *app
     profiles: [llm]
@@ -746,11 +844,79 @@ services:
       assessment: {condition: service_healthy}
       coding-workspace: {condition: service_healthy}
       privacy: {condition: service_healthy}
+  privacy-backup-purge:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: privacy
+      HR_DATABASE_URL: postgresql+psycopg://privacy:${PRIVACY_DB_PASSWORD:?Generate .env first}@postgres:5432/privacy
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/privacy.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, purge-backups]
+    depends_on:
+      privacy: {condition: service_healthy}
+  media-decoder:
+    build: .
+    profiles: [all]
+    network_mode: none
+    read_only: true
+    tmpfs: [/tmp:size=128m,mode=1777]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 32
+    restart: unless-stopped
+    volumes: [decoder-socket:/run/decoder]
+    environment:
+      HR_MEDIA_VALIDATION_TIMEOUT_SECONDS: 20
+    command: [uvicorn, reverse_hr.media_decoder:create_app, --factory, --uds, /run/decoder/decoder.sock, --workers, "1", --no-access-log]
+    healthcheck:
+      test: [CMD, python, -c, "from reverse_hr.media_decoder import UnixConnection; c=UnixConnection('/run/decoder/decoder.sock', 2); c.request('GET', '/ready'); assert c.getresponse().status == 200"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  clamav:
+    build: {context: ., dockerfile: infra/Dockerfile.clamav}
+    profiles: [all]
+    networks: [antivirus]
+    read_only: true
+    tmpfs: [/tmp, /run/clamav]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1536m
+    cpus: 1
+    pids_limit: 64
+    restart: unless-stopped
+    volumes: [clamav-signatures:/var/lib/clamav:ro]
+  freshclam:
+    build: {context: ., dockerfile: infra/Dockerfile.clamav}
+    profiles: [all]
+    networks: [antivirus-updates]
+    read_only: true
+    tmpfs: [/tmp, /run/clamav]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    pids_limit: 32
+    restart: unless-stopped
+    volumes: [clamav-signatures:/var/lib/clamav]
+    command: [freshclam, --daemon, --foreground=true, --config-file=/etc/clamav/freshclam.conf]
 networks:
   backend: {internal: true}
   edge: {}
   llm-egress: {}
+  transcription-egress: {}
+  antivirus: {internal: true}
+  antivirus-updates: {}
 volumes:
+  media-objects: {}
+  decoder-socket: {}
+  clamav-signatures: {}
   postgres-data: {}
   rabbitmq-data: {}
   redis-data: {}

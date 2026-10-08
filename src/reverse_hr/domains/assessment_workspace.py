@@ -69,11 +69,21 @@ def workspace_stage(
                     (
                         s
                         for s in row.stages
-                        if s["stage_id"] == str(body.stage_id) and s["format"] in {"code", "sql"}
+                        if s["stage_id"] == str(body.stage_id)
+                        and s["format"]
+                        in {
+                            "coding-workspace": {"code", "sql"},
+                            "media": {"voice", "vcv"},
+                            "whiteboard": {"whiteboard"},
+                        }[body.requester]
                     ),
                     None,
                 )
-            if stage and body.purpose == "write" and row.status != "preflight":
+            if (
+                stage
+                and body.purpose == "write"
+                and (row.status != "preflight" or body.requester != "coding-workspace")
+            ):
                 progress = session.get(StageState, str(body.stage_id))
                 if (
                     row.status != "in_progress"

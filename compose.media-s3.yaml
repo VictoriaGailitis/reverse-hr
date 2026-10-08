@@ -1,0 +1,44 @@
+# Opt-in private S3 + managed backup cleanup. Generate credentials/policies separately.
+x-media-s3: &media-s3
+  HR_MEDIA_STORAGE_BACKEND: s3
+  HR_MEDIA_S3_BUCKET: ${MEDIA_S3_BUCKET:?Configure private versioned media bucket}
+  HR_MEDIA_S3_PREFIX: ${MEDIA_S3_PREFIX:-media/}
+  HR_S3_REGION: ${S3_REGION:-us-east-1}
+  HR_S3_ENDPOINT: ${S3_ENDPOINT:-}
+  HR_S3_CREDENTIALS_FILE: /run/secrets/s3.json
+  HR_S3_KMS_KEY_ID: ${MEDIA_S3_KMS_KEY_ID:-}
+x-backup-s3: &backup-s3
+  HR_BACKUP_PURGE_REQUIRED: "true"
+  HR_BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:?Configure private versioned backup bucket}
+  HR_BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-backups/}
+  HR_S3_REGION: ${S3_REGION:-us-east-1}
+  HR_S3_ENDPOINT: ${S3_ENDPOINT:-}
+  HR_S3_CREDENTIALS_FILE: /run/secrets/backup-s3.json
+  HR_S3_KMS_KEY_ID: ${BACKUP_S3_KMS_KEY_ID:-}
+services:
+  media:
+    environment: *media-s3
+    networks: [backend, antivirus, storage-egress]
+    volumes: [./.secrets/media-s3.json:/run/secrets/s3.json:ro]
+  media-consumer:
+    environment: *media-s3
+    networks: [backend, storage-egress]
+    volumes: [./.secrets/media-s3.json:/run/secrets/s3.json:ro]
+  media-transcription:
+    environment: *media-s3
+    networks: [backend, transcription-egress, storage-egress]
+    volumes: [./.secrets/media-s3.json:/run/secrets/s3.json:ro]
+  privacy:
+    environment: *backup-s3
+    networks: [backend, storage-egress]
+    volumes: [./.secrets/backup-s3.json:/run/secrets/backup-s3.json:ro]
+  privacy-consumer:
+    environment: *backup-s3
+    networks: [backend, storage-egress]
+    volumes: [./.secrets/backup-s3.json:/run/secrets/backup-s3.json:ro]
+  privacy-backup-purge:
+    environment: *backup-s3
+    networks: [backend, storage-egress]
+    volumes: [./.secrets/backup-s3.json:/run/secrets/backup-s3.json:ro]
+networks:
+  storage-egress: {}

@@ -22,7 +22,7 @@ STAGE_RESPONSE_CONTEXT = b"reverse-hr.workspace-stage-response.v1\0"
 
 
 class StageRequest(ProcessingRequest):
-    requester: Literal["coding-workspace"]
+    requester: Literal["coding-workspace", "media", "whiteboard"]
     purpose: Literal["write", "read"] = "write"
     session_id: UUID
     stage_id: UUID
@@ -30,7 +30,7 @@ class StageRequest(ProcessingRequest):
 
 class StageStatus(StageRequest):
     allowed: bool = Field(strict=True)
-    format: Literal["code", "sql"] | None
+    format: Literal["code", "sql", "voice", "vcv", "whiteboard"] | None
 
 
 class StageAccess(ProcessingAccess):
@@ -46,7 +46,7 @@ class StageAccess(ProcessingAccess):
             session_id=session_id,
             stage_id=stage_id,
             nonce=uuid4(),
-            requester="coding-workspace",
+            requester=self.settings.service_name,
             issued_at=datetime.now(UTC),
         )
         try:

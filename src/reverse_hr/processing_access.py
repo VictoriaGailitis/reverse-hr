@@ -32,6 +32,8 @@ class ProcessingRequest(Contract):
         "matching",
         "hiring",
         "notification",
+        "media",
+        "whiteboard",
     ]
     issued_at: datetime
 

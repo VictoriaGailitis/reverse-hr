@@ -86,7 +86,7 @@ def stage_score(
                 decisions = {d["criterion_key"]: d for d in review.decisions} if review else {}
                 model_attempt = None
                 if review and review.model_attempt_id:
-                    from reverse_hr.evaluation_llm import ModelAttempt, ModelInput
+                    from reverse_hr.evaluation_llm import ModelAttempt, attempt_input_digest
 
                     model_attempt = session.get(ModelAttempt, review.model_attempt_id)
                     if (
@@ -95,13 +95,13 @@ def stage_score(
                         or model_attempt.stage_id != row.stage_id
                         or model_attempt.candidate_id != row.candidate_id
                         or model_attempt.input_digest
-                        != digest(ModelInput(material=row.material, source=row.source))
+                        != attempt_input_digest(model_attempt, row.material, row.source)
                     ):
                         raise HTTPException(409)
                 if review:
-                    from reverse_hr.domains.coding_workspace import FilesCommand
+                    from reverse_hr.practical_evidence import source_digest
 
-                    if digest(FilesCommand.model_validate(row.source)) != material.snapshot_digest:
+                    if source_digest(row.source) != material.snapshot_digest:
                         raise HTTPException(409)
                     test_scores, proof_digest = test_points(session, row, signatures)
                     command = ReviewCommand(
