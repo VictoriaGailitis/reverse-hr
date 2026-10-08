@@ -43,12 +43,41 @@ class Settings(BaseSettings):
     candidate_api_url: str = "http://candidate:8000"
     employer_api_url: str = "http://employer:8000"
     hiring_api_url: str = "http://hiring:8000"
+    media_api_url: str = "http://media:8000"
+    whiteboard_api_url: str = "http://whiteboard:8000"
     workspace_api_url: str = "http://coding-workspace:8000"
     evaluation_llm_enabled: bool = False
     evaluation_llm_model: str = Field(default="", max_length=200)
     evaluation_llm_config: GatewayConfiguration | None = None
     evaluation_llm_key_file: str = ""
     evaluation_llm_timeout_seconds: int = Field(default=30, ge=1, le=30)
+    media_transcription_enabled: bool = False
+    media_transcription_origin: str = ""
+    media_transcription_model: str = Field(default="", max_length=200)
+    media_transcription_key_file: str = ""
+    media_storage_root: str = ""
+    media_storage_backend: Literal["file", "s3"] = "file"
+    media_s3_bucket: str = ""
+    media_s3_prefix: str = "media/"
+    s3_region: str = "us-east-1"
+    s3_endpoint: str = ""
+    s3_credentials_file: str = ""
+    s3_allow_insecure_local: bool = False
+    s3_kms_key_id: str = ""
+    backup_s3_bucket: str = ""
+    backup_s3_prefix: str = "backups/"
+    backup_purge_required: bool = False
+    media_antivirus_required: bool = True
+    media_clamd_host: str = "clamav"
+    media_clamd_port: int = Field(default=3310, ge=1, le=65535)
+    media_antivirus_timeout_seconds: int = Field(default=15, ge=1, le=30)
+    media_antivirus_max_signature_age_hours: int = Field(default=48, ge=1, le=168)
+    media_decoder_socket: str = ""
+    media_decoder_required: bool = True
+    decoder_container_required: bool = True
+    media_ffprobe_binary: str = "ffprobe"
+    media_ffmpeg_binary: str = "ffmpeg"
+    media_validation_timeout_seconds: int = Field(default=20, ge=1, le=30)
     runner_execution_enabled: bool = False
     assessment_trusted_runtimes: list[TrustedRuntime] = Field(default_factory=list, max_length=32)
     runner_verification_file: str = ""
@@ -81,6 +110,8 @@ class Settings(BaseSettings):
             self.candidate_api_url,
             self.employer_api_url,
             self.hiring_api_url,
+            self.media_api_url,
+            self.whiteboard_api_url,
         ):
             self.validate_origin(origin)
         if self.service_name not in SERVICES:

@@ -1,0 +1,10 @@
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates clamav-daemon clamav-freshclam \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /var/lib/clamav /run/clamav \
+    && chown clamav:clamav /var/lib/clamav /run/clamav
+COPY infra/clamd.conf /etc/clamav/clamd.conf
+COPY infra/freshclam.conf /etc/clamav/freshclam.conf
+ENV TZ=UTC
+USER clamav
+CMD ["clamd", "--foreground=true", "--config-file=/etc/clamav/clamd.conf"]
