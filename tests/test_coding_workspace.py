@@ -121,7 +121,10 @@ def test_snapshots_conflicts_and_run_pins_original(workspace_setup, token):
     )
     with Session(workspace.app.state.engine) as db:
         events = list(db.scalars(select(Outbox)))
-        assert len(events) == 3
+        assert len(events) == 6
+        observations = [e for e in events if e.envelope["event_type"].endswith("_observed.v1")]
+        assert len(observations) == 3
+        assert all({"session_id", "stage_id"} <= set(e.envelope["payload"]) for e in observations)
         assert "synthetic" not in str([event.envelope for event in events])
         assert len(list(db.scalars(select(Snapshot)))) == 2
 

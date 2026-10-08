@@ -220,6 +220,27 @@ bindings.append(
         "arguments": {},
     }
 )
+# Proctoring consumes immutable environment references, never clipboard/source content.
+for event_type in (
+    "whiteboard.board_created.v1",
+    "whiteboard.board_changed.v1",
+    "whiteboard.board_sealed.v1",
+    "media.recording_created.v1",
+    "media.recording_restarted.v1",
+    "media.recording_finalized.v1",
+    "coding-workspace.snapshot_saved_observed.v1",
+    "coding-workspace.run_requested_observed.v1",
+):
+    bindings.append(
+        {
+            "source": "events." + event_type.split(".")[0],
+            "vhost": "/",
+            "destination": "proctoring.incoming",
+            "destination_type": "queue",
+            "routing_key": event_type,
+            "arguments": {},
+        }
+    )
 # Deletion fan-out and independently signed acknowledgements to the coordinator.
 for service in SERVICES:
     if service == "privacy":

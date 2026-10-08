@@ -34,6 +34,7 @@ class ProcessingRequest(Contract):
         "notification",
         "media",
         "whiteboard",
+        "proctoring",
     ]
     issued_at: datetime
 

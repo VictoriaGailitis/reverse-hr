@@ -6486,7 +6486,8 @@
             "enum": [
               "coding-workspace",
               "media",
-              "whiteboard"
+              "whiteboard",
+              "proctoring"
             ],
             "title": "Requester"
           },
@@ -6544,7 +6545,8 @@
             "enum": [
               "coding-workspace",
               "media",
-              "whiteboard"
+              "whiteboard",
+              "proctoring"
             ],
             "title": "Requester"
           },

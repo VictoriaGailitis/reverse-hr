@@ -63,7 +63,10 @@ def workspace_stage(
                 not subject.blocked
                 and row
                 and row.candidate_id == str(body.candidate_id)
-                and row.status in {"preflight", "in_progress", "submitted"}
+                and (
+                    row.status in {"preflight", "in_progress", "submitted"}
+                    or (body.requester == "proctoring" and body.purpose == "read")
+                )
             ):
                 stage = next(
                     (
@@ -75,6 +78,7 @@ def workspace_stage(
                             "coding-workspace": {"code", "sql"},
                             "media": {"voice", "vcv"},
                             "whiteboard": {"whiteboard"},
+                            "proctoring": {"code", "sql", "voice", "vcv", "whiteboard"},
                         }[body.requester]
                     ),
                     None,

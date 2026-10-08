@@ -203,6 +203,25 @@ def emit(session, request, row, aggregate, version, kind, extra):
         ),
     )
 
+    # Separate telemetry contract preserves the existing Runner request shape.
+    enqueue(
+        session,
+        EventEnvelope(
+            event_type=f"coding-workspace.{kind}_observed.v1",
+            producer="coding-workspace",
+            correlation_id=request.state.trace_id,
+            aggregate_id=UUID(aggregate),
+            aggregate_version=version,
+            payload={
+                "candidate_id": UUID(row.candidate_id),
+                "workspace_id": UUID(row.workspace_id),
+                "session_id": UUID(row.session_id),
+                "stage_id": UUID(row.stage_id),
+                **extra,
+            },
+        ),
+    )
+
 
 def save(session, row, body, version):
     files = [f.model_dump() for f in sorted(body.files, key=lambda f: f.path)]
@@ -457,7 +476,14 @@ def process_deletion_request(session, event):
                 Outbox.envelope["payload"]["candidate_id"].as_string() == subject,
                 Outbox.envelope["event_type"]
                 .as_string()
-                .in_(["coding-workspace.snapshot_saved.v1", "coding-workspace.run_requested.v1"]),
+                .in_(
+                    [
+                        "coding-workspace.snapshot_saved.v1",
+                        "coding-workspace.run_requested.v1",
+                        "coding-workspace.snapshot_saved_observed.v1",
+                        "coding-workspace.run_requested_observed.v1",
+                    ]
+                ),
             )
         )
         if first:

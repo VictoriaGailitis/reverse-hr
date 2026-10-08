@@ -22,7 +22,7 @@ STAGE_RESPONSE_CONTEXT = b"reverse-hr.workspace-stage-response.v1\0"
 
 
 class StageRequest(ProcessingRequest):
-    requester: Literal["coding-workspace", "media", "whiteboard"]
+    requester: Literal["coding-workspace", "media", "whiteboard", "proctoring"]
     purpose: Literal["write", "read"] = "write"
     session_id: UUID
     stage_id: UUID

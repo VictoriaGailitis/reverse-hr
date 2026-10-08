@@ -30,8 +30,19 @@ function controls(root) {
   }};
 }
 
-export function mountRecording(root, {api, sessionId, stageId, recordingConsentId, video = false, onReady}) {
+export function mountRecording(root, {api, sessionId, stageId, recordingConsentId, video = false, onReady, proctor}) {
   const ui = controls(root);
+  let ownedProctor = false, proctorPromise;
+  async function ensureProctor() {
+    if (!proctor) {
+      proctorPromise ??= mountProctoring({api, sessionId, stageId, onStatus: state => {
+        if (state.status === 'delivery_retry' || state.status === 'buffer_full') ui.status.textContent = 'Журнал событий ожидает доставки. Проверьте соединение.';
+      }}).catch(error => { proctorPromise = undefined; throw error; });
+      proctor = await proctorPromise;
+      ownedProctor = true;
+      if (disposed) { await proctor.dispose(); throw new Error('Disposed'); }
+    }
+  }
   const preview = element(video ? 'video' : 'audio');
   preview.controls = true;
   preview.muted = true;
@@ -46,6 +57,7 @@ export function mountRecording(root, {api, sessionId, stageId, recordingConsentI
   }
   const start = ui.button('Начать запись', async () => {
     if (disposed || saving || recorder?.state === 'recording' || blob) return false;
+    await ensureProctor();
     if (!navigator.mediaDevices || !globalThis.MediaRecorder) throw new Error('Capture unavailable');
     await api('media', '/v1/recordings/admission', {method:'POST', body:{session_id:sessionId, stage_id:stageId, recording_consent_id:recordingConsentId}});
     if (disposed) return;
@@ -54,8 +66,12 @@ export function mountRecording(root, {api, sessionId, stageId, recordingConsentI
     stream = await navigator.mediaDevices.getUserMedia({
       audio:{channelCount:{ideal:1,max:2},sampleRate:{ideal:48000,max:48000}},
       video:video ? {width:{ideal:1280,max:1920},height:{ideal:720,max:1080},frameRate:{ideal:30,max:60}} : false
-    });
+    }).catch(error => { proctor?.record('recording_error'); throw error; });
     if (disposed) { release(); return; }
+    stream.getTracks().forEach(track => track.addEventListener?.('ended', () => {
+      proctor?.record('recording_error');
+      if (recorder?.state === 'recording') recorder.stop();
+    }));
     try {
       recorder = new MediaRecorder(stream, {mimeType:mime});
       const parts = [];
@@ -69,6 +85,7 @@ export function mountRecording(root, {api, sessionId, stageId, recordingConsentI
         } else if (size <= limit) parts.push(event.data);
       });
       recorder.addEventListener('stop', () => {
+        proctor?.record('recording_stopped');
         duration = Math.min(7200000, Math.max(1, Math.round(performance.now()-started)));
         release();
         if (disposed) return;
@@ -83,9 +100,10 @@ export function mountRecording(root, {api, sessionId, stageId, recordingConsentI
         stop.disabled = true;
         start.disabled = Boolean(blob);
       });
-      recorder.addEventListener('error', () => { release(); ui.status.textContent = 'Запись прервана. Доступный файл можно отправить повторно.'; });
+      recorder.addEventListener('error', () => { proctor?.record('recording_error'); release(); ui.status.textContent = 'Запись прервана. Доступный файл можно отправить повторно.'; });
       started = performance.now();
       recorder.start(1000);
+      proctor?.record('recording_started');
       timer = setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 7200000);
       start.disabled = true;
       stop.disabled = false;
@@ -122,6 +140,7 @@ export function mountRecording(root, {api, sessionId, stageId, recordingConsentI
       ui.status.textContent = `Сохранено частей: ${row.received_chunks.length}`;
     }
     if (row.status !== 'finalized') row = await api('media', `/v1/recordings/${row.recording_id}/finalize`, {method:'POST', key:`${createKey}-finalize`, version:row.version});
+    if (proctor && !await proctor.flush()) throw new Error('Telemetry delivery pending');
     await onReady({workspace_id:row.recording_id, snapshot_id:row.snapshot_id});
     ui.status.textContent = 'Запись сохранена';
     return false;
@@ -148,10 +167,10 @@ export function mountRecording(root, {api, sessionId, stageId, recordingConsentI
     upload.disabled = true;
     ui.status.textContent = 'Готово к новой записи';
   });
-  return () => { disposed = true; if (recorder?.state === 'recording') recorder.stop(); release(); if (objectUrl) URL.revokeObjectURL(objectUrl); root.replaceChildren(); };
+  return () => { disposed = true; if (recorder?.state === 'recording') recorder.stop(); release(); if (objectUrl) URL.revokeObjectURL(objectUrl); root.replaceChildren(); if (ownedProctor) return proctor.dispose(); };
 }
 
-export async function mountBoard(root, {api, sessionId, stageId, boardId, onReady}) {
+export async function mountBoard(root, {api, sessionId, stageId, boardId, onReady, proctor}) {
   const ui = controls(root);
   const canvas = element('canvas');
   canvas.width = 1000;
@@ -165,6 +184,10 @@ export async function mountBoard(root, {api, sessionId, stageId, boardId, onRead
   input.setAttribute('aria-label', 'Текст на доске');
   ui.section.append(input);
   let row = boardId ? await api('whiteboard', `/v1/boards/${boardId}`, {}) : await api('whiteboard', '/v1/boards', {method:'POST', key:crypto.randomUUID(), body:{session_id:sessionId, stage_id:stageId}});
+  const ownedProctor = !proctor && row.status === 'editing';
+  if (ownedProctor) proctor = await mountProctoring({api, sessionId, stageId, onStatus: state => {
+    if (state.status === 'delivery_retry' || state.status === 'buffer_full') ui.status.textContent = 'Журнал событий ожидает доставки. Проверьте соединение.';
+  }});
   const path = `/v1/boards/${row.board_id}`;
   let queue = Promise.resolve(), drawing, disposed = false, failed = false, frozen = row.status === 'sealed';
   const ctx = canvas.getContext('2d');
@@ -211,9 +234,76 @@ export async function mountBoard(root, {api, sessionId, stageId, boardId, onRead
     if (failed || drawing) throw new Error('Unsaved operation');
     if (!frozen) row = await api('whiteboard', path+'/seal', {method:'POST', key:crypto.randomUUID(), version:row.version});
     frozen=true; draw();
+    if (proctor && !await proctor.flush()) throw new Error('Telemetry delivery pending');
     await onReady({workspace_id:row.board_id, snapshot_id:row.snapshot_id});
     ui.status.textContent='Доска сохранена';
   });
   draw();
-  return () => { disposed=true; root.replaceChildren(); };
+  return () => { disposed=true; root.replaceChildren(); if (ownedProctor) return proctor.dispose(); };
+}
+
+/** One admitted telemetry stream per mounted stage. No clipboard content, URLs or key logging.
+ * Technical delivery failures are reported through onStatus; retry preserves event IDs and sequence.
+ * Mount once at the stage controller, then pass the returned object as `proctor` to recording controls.
+ */
+export async function mountProctoring({api, sessionId, stageId, onStatus = () => {},
+  documentTarget = document, windowTarget = globalThis, heartbeatMs = 30000}) {
+  const startedAt = new Date().toISOString(), started = performance.now(), streamId = crypto.randomUUID();
+  const create = {method:'POST', key:streamId,
+    body:{session_id:sessionId, stage_id:stageId, stream_id:streamId, client_started_at:startedAt}};
+  for (let attempt=0; ; attempt++) {
+    try { await api('proctoring', '/v1/proctoring/streams', create); break; }
+    catch (error) { if (attempt >= 2) throw error; }
+  }
+  const path = `/v1/proctoring/streams/${streamId}/events`;
+  let sequence = 0, queue = [], pending, active, timer, disposed = false, overflow = false;
+  const listeners = [];
+  const kinds = new Set(['heartbeat','visibility_hidden','visibility_visible','focus_lost','focus_gained',
+    'paste','recording_started','recording_stopped','recording_error','offline','online','telemetry_overflow']);
+  function record(kind) {
+    if (disposed || !kinds.has(kind)) return;
+    if (sequence >= 20000) { onStatus({status:'capacity_reached'}); return; }
+    const event = {event_id:crypto.randomUUID(), sequence:++sequence, kind,
+      client_time:new Date().toISOString(), elapsed_ms:Math.min(86400000, Math.max(0,Math.round(performance.now()-started)))};
+    if (queue.length >= 500) { overflow = true; onStatus({status:'buffer_full'}); return; }
+    queue.push(event);
+  }
+  async function flush() {
+    if (active) return active;
+    active = Promise.resolve().then(async () => {
+      try {
+        while (queue.length || pending) {
+          if (!pending) pending = {key:crypto.randomUUID(), events:queue.splice(0,50)};
+          await api('proctoring',path,{method:'POST',key:pending.key,body:{events:pending.events}});
+          pending = undefined;
+          if (overflow && queue.length < 500) { overflow = false; record('telemetry_overflow'); }
+        }
+        onStatus({status:'saved'});
+        return true;
+      } catch { onStatus({status:'delivery_retry'}); return false; }
+      finally { active = undefined; }
+    });
+    return active;
+  }
+  function listen(target, name, handler) {
+    target.addEventListener(name,handler);
+    listeners.push(() => target.removeEventListener(name,handler));
+  }
+  listen(documentTarget,'visibilitychange',() => record(documentTarget.hidden ? 'visibility_hidden' : 'visibility_visible'));
+  listen(windowTarget,'blur',() => record('focus_lost'));
+  listen(windowTarget,'focus',() => record('focus_gained'));
+  listen(documentTarget,'paste',() => record('paste'));
+  listen(windowTarget,'offline',() => record('offline'));
+  listen(windowTarget,'online',() => { record('online'); void flush(); });
+  record('heartbeat');
+  record(documentTarget.hidden ? 'visibility_hidden' : 'visibility_visible');
+  await flush();
+  function schedule() {
+    timer = setTimeout(async () => { if (disposed) return; record('heartbeat'); await flush(); if (!disposed) schedule(); }, heartbeatMs);
+  }
+  schedule();
+  return {streamId, record, flush, async dispose() {
+    disposed = true; clearTimeout(timer); listeners.forEach(remove => remove());
+    return flush();
+  }};
 }

@@ -27,6 +27,7 @@ test('board serializes writes, restores server state after a failed write and bl
   let row={board_id:'board',version:1,status:'editing',state:[]}, fail=false;
   const calls=[], ready=[];
   const api=async (service,path,command) => {
+    if (service === 'proctoring') return {};
     calls.push([service,path,command]);
     if (command.method==='POST' && path.endsWith('/operations')) {
       assert.equal(command.version,row.version);
@@ -80,6 +81,7 @@ test('recording checks server permission before opening a device and retries a s
   globalThis.MediaRecorder=Recorder;
   let row;
   const api=async (service,path,command) => {
+    if (service === 'proctoring') return {};
     calls.push(path);
     if (path.endsWith('/admission')) { permission=true; return {allowed:true}; }
     if (path==='/v1/recordings') {
@@ -128,6 +130,7 @@ test('recording replaces an invalid upload and recovers a lost restart response'
   }
   globalThis.MediaRecorder=Recorder;
   const api=async (service,path,command) => {
+    if (service === 'proctoring') return {};
     if (path.endsWith('/admission')) return {allowed:true};
     if (path==='/v1/recordings') row={recording_id:'recording',version:1,status:'uploading',received_chunks:[]};
     else if (path.endsWith('/restart')) {
@@ -165,4 +168,81 @@ test('recording replaces an invalid upload and recovers a lost restart response'
   await button(root,'Записать заново').click();
   assert.equal(capture,2);
   dispose();
+});
+
+test('proctoring retries the identical batch, supports later flushes and never reads clipboard data', async () => {
+  const {mountProctoring}=await import('../src/reverse_hr/assets/practical.mjs');
+  class Target {
+    constructor() { this.listeners=new Map(); this.hidden=false; }
+    addEventListener(name,handler) { this.listeners.set(name,handler); }
+    removeEventListener(name,handler) { if (this.listeners.get(name)===handler) this.listeners.delete(name); }
+    emit(name,event={}) { this.listeners.get(name)?.(event); }
+  }
+  const doc=new Target(), win=new Target(), calls=[], statuses=[];
+  let failed=false;
+  const proctor=await mountProctoring({api:async (service,path,command)=>{
+    assert.equal(service,'proctoring');
+    if (path.endsWith('/events')) {
+      calls.push(structuredClone(command));
+      if (!failed) { failed=true; throw new Error('lost response'); }
+    }
+    return {};
+  },sessionId:'session',stageId:'stage',documentTarget:doc,windowTarget:win,onStatus:s=>statuses.push(s.status),heartbeatMs:3600000});
+  doc.emit('paste',{get clipboardData() { throw new Error('Must not read clipboard'); }});
+  assert.equal(await proctor.flush(),true);
+  assert.deepEqual(calls[0],calls[1]);
+  await proctor.flush(); // empty flush must not leave a permanently resolved active promise
+  win.emit('blur');doc.hidden=true;doc.emit('visibilitychange');
+  await proctor.flush();
+  proctor.record('recording_error');await proctor.flush();
+  const accepted=calls.slice(1).flatMap(c=>c.body.events);
+  assert.deepEqual(accepted.map(e=>e.kind),['heartbeat','visibility_visible','paste','focus_lost','visibility_hidden','recording_error']);
+  assert.deepEqual(accepted.map(e=>e.sequence),[1,2,3,4,5,6]);
+  assert.deepEqual(Object.keys(accepted[2]).sort(),['client_time','elapsed_ms','event_id','kind','sequence']);
+  assert.equal(await proctor.dispose(),true);
+  assert.equal(doc.listeners.size,0);assert.equal(win.listeners.size,0);
+  assert.ok(statuses.includes('delivery_retry'));
+});
+
+test('proctoring buffers are bounded and overflow leaves explicit sequence gaps and a technical marker', async () => {
+  const {mountProctoring}=await import('../src/reverse_hr/assets/practical.mjs');
+  const target={addEventListener(){},removeEventListener(){},hidden:false};
+  let offline=true;const delivered=[];
+  const proctor=await mountProctoring({api:async (_,path,cmd)=>{
+    if (path.endsWith('/events')) {
+      if (offline) throw new Error('offline');
+      delivered.push(...cmd.body.events);
+    }
+  },sessionId:'session',stageId:'stage',documentTarget:target,windowTarget:target,heartbeatMs:3600000});
+  for (let i=0;i<700;i++) proctor.record('paste');
+  offline=false;assert.equal(await proctor.flush(),true);
+  assert.equal(delivered.length,503); // 2 pending + 500 buffered + overflow marker
+  assert.equal(delivered.at(-1).kind,'telemetry_overflow');
+  assert.equal(delivered.at(-1).sequence,703);
+  await proctor.dispose();
+});
+
+test('automatic board proctoring blocks onReady until telemetry delivery recovers', async () => {
+  const root=new Element('root'), ready=[];
+  let row={board_id:'board',version:1,status:'editing',state:[]}, failed=true;
+  const creations=[];
+  const dispose=await mountBoard(root,{api:async (service,path,cmd)=>{
+    if (service==='proctoring') {
+      if (path.endsWith('/streams')) {
+        creations.push(structuredClone(cmd));
+        if (creations.length===1) throw new Error('lost create response');
+      } else if (failed) throw new Error('telemetry outage');
+      return {};
+    }
+    if (path.endsWith('/seal')) row={...row,status:'sealed',version:2,snapshot_id:'snapshot'};
+    return structuredClone(row);
+  },sessionId:'session',stageId:'stage',onReady:result=>ready.push(result)});
+  assert.deepEqual(creations[0],creations[1]);
+  await button(root,'Завершить доску').click();
+  assert.equal(ready.length,0);
+  assert.equal(row.status,'sealed');
+  failed=false;
+  await button(root,'Завершить доску').click();
+  assert.deepEqual(ready,[{workspace_id:'board',snapshot_id:'snapshot'}]);
+  await dispose();
 });

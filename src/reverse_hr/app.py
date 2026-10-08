@@ -69,11 +69,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "notification",
         "media",
         "whiteboard",
+        "proctoring",
     }:
         from reverse_hr.processing_access import ProcessingAccess
 
         app.state.processing_access = ProcessingAccess(config)
-    if config.service_name in {"media", "whiteboard"}:
+    if config.service_name in {"media", "whiteboard", "proctoring", "coding-workspace"}:
         from importlib import import_module
 
         from reverse_hr.stage_access import StageAccess
@@ -118,6 +119,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.recording_access = RecordingAccess(config)
             app.include_router(transcription_router)
             app.include_router(playback_internal_router)
+    if config.service_name == "proctoring":
+        from reverse_hr.proctoring_internal import internal_router
+        from reverse_hr.stage_access import StageAccess
+
+        app.state.stage_access = StageAccess(config)
+        app.include_router(internal_router)
+    if config.service_name == "evaluation":
+        from reverse_hr.proctoring_access import IntegrityAccess
+        from reverse_hr.proctoring_access import router as integrity_router
+
+        app.state.integrity_access = IntegrityAccess(config)
+        app.include_router(integrity_router)
     if config.service_name == "privacy":
         from reverse_hr.backup_archive import configure as configure_backups
 
@@ -201,6 +214,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "notification",
         "media",
         "whiteboard",
+        "proctoring",
     ):
         from importlib import import_module
 
@@ -397,6 +411,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
                     with Session(engine) as session, session.begin():
                         backup_bind(session)
+                if config.service_name == "proctoring":
+                    for name in (
+                        "proctor_subjects",
+                        "proctor_streams",
+                        "proctor_events",
+                        "integrity_tracks",
+                        "integrity_reviews",
+                        "proctor_nonces",
+                    ):
+                        connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
                 if config.service_name == "notification":
                     for name in (
                         "notification_subjects",

@@ -47,6 +47,7 @@ def service(tmp_path, keys):
             "notification",
             "media",
             "whiteboard",
+            "proctoring",
         }:
             app.state.processing_access = SimpleNamespace(
                 check=lambda *_: None, check_assessment=lambda *_: None

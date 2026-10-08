@@ -6,6 +6,54 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/v1/evaluations/{stage_id}/integrity": {
+      "get": {
+        "tags": [
+          "integrity"
+        ],
+        "summary": "Evaluation Integrity",
+        "operationId": "evaluation_integrity_v1_evaluations__stage_id__integrity_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegritySummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/evaluation-reviews/stages/{stage_id}/recording/chunks/{number}": {
       "get": {
         "tags": [
@@ -673,7 +721,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ReviewView"
+                    "$ref": "#/components/schemas/reverse_hr__domains__evaluation_review__ReviewView"
                   },
                   "title": "Response History V1 Evaluation Reviews Stages  Stage Id  History Get"
                 }
@@ -1434,6 +1482,120 @@
         ],
         "title": "IntakeView"
       },
+      "IntegritySummary": {
+        "properties": {
+          "track_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "timeline_version": {
+            "type": "integer",
+            "title": "Timeline Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "no_material",
+              "needs_review",
+              "clear",
+              "inconclusive",
+              "concern"
+            ],
+            "title": "Status"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "title": "Evidence Digest"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "gaps": {
+            "additionalProperties": {
+              "items": {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Gaps"
+          },
+          "streams": {
+            "items": {
+              "$ref": "#/components/schemas/StreamTiming"
+            },
+            "type": "array",
+            "title": "Streams"
+          },
+          "latest_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/reverse_hr__domains__proctoring__ReviewView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_telemetry_trusted": {
+            "type": "boolean",
+            "const": false,
+            "title": "Client Telemetry Trusted",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "track_id",
+          "candidate_id",
+          "session_id",
+          "stage_id",
+          "version",
+          "timeline_version",
+          "status",
+          "evidence_digest",
+          "flags",
+          "gaps",
+          "streams",
+          "latest_review"
+        ],
+        "title": "IntegritySummary"
+      },
       "ModelAttemptView": {
         "properties": {
           "attempt_id": {
@@ -2036,7 +2198,7 @@
           "latest": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReviewView"
+                "$ref": "#/components/schemas/reverse_hr__domains__evaluation_review__ReviewView"
               },
               {
                 "type": "null"
@@ -2060,87 +2222,6 @@
           "latest"
         ],
         "title": "ReviewResult"
-      },
-      "ReviewView": {
-        "properties": {
-          "model_attempt_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model Attempt Id"
-          },
-          "decisions": {
-            "items": {
-              "$ref": "#/components/schemas/CriterionDecision"
-            },
-            "type": "array",
-            "maxItems": 20,
-            "minItems": 1,
-            "title": "Decisions"
-          },
-          "reason": {
-            "type": "string",
-            "maxLength": 2000,
-            "minLength": 1,
-            "pattern": "\\S",
-            "title": "Reason"
-          },
-          "review_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Review Id"
-          },
-          "reviewer_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Reviewer Id"
-          },
-          "number": {
-            "type": "integer",
-            "title": "Number"
-          },
-          "intake_version": {
-            "type": "integer",
-            "title": "Intake Version"
-          },
-          "score": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 100.0,
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Score"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "decisions",
-          "reason",
-          "review_id",
-          "reviewer_id",
-          "number",
-          "intake_version",
-          "score",
-          "created_at"
-        ],
-        "title": "ReviewView"
       },
       "ReviewWorkspace": {
         "properties": {
@@ -2182,7 +2263,7 @@
           "latest": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ReviewView"
+                "$ref": "#/components/schemas/reverse_hr__domains__evaluation_review__ReviewView"
               },
               {
                 "type": "null"
@@ -2679,6 +2760,38 @@
         ],
         "title": "StageScore"
       },
+      "StreamTiming": {
+        "properties": {
+          "stream_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stream Id"
+          },
+          "client_started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Client Started At"
+          },
+          "server_received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Received At"
+          },
+          "clock_or_delivery_offset_ms": {
+            "type": "integer",
+            "title": "Clock Or Delivery Offset Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stream_id",
+          "client_started_at",
+          "server_received_at",
+          "clock_or_delivery_offset_ms"
+        ],
+        "title": "StreamTiming"
+      },
       "SuitePin": {
         "properties": {
           "suite_id": {
@@ -3024,6 +3137,158 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "reverse_hr__domains__evaluation_review__ReviewView": {
+        "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionDecision"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Decisions"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          },
+          "review_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Review Id"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reviewer Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "intake_version": {
+            "type": "integer",
+            "title": "Intake Version"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decisions",
+          "reason",
+          "review_id",
+          "reviewer_id",
+          "number",
+          "intake_version",
+          "score",
+          "created_at"
+        ],
+        "title": "ReviewView"
+      },
+      "reverse_hr__domains__proctoring__ReviewView": {
+        "properties": {
+          "timeline_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Timeline Version"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Evidence Digest"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "clear",
+              "inconclusive",
+              "concern"
+            ],
+            "title": "Outcome"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Reason"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Evidence Ids"
+          },
+          "review_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Review Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reviewer Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timeline_version",
+          "evidence_digest",
+          "outcome",
+          "reason",
+          "evidence_ids",
+          "review_id",
+          "number",
+          "reviewer_id",
+          "created_at"
+        ],
+        "title": "ReviewView"
       }
     },
     "securitySchemes": {

@@ -6,6 +6,20 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/v1/environment.js": {
+      "get": {
+        "tags": [
+          "practical-ui"
+        ],
+        "summary": "Practical Ui",
+        "operationId": "practical_ui_v1_environment_js_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
     "/v1/workspaces": {
       "post": {
         "tags": [

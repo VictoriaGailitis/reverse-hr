@@ -255,9 +255,15 @@ services:
     <<: *app
     profiles: [all]
     environment:
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+      HR_OIDC_JWKS_URL: http://keycloak:8080/realms/reverse-hr/protocol/openid-connect/certs
       HR_SERVICE_NAME: proctoring
       HR_ROOT_PATH: /proctoring
       HR_DATABASE_URL: postgresql+psycopg://proctoring:${PROCTORING_DB_PASSWORD:?Generate .env first}@postgres:5432/proctoring
+    volumes:
+      - ./.secrets/proctoring.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
     command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   evaluation:
     <<: *app
@@ -795,6 +801,40 @@ services:
     command: [python, -m, reverse_hr.worker, consume]
     depends_on:
       whiteboard: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  proctoring-outbox:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: proctoring
+      HR_DATABASE_URL: postgresql+psycopg://proctoring:${PROCTORING_DB_PASSWORD:?Generate .env first}@postgres:5432/proctoring
+      HR_AMQP_URL: amqp://proctoring:${PROCTORING_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/proctoring.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, publish]
+    depends_on:
+      proctoring: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+  proctoring-consumer:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: proctoring
+      HR_DATABASE_URL: postgresql+psycopg://proctoring:${PROCTORING_DB_PASSWORD:?Generate .env first}@postgres:5432/proctoring
+      HR_AMQP_URL: amqp://proctoring:${PROCTORING_AMQP_PASSWORD:?Run configure_events.py first}@rabbitmq:5672/%2F
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/proctoring.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.worker, consume]
+    depends_on:
+      proctoring: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
   media-transcription:
     <<: *app

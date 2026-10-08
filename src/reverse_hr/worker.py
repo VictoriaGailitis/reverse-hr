@@ -13,6 +13,7 @@ from reverse_hr.event_transport import (
     MediaConsumer,
     NotificationConsumer,
     PrivacyConsumer,
+    ProctoringConsumer,
     RunnerConsumer,
     Signatures,
     WhiteboardConsumer,
@@ -48,6 +49,7 @@ def main():
         parser.error("Material preparation requires Evaluation")
     consumers = {
         "privacy": PrivacyConsumer,
+        "proctoring": ProctoringConsumer,
         "candidate": CandidateConsumer,
         "employer": EmployerConsumer,
         "assessment": AssessmentConsumer,
