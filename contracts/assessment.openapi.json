@@ -6,6 +6,75 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/internal/v1/subject-rights/{operation}": {
+      "post": {
+        "tags": [
+          "internal-subject-rights"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_internal_v1_subject_rights__operation__post",
+        "parameters": [
+          {
+            "name": "operation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Operation"
+            }
+          },
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RightsExchange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RightsReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/content-families": {
       "post": {
         "tags": [
@@ -698,6 +767,760 @@
         }
       }
     },
+    "/v1/assessment-selection-policies": {
+      "get": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Selection Offers",
+        "operationId": "selection_offers_v1_assessment_selection_policies_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SelectionOffer"
+                  },
+                  "title": "Response Selection Offers V1 Assessment Selection Policies Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Create Policy",
+        "operationId": "create_policy_v1_assessment_selection_policies_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/reverse_hr__domains__assessment_selection__PolicyCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-selection-policies/{policy_id}": {
+      "get": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Get Selection Policy",
+        "operationId": "get_selection_policy_v1_assessment_selection_policies__policy_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "policy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Policy Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-variant-templates/{template_id}": {
+      "get": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Get Variant Template",
+        "operationId": "get_variant_template_v1_assessment_variant_templates__template_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-selection-policies/{policy_id}/publish": {
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Publish Policy",
+        "operationId": "publish_policy_v1_assessment_selection_policies__policy_id__publish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "policy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Policy Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-selection-policies/{policy_id}/retire": {
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Retire Policy",
+        "operationId": "retire_policy_v1_assessment_selection_policies__policy_id__retire_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "policy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Policy Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-variant-templates": {
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Create Template",
+        "operationId": "create_template_v1_assessment_variant_templates_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TemplateCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-variant-templates/{template_id}/publish": {
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Publish Template",
+        "operationId": "publish_template_v1_assessment_variant_templates__template_id__publish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-variant-templates/{template_id}/retire": {
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Retire Template",
+        "operationId": "retire_template_v1_assessment_variant_templates__template_id__retire_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-variant-templates/{template_id}/generate": {
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Generate",
+        "operationId": "generate_v1_assessment_variant_templates__template_id__generate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Template Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-selected-sessions": {
+      "post": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Selected Session",
+        "operationId": "selected_session_v1_assessment_selected_sessions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectedSessionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-task-history": {
+      "get": {
+        "tags": [
+          "assessment-selection"
+        ],
+        "summary": "Task History",
+        "operationId": "task_history_v1_assessment_task_history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryItem"
+                  },
+                  "title": "Response Task History V1 Assessment Task History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/company-task-proposals": {
       "post": {
         "tags": [
@@ -1189,6 +2012,1067 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-assignments": {
+      "post": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "Assign",
+        "operationId": "assign_v1_company_assignments_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "List Assignments",
+        "operationId": "list_assignments_v1_company_assignments_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssignmentView"
+                  },
+                  "title": "Response List Assignments V1 Company Assignments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-assignments/{assignment_id}": {
+      "get": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "Get Assignment",
+        "operationId": "get_assignment_v1_company_assignments__assignment_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Assignment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-assignments/{assignment_id}/accept": {
+      "post": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "Accept",
+        "operationId": "accept_v1_company_assignments__assignment_id__accept_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Assignment Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Acceptance"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-assignments/{assignment_id}/decline": {
+      "post": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "Decline",
+        "operationId": "decline_v1_company_assignments__assignment_id__decline_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Assignment Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-assignments/{assignment_id}/revoke": {
+      "post": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "Revoke",
+        "operationId": "revoke_v1_company_assignments__assignment_id__revoke_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Assignment Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-assignments/{assignment_id}/result": {
+      "get": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "Result",
+        "operationId": "result_v1_company_assignments__assignment_id__result_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Assignment Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-assignments/{assignment_id}/complete": {
+      "post": {
+        "tags": [
+          "company-assignments"
+        ],
+        "summary": "Complete",
+        "operationId": "complete_v1_company_assignments__assignment_id__complete_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Assignment Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignmentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-task-subscriptions": {
+      "get": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "List Subscriptions",
+        "operationId": "list_subscriptions_v1_company_task_subscriptions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubscriptionView"
+                  },
+                  "title": "Response List Subscriptions V1 Company Task Subscriptions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-task-subscriptions/{organization_id}": {
+      "get": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "Get Subscription",
+        "operationId": "get_subscription_v1_company_task_subscriptions__organization_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "Set Subscription",
+        "operationId": "set_subscription_v1_company_task_subscriptions__organization_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-task-schedules": {
+      "post": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "Create Schedule",
+        "operationId": "create_schedule_v1_company_task_schedules_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "List Schedules",
+        "operationId": "list_schedules_v1_company_task_schedules_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleView"
+                  },
+                  "title": "Response List Schedules V1 Company Task Schedules Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-task-schedules/{schedule_id}": {
+      "get": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "Get Schedule",
+        "operationId": "get_schedule_v1_company_task_schedules__schedule_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-task-schedules/{schedule_id}/cancel": {
+      "post": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "Cancel Schedule",
+        "operationId": "cancel_schedule_v1_company_task_schedules__schedule_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Schedule Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/company-task-schedules/{schedule_id}/jobs": {
+      "get": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "Jobs",
+        "operationId": "jobs_v1_company_task_schedules__schedule_id__jobs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobView"
+                  },
+                  "title": "Response Jobs V1 Company Task Schedules  Schedule Id  Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/market/company-notice": {
+      "post": {
+        "tags": [
+          "company-schedules"
+        ],
+        "summary": "Company Notice",
+        "operationId": "company_notice_internal_v1_market_company_notice_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketReceipt"
                 }
               }
             }
@@ -1858,6 +3742,114 @@
         }
       }
     },
+    "/v1/review-sla/availability": {
+      "put": {
+        "tags": [
+          "review-sla"
+        ],
+        "summary": "Available",
+        "operationId": "available_v1_review_sla_availability_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "enabled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Enabled"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/review-sla/inbox": {
+      "get": {
+        "tags": [
+          "review-sla"
+        ],
+        "summary": "Inbox",
+        "operationId": "inbox_v1_review_sla_inbox_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "headers": {
+              "X-HR-Next-Cursor": {
+                "description": "Next page UUID; advances past hidden actions",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/grade-policies": {
       "post": {
         "tags": [
@@ -1888,7 +3880,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PolicyCommand"
+                "$ref": "#/components/schemas/reverse_hr__domains__assessment_grades__PolicyCommand"
               }
             }
           }
@@ -2271,6 +4263,617 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PolicyView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/market/appeal-notice": {
+      "post": {
+        "tags": [
+          "internal-appeal-notices"
+        ],
+        "summary": "Notice Permission",
+        "operationId": "notice_permission_internal_v1_market_appeal_notice_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals": {
+      "post": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Submit",
+        "operationId": "submit_v1_assessment_appeals_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppealCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Own List",
+        "operationId": "own_list_v1_assessment_appeals_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppealView"
+                  },
+                  "title": "Response Own List V1 Assessment Appeals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals/queue": {
+      "get": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Queue",
+        "operationId": "queue_v1_assessment_appeals_queue_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppealView"
+                  },
+                  "title": "Response Queue V1 Assessment Appeals Queue Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals/{appeal_id}": {
+      "get": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Get",
+        "operationId": "get_v1_assessment_appeals__appeal_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appeal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Appeal Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals/{appeal_id}/claim": {
+      "post": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Claim",
+        "operationId": "claim_v1_assessment_appeals__appeal_id__claim_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appeal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Appeal Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals/{appeal_id}/withdraw": {
+      "post": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Withdraw",
+        "operationId": "withdraw_v1_assessment_appeals__appeal_id__withdraw_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appeal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Appeal Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals/{appeal_id}/evidence": {
+      "get": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Workspace",
+        "operationId": "workspace_v1_assessment_appeals__appeal_id__evidence_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appeal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Appeal Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealEvidence"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals/{appeal_id}/resolve": {
+      "post": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "Resolve",
+        "operationId": "resolve_v1_assessment_appeals__appeal_id__resolve_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appeal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Appeal Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppealResolution"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-appeals/{appeal_id}/history": {
+      "get": {
+        "tags": [
+          "assessment-appeals"
+        ],
+        "summary": "History",
+        "operationId": "history_v1_assessment_appeals__appeal_id__history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appeal_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Appeal Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response History V1 Assessment Appeals  Appeal Id  History Get"
                 }
               }
             }
@@ -4105,6 +6708,258 @@
   },
   "components": {
     "schemas": {
+      "Acceptance": {
+        "properties": {
+          "assessment_consent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assessment Consent Id"
+          },
+          "result_grant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Result Grant Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "assessment_consent_id",
+          "result_grant_id"
+        ],
+        "title": "Acceptance"
+      },
+      "AppealCreate": {
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision_id",
+          "reason"
+        ],
+        "title": "AppealCreate"
+      },
+      "AppealEvidence": {
+        "properties": {
+          "appeal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Appeal Id"
+          },
+          "original": {
+            "$ref": "#/components/schemas/SessionEvidence"
+          },
+          "current": {
+            "$ref": "#/components/schemas/SessionEvidence"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "title": "Evidence Digest"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "competency_scores": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Competency Scores"
+          },
+          "recommended_status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "rejected",
+              "technical_failure"
+            ],
+            "title": "Recommended Status"
+          },
+          "repeated_review_complete": {
+            "type": "boolean",
+            "title": "Repeated Review Complete"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "appeal_id",
+          "original",
+          "current",
+          "evidence_digest",
+          "score",
+          "competency_scores",
+          "recommended_status",
+          "repeated_review_complete"
+        ],
+        "title": "AppealEvidence"
+      },
+      "AppealResolution": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "uphold",
+              "change"
+            ],
+            "title": "Action"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "rejected",
+              "technical_failure"
+            ],
+            "title": "Status"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "status",
+          "evidence_digest",
+          "reason"
+        ],
+        "title": "AppealResolution"
+      },
+      "AppealView": {
+        "properties": {
+          "appeal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Appeal Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "submitted",
+              "in_review",
+              "resolved",
+              "withdrawn"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "reviewer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Id"
+          },
+          "submitted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Submitted At"
+          },
+          "filing_deadline": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Filing Deadline"
+          },
+          "review_due_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Review Due At"
+          },
+          "overdue": {
+            "type": "boolean",
+            "title": "Overdue"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "appeal_id",
+          "session_id",
+          "decision_id",
+          "candidate_id",
+          "reason",
+          "status",
+          "version",
+          "reviewer_id",
+          "submitted_at",
+          "filing_deadline",
+          "review_due_at",
+          "overdue",
+          "resolution"
+        ],
+        "title": "AppealView"
+      },
       "ArtifactPermit": {
         "properties": {
           "candidate_id": {
@@ -4291,6 +7146,219 @@
           "digest"
         ],
         "title": "ArtifactPermitRequest"
+      },
+      "AssignmentCommand": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "proposal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proposal Id"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "expires_in_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Expires In Days",
+            "default": 14
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "candidate_id",
+          "proposal_id",
+          "plan_version_id"
+        ],
+        "title": "AssignmentCommand"
+      },
+      "AssignmentResult": {
+        "properties": {
+          "assignment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assignment Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "review_pending",
+              "reviewed"
+            ],
+            "title": "Status"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/ResultStage"
+            },
+            "type": "array",
+            "title": "Stages"
+          },
+          "affects_general_grade": {
+            "type": "boolean",
+            "const": false,
+            "title": "Affects General Grade",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "session_id",
+          "organization_id",
+          "status",
+          "stages"
+        ],
+        "title": "AssignmentResult"
+      },
+      "AssignmentView": {
+        "properties": {
+          "assignment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assignment Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "proposal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proposal Id"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "assigned",
+              "accepted",
+              "declined",
+              "revoked",
+              "expired",
+              "cancelled",
+              "in_progress",
+              "submitted",
+              "completed"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "formats": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "code",
+                "sql",
+                "voice",
+                "vcv",
+                "whiteboard"
+              ]
+            },
+            "type": "array",
+            "title": "Formats"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "title": "Duration Seconds"
+          },
+          "result_recipient": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Result Recipient"
+          },
+          "result_scope": {
+            "type": "string",
+            "const": "reviewed_scores_only",
+            "title": "Result Scope",
+            "default": "reviewed_scores_only"
+          },
+          "affects_general_grade": {
+            "type": "boolean",
+            "const": false,
+            "title": "Affects General Grade",
+            "default": false
+          },
+          "reveals_contacts": {
+            "type": "boolean",
+            "const": false,
+            "title": "Reveals Contacts",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "assignment_id",
+          "organization_id",
+          "candidate_id",
+          "proposal_id",
+          "plan_version_id",
+          "session_id",
+          "status",
+          "version",
+          "expires_at",
+          "formats",
+          "duration_seconds",
+          "result_recipient"
+        ],
+        "title": "AssignmentView"
       },
       "CalibrationCase": {
         "properties": {
@@ -4507,6 +7575,56 @@
         ],
         "title": "Criterion"
       },
+      "CriterionScore": {
+        "properties": {
+          "criterion_key": {
+            "type": "string",
+            "title": "Criterion Key"
+          },
+          "competency": {
+            "type": "string",
+            "title": "Competency"
+          },
+          "max_points": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Points"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "evidence_type": {
+            "type": "string",
+            "enum": [
+              "artifact",
+              "test_result",
+              "timestamped_recording",
+              "board_snapshot"
+            ],
+            "title": "Evidence Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "criterion_key",
+          "competency",
+          "max_points",
+          "evidence_type"
+        ],
+        "title": "CriterionScore"
+      },
       "DecisionCommand": {
         "properties": {
           "action": {
@@ -4712,11 +7830,40 @@
             "format": "date-time",
             "title": "Decided At"
           },
+          "decision_revision": {
+            "type": "integer",
+            "maximum": 2.0,
+            "minimum": 1.0,
+            "title": "Decision Revision",
+            "default": 1
+          },
+          "supersedes_decision_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Decision Id"
+          },
           "demo": {
             "type": "boolean",
             "const": true,
             "title": "Demo",
             "default": true
+          },
+          "qualification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QualificationEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -4876,6 +8023,57 @@
         ],
         "title": "FilesCommand"
       },
+      "FollowupLink": {
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "parent_stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Parent Stage Id"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_id",
+          "parent_stage_id",
+          "available"
+        ],
+        "title": "FollowupLink"
+      },
+      "GenerateCommand": {
+        "properties": {
+          "parameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "minProperties": 1,
+            "title": "Parameters"
+          },
+          "family_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Family Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "parameters",
+          "family_version"
+        ],
+        "title": "GenerateCommand"
+      },
       "Grade": {
         "type": "string",
         "enum": [
@@ -4916,6 +8114,56 @@
           "service"
         ],
         "title": "HealthResponse"
+      },
+      "HistoryItem": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "family_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Family Ids"
+          },
+          "revision_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Revision Ids"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session_id",
+          "plan_version_id",
+          "family_ids",
+          "revision_ids",
+          "issued_at",
+          "status"
+        ],
+        "title": "HistoryItem"
       },
       "IntakeView": {
         "properties": {
@@ -4974,6 +8222,449 @@
           "received_at"
         ],
         "title": "IntakeView"
+      },
+      "JobView": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "done",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "next_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Next At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "permission_unavailable",
+                  "evidence_pending",
+                  "rate_limited"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "job_id",
+          "kind",
+          "status",
+          "attempts",
+          "next_at",
+          "error"
+        ],
+        "title": "JobView"
+      },
+      "MarketReceipt": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "enum": [
+              "achievements",
+              "integration",
+              "demo-ats",
+              "candidate",
+              "matching",
+              "hiring",
+              "notification",
+              "assessment",
+              "evaluation"
+            ],
+            "title": "Requester"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "profile",
+              "membership",
+              "affiliation",
+              "content-membership",
+              "need",
+              "purpose-permission",
+              "contact-permission",
+              "resume-permission",
+              "company-result-permission",
+              "company-notice",
+              "appeal-notice",
+              "contacts",
+              "notice"
+            ],
+            "title": "Purpose"
+          },
+          "assignment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignment Id"
+          },
+          "result_grant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Grant Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "notice_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notice Id"
+          },
+          "need_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Need Id"
+          },
+          "invitation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invitation Id"
+          },
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          },
+          "consent_purpose": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "achievement_import",
+                  "achievement_publication",
+                  "ats_export",
+                  "profile_publication",
+                  "contact_disclosure",
+                  "company_task_subscription",
+                  "resume_publication",
+                  "external_service_notifications",
+                  "external_marketing_notifications"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Purpose"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Revision",
+            "default": 0
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "requester",
+          "issued_at",
+          "purpose",
+          "allowed"
+        ],
+        "title": "MarketReceipt"
+      },
+      "MarketRequest": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "enum": [
+              "achievements",
+              "integration",
+              "demo-ats",
+              "candidate",
+              "matching",
+              "hiring",
+              "notification",
+              "assessment",
+              "evaluation"
+            ],
+            "title": "Requester"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "profile",
+              "membership",
+              "affiliation",
+              "content-membership",
+              "need",
+              "purpose-permission",
+              "contact-permission",
+              "resume-permission",
+              "company-result-permission",
+              "company-notice",
+              "appeal-notice",
+              "contacts",
+              "notice"
+            ],
+            "title": "Purpose"
+          },
+          "assignment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignment Id"
+          },
+          "result_grant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Grant Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "notice_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notice Id"
+          },
+          "need_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Need Id"
+          },
+          "invitation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invitation Id"
+          },
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          },
+          "consent_purpose": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "achievement_import",
+                  "achievement_publication",
+                  "ats_export",
+                  "profile_publication",
+                  "contact_disclosure",
+                  "company_task_subscription",
+                  "resume_publication",
+                  "external_service_notifications",
+                  "external_marketing_notifications"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Purpose"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "requester",
+          "issued_at",
+          "purpose"
+        ],
+        "title": "MarketRequest"
       },
       "MaterialReceipt": {
         "properties": {
@@ -5133,6 +8824,18 @@
       },
       "PinnedMaterial": {
         "properties": {
+          "company_organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Organization Id"
+          },
           "consent_id": {
             "type": "string",
             "format": "uuid",
@@ -5319,25 +9022,6 @@
           "version"
         ],
         "title": "PlanView"
-      },
-      "PolicyCommand": {
-        "properties": {
-          "plan_version_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Plan Version Id"
-          },
-          "rules": {
-            "$ref": "#/components/schemas/Rules"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "plan_version_id",
-          "rules"
-        ],
-        "title": "PolicyCommand"
       },
       "PolicyView": {
         "properties": {
@@ -5656,6 +9340,80 @@
         ],
         "title": "ProposalView"
       },
+      "QualificationEvidence": {
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Id"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest"
+          },
+          "assessed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Assessed At"
+          },
+          "score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "competency_scores": {
+            "additionalProperties": {
+              "type": "integer",
+              "maximum": 100.0,
+              "minimum": 0.0
+            },
+            "type": "object",
+            "maxProperties": 20,
+            "minProperties": 1,
+            "title": "Competency Scores"
+          },
+          "competency_minimums": {
+            "additionalProperties": {
+              "type": "integer",
+              "maximum": 100.0,
+              "minimum": 0.0
+            },
+            "type": "object",
+            "maxProperties": 20,
+            "title": "Competency Minimums"
+          },
+          "next_attempt_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Next Attempt At"
+          },
+          "grade_change_available_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Grade Change Available At"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "policy_id",
+          "evidence_digest",
+          "assessed_at",
+          "score",
+          "competency_scores",
+          "next_attempt_at",
+          "grade_change_available_at"
+        ],
+        "title": "QualificationEvidence"
+      },
       "ReasonCommand": {
         "properties": {
           "reason": {
@@ -5672,6 +9430,87 @@
           "reason"
         ],
         "title": "ReasonCommand"
+      },
+      "ResultCriterion": {
+        "properties": {
+          "criterion_key": {
+            "type": "string",
+            "title": "Criterion Key"
+          },
+          "competency": {
+            "type": "string",
+            "title": "Competency"
+          },
+          "points": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Points"
+          },
+          "max_points": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Points"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "criterion_key",
+          "competency",
+          "points",
+          "max_points"
+        ],
+        "title": "ResultCriterion"
+      },
+      "ResultStage": {
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "code",
+              "sql",
+              "voice",
+              "vcv",
+              "whiteboard"
+            ],
+            "title": "Format"
+          },
+          "score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "review_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Review Id"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/ResultCriterion"
+            },
+            "type": "array",
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_id",
+          "format",
+          "score",
+          "review_id",
+          "criteria"
+        ],
+        "title": "ResultStage"
       },
       "RetirementCommand": {
         "properties": {
@@ -5706,6 +9545,37 @@
           "reason"
         ],
         "title": "ReviewCommand"
+      },
+      "ReviewView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "version",
+          "data"
+        ],
+        "title": "ReviewView"
       },
       "RevisionView": {
         "properties": {
@@ -5783,6 +9653,99 @@
           "retired_at"
         ],
         "title": "RevisionView"
+      },
+      "RightsExchange": {
+        "properties": {
+          "requester": {
+            "type": "string",
+            "title": "Requester"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "permission",
+              "export",
+              "correct",
+              "export-page"
+            ],
+            "title": "Operation"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16384
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "requester",
+          "operation",
+          "candidate_id",
+          "request_id",
+          "revision",
+          "nonce",
+          "issued_at"
+        ],
+        "title": "RightsExchange"
+      },
+      "RightsReceipt": {
+        "properties": {
+          "request_digest": {
+            "type": "string",
+            "title": "Request Digest"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_digest",
+          "issued_at",
+          "data"
+        ],
+        "title": "RightsReceipt"
       },
       "Rules": {
         "properties": {
@@ -5989,6 +9952,257 @@
         ],
         "title": "RuntimeDecision"
       },
+      "ScheduleCommand": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "proposal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proposal Id"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "expires_in_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Expires In Days",
+            "default": 14
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "interval_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 7776000.0,
+                "minimum": 86400.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Seconds"
+          },
+          "max_occurrences": {
+            "type": "integer",
+            "maximum": 52.0,
+            "minimum": 1.0,
+            "title": "Max Occurrences",
+            "default": 1
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "candidate_id",
+          "proposal_id",
+          "plan_version_id",
+          "starts_at"
+        ],
+        "title": "ScheduleCommand"
+      },
+      "ScheduleView": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "proposal_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Proposal Id"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "expires_in_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Expires In Days",
+            "default": 14
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Starts At"
+          },
+          "interval_seconds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 7776000.0,
+                "minimum": 86400.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Seconds"
+          },
+          "max_occurrences": {
+            "type": "integer",
+            "maximum": 52.0,
+            "minimum": 1.0,
+            "title": "Max Occurrences",
+            "default": 1
+          },
+          "schedule_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Schedule Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "cancelled",
+              "completed"
+            ],
+            "title": "Status"
+          },
+          "issued_count": {
+            "type": "integer",
+            "title": "Issued Count"
+          },
+          "subscription_version": {
+            "type": "integer",
+            "title": "Subscription Version"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "candidate_id",
+          "proposal_id",
+          "plan_version_id",
+          "starts_at",
+          "schedule_id",
+          "status",
+          "issued_count",
+          "subscription_version",
+          "version"
+        ],
+        "title": "ScheduleView"
+      },
+      "SelectedSessionCommand": {
+        "properties": {
+          "selection_policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Selection Policy Id"
+          },
+          "assessment_consent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assessment Consent Id"
+          },
+          "grade_policy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Policy Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selection_policy_id",
+          "assessment_consent_id"
+        ],
+        "title": "SelectedSessionCommand"
+      },
+      "SelectionOffer": {
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "specialization": {
+            "type": "string",
+            "title": "Specialization"
+          },
+          "grade": {
+            "type": "string",
+            "title": "Grade"
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "policy_id",
+          "name",
+          "specialization",
+          "grade"
+        ],
+        "title": "SelectionOffer"
+      },
+      "SelectionReceipt": {
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Id"
+          },
+          "policy_digest": {
+            "type": "string",
+            "title": "Policy Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "policy_id",
+          "policy_digest"
+        ],
+        "title": "SelectionReceipt"
+      },
       "SessionCommand": {
         "properties": {
           "plan_version_id": {
@@ -6153,6 +10367,35 @@
           "status"
         ],
         "title": "SessionEvaluation"
+      },
+      "SessionEvidence": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Id"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/StageScore"
+            },
+            "type": "array",
+            "title": "Stages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session_id",
+          "policy_id",
+          "stages"
+        ],
+        "title": "SessionEvidence"
       },
       "SessionSuitePin": {
         "properties": {
@@ -6336,6 +10579,23 @@
             },
             "type": "array",
             "title": "Progress"
+          },
+          "followups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowupLink"
+            },
+            "type": "array",
+            "title": "Followups"
+          },
+          "selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelectionReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -6527,6 +10787,136 @@
           "stage_id"
         ],
         "title": "StageRequest"
+      },
+      "StageScore": {
+        "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
+          "llm_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Model"
+          },
+          "llm_prompt_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Prompt Digest"
+          },
+          "snapshot_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Snapshot Version"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision Id"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Digest"
+          },
+          "task_key": {
+            "type": "string",
+            "title": "Task Key"
+          },
+          "review_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Id"
+          },
+          "reviewer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Id"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionScore"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Criteria"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_version",
+          "snapshot_digest",
+          "revision_id",
+          "content_digest",
+          "task_key",
+          "review_id",
+          "reviewer_id",
+          "criteria",
+          "evidence_digest"
+        ],
+        "title": "StageScore"
       },
       "StageStatus": {
         "properties": {
@@ -6885,6 +11275,93 @@
           "runtime_fingerprint"
         ],
         "title": "SubmittedRequest"
+      },
+      "SubscriptionCommand": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "declined",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          },
+          "min_interval_seconds": {
+            "type": "integer",
+            "maximum": 7776000.0,
+            "minimum": 86400.0,
+            "title": "Min Interval Seconds",
+            "default": 604800
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SubscriptionCommand"
+      },
+      "SubscriptionView": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "declined",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          },
+          "min_interval_seconds": {
+            "type": "integer",
+            "maximum": 7776000.0,
+            "minimum": 86400.0,
+            "title": "Min Interval Seconds",
+            "default": 604800
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "organization_id",
+          "version"
+        ],
+        "title": "SubscriptionView"
       },
       "SuiteAdmissionRequest": {
         "properties": {
@@ -7448,6 +11925,18 @@
             "maxItems": 20,
             "minItems": 1,
             "title": "Rubric"
+          },
+          "follows_task_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follows Task Key"
           }
         },
         "additionalProperties": false,
@@ -7494,6 +11983,34 @@
           "validation_id"
         ],
         "title": "TaskSuiteSelection"
+      },
+      "TemplateCommand": {
+        "properties": {
+          "base_revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Base Revision Id"
+          },
+          "allowed_parameters": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "minProperties": 1,
+            "title": "Allowed Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base_revision_id",
+          "allowed_parameters"
+        ],
+        "title": "TemplateCommand"
       },
       "TestCase": {
         "properties": {
@@ -7787,6 +12304,107 @@
           "reason"
         ],
         "title": "WithdrawCommand"
+      },
+      "reverse_hr__domains__assessment_grades__PolicyCommand": {
+        "properties": {
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/Rules"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "plan_version_id",
+          "rules"
+        ],
+        "title": "PolicyCommand"
+      },
+      "reverse_hr__domains__assessment_selection__PolicyCommand": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Name"
+          },
+          "plan_version_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 2,
+            "title": "Plan Version Ids"
+          },
+          "grade_policy_ids": {
+            "additionalProperties": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "type": "object",
+            "maxProperties": 100,
+            "title": "Grade Policy Ids"
+          },
+          "family_cooldown_seconds": {
+            "type": "integer",
+            "maximum": 31536000.0,
+            "minimum": 0.0,
+            "title": "Family Cooldown Seconds",
+            "default": 86400
+          },
+          "variant_cooldown_seconds": {
+            "type": "integer",
+            "maximum": 31536000.0,
+            "minimum": 0.0,
+            "title": "Variant Cooldown Seconds",
+            "default": 2592000
+          },
+          "window_seconds": {
+            "type": "integer",
+            "maximum": 31536000.0,
+            "minimum": 60.0,
+            "title": "Window Seconds",
+            "default": 2592000
+          },
+          "family_candidate_limit": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Family Candidate Limit",
+            "default": 2
+          },
+          "family_global_limit": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "minimum": 1.0,
+            "title": "Family Global Limit",
+            "default": 1000
+          },
+          "candidate_session_limit": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 1.0,
+            "title": "Candidate Session Limit",
+            "default": 10
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "plan_version_ids"
+        ],
+        "title": "PolicyCommand"
       }
     },
     "securitySchemes": {

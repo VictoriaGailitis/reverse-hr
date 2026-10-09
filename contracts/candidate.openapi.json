@@ -6,6 +6,694 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/v1/candidates/me/resume-imports": {
+      "post": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Upload",
+        "operationId": "upload_v1_candidates_me_resume_imports_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/pdf": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Imports",
+        "operationId": "imports_v1_candidates_me_resume_imports_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportView"
+                  },
+                  "title": "Response Imports V1 Candidates Me Resume Imports Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/resume-imports/{import_id}": {
+      "get": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Get Import",
+        "operationId": "get_import_v1_candidates_me_resume_imports__import_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Import Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Remove Import",
+        "operationId": "remove_import_v1_candidates_me_resume_imports__import_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Import Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportRemoved"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/resume-imports/{import_id}/source.pdf": {
+      "get": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Original",
+        "operationId": "original_v1_candidates_me_resume_imports__import_id__source_pdf_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Import Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/resume-imports/{import_id}/confirm": {
+      "post": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Confirm",
+        "operationId": "confirm_v1_candidates_me_resume_imports__import_id__confirm_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Import Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/resume": {
+      "put": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Edit",
+        "operationId": "edit_v1_candidates_me_resume_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeConfirmation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Get Resume",
+        "operationId": "get_resume_v1_candidates_me_resume_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/resume/publication": {
+      "put": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Publication",
+        "operationId": "publication_v1_candidates_me_resume_publication_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumePublication"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/resume-imports/{import_id}/retry": {
+      "post": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_v1_candidates_me_resume_imports__import_id__retry_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "import_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Import Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/candidates/{candidate_id}/resume.pdf": {
+      "get": {
+        "tags": [
+          "resume-pdf"
+        ],
+        "summary": "Pdf",
+        "operationId": "pdf_v1_candidates__candidate_id__resume_pdf_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Candidate Id"
+            }
+          },
+          {
+            "name": "variant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "full",
+                "anonymous"
+              ],
+              "type": "string",
+              "default": "anonymous",
+              "title": "Variant"
+            }
+          },
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "invitation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Invitation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/v1/market/profile": {
       "post": {
         "tags": [
@@ -109,6 +797,75 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MarketReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/subject-rights/{operation}": {
+      "post": {
+        "tags": [
+          "internal-subject-rights"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_internal_v1_subject_rights__operation__post",
+        "parameters": [
+          {
+            "name": "operation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Operation"
+            }
+          },
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RightsExchange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RightsReceipt"
                 }
               }
             }
@@ -526,6 +1283,328 @@
         ]
       }
     },
+    "/v1/candidates/me/qualification": {
+      "get": {
+        "tags": [
+          "candidate"
+        ],
+        "summary": "Qualification Report",
+        "operationId": "qualification_report_v1_candidates_me_qualification_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "policy_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Policy Id"
+            }
+          },
+          {
+            "name": "policy_mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "demo",
+                "production"
+              ],
+              "type": "string",
+              "default": "demo",
+              "title": "Policy Mode"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QualificationAdvice"
+                  },
+                  "title": "Response Qualification Report V1 Candidates Me Qualification Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/preferences": {
+      "get": {
+        "tags": [
+          "candidate"
+        ],
+        "summary": "Get Preferences",
+        "operationId": "get_preferences_v1_candidates_me_preferences_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "candidate"
+        ],
+        "summary": "Update Preferences",
+        "operationId": "update_preferences_v1_candidates_me_preferences_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[0-9]+\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidatePreferenceCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/v1/candidates/me/publication": {
       "put": {
         "tags": [
@@ -803,6 +1882,66 @@
   },
   "components": {
     "schemas": {
+      "CandidatePreferenceCommand": {
+        "properties": {
+          "salary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonthlySalary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work_formats": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "remote",
+                "hybrid",
+                "onsite"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Work Formats"
+          },
+          "start_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StartWindow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "salary_tolerance_percent": {
+            "type": "integer",
+            "maximum": 25.0,
+            "minimum": 0.0,
+            "title": "Salary Tolerance Percent",
+            "default": 0
+          },
+          "share_in_matching": {
+            "type": "boolean",
+            "title": "Share In Matching",
+            "default": false
+          },
+          "confirmed": {
+            "type": "boolean",
+            "const": true,
+            "title": "Confirmed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "confirmed"
+        ],
+        "title": "CandidatePreferenceCommand"
+      },
       "ContactsCommand": {
         "properties": {
           "email": {
@@ -864,6 +2003,42 @@
           "trace_id"
         ],
         "title": "ErrorResponse"
+      },
+      "ExtractedPDF": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 40000,
+            "title": "Text"
+          },
+          "pages": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Pages"
+          },
+          "ocr_pages": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Ocr Pages"
+          },
+          "extractor": {
+            "type": "string",
+            "const": "isolated-pdf-v1",
+            "title": "Extractor",
+            "default": "isolated-pdf-v1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "pages"
+        ],
+        "title": "ExtractedPDF"
       },
       "Grade": {
         "type": "string",
@@ -931,11 +2106,40 @@
             "format": "date-time",
             "title": "Decided At"
           },
+          "decision_revision": {
+            "type": "integer",
+            "maximum": 2.0,
+            "minimum": 1.0,
+            "title": "Decision Revision",
+            "default": 1
+          },
+          "supersedes_decision_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Decision Id"
+          },
           "demo": {
             "type": "boolean",
             "const": true,
             "title": "Demo",
             "default": true
+          },
+          "qualification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QualificationEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "decision_id": {
             "type": "string",
@@ -960,6 +2164,113 @@
         ],
         "title": "HistoryItem"
       },
+      "ImportRemoved": {
+        "properties": {
+          "import_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Import Id"
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true,
+            "title": "Deleted",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "import_id"
+        ],
+        "title": "ImportRemoved"
+      },
+      "ImportView": {
+        "properties": {
+          "import_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Import Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "processing",
+              "review_ready",
+              "confirmed",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "extraction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtractedPDF"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requires_confirmation": {
+            "type": "boolean",
+            "title": "Requires Confirmation"
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResumeFields"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "import_id",
+          "status",
+          "digest",
+          "size",
+          "version",
+          "attempts",
+          "error",
+          "extraction",
+          "requires_confirmation",
+          "proposal"
+        ],
+        "title": "ImportView"
+      },
       "MarketReceipt": {
         "properties": {
           "candidate_id": {
@@ -975,11 +2286,15 @@
           "requester": {
             "type": "string",
             "enum": [
+              "achievements",
+              "integration",
+              "demo-ats",
               "candidate",
               "matching",
               "hiring",
               "notification",
-              "assessment"
+              "assessment",
+              "evaluation"
             ],
             "title": "Requester"
           },
@@ -998,10 +2313,38 @@
               "need",
               "purpose-permission",
               "contact-permission",
+              "resume-permission",
+              "company-result-permission",
+              "company-notice",
+              "appeal-notice",
               "contacts",
               "notice"
             ],
             "title": "Purpose"
+          },
+          "assignment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignment Id"
+          },
+          "result_grant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Grant Id"
           },
           "organization_id": {
             "anyOf": [
@@ -1080,8 +2423,15 @@
               {
                 "type": "string",
                 "enum": [
+                  "achievement_import",
+                  "achievement_publication",
+                  "ats_export",
                   "profile_publication",
-                  "contact_disclosure"
+                  "contact_disclosure",
+                  "company_task_subscription",
+                  "resume_publication",
+                  "external_service_notifications",
+                  "external_marketing_notifications"
                 ]
               },
               {
@@ -1140,11 +2490,15 @@
           "requester": {
             "type": "string",
             "enum": [
+              "achievements",
+              "integration",
+              "demo-ats",
               "candidate",
               "matching",
               "hiring",
               "notification",
-              "assessment"
+              "assessment",
+              "evaluation"
             ],
             "title": "Requester"
           },
@@ -1163,10 +2517,38 @@
               "need",
               "purpose-permission",
               "contact-permission",
+              "resume-permission",
+              "company-result-permission",
+              "company-notice",
+              "appeal-notice",
               "contacts",
               "notice"
             ],
             "title": "Purpose"
+          },
+          "assignment_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignment Id"
+          },
+          "result_grant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Grant Id"
           },
           "organization_id": {
             "anyOf": [
@@ -1245,8 +2627,15 @@
               {
                 "type": "string",
                 "enum": [
+                  "achievement_import",
+                  "achievement_publication",
+                  "ats_export",
                   "profile_publication",
-                  "contact_disclosure"
+                  "contact_disclosure",
+                  "company_task_subscription",
+                  "resume_publication",
+                  "external_service_notifications",
+                  "external_marketing_notifications"
                 ]
               },
               {
@@ -1266,6 +2655,50 @@
           "purpose"
         ],
         "title": "MarketRequest"
+      },
+      "MonthlySalary": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "const": "RUB",
+            "title": "Currency",
+            "default": "RUB"
+          },
+          "period": {
+            "type": "string",
+            "const": "month",
+            "title": "Period",
+            "default": "month"
+          },
+          "tax_basis": {
+            "type": "string",
+            "enum": [
+              "gross",
+              "net"
+            ],
+            "title": "Tax Basis"
+          },
+          "minimum": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Minimum"
+          },
+          "maximum": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Maximum"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tax_basis",
+          "minimum",
+          "maximum"
+        ],
+        "title": "MonthlySalary"
       },
       "Profile": {
         "properties": {
@@ -1376,6 +2809,499 @@
           "published"
         ],
         "title": "PublicationCommand"
+      },
+      "QualificationAdvice": {
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "specialization": {
+            "type": "string",
+            "title": "Specialization"
+          },
+          "assessed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Assessed At"
+          },
+          "current_grade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Grade"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "freshness": {
+            "type": "string",
+            "enum": [
+              "current",
+              "aging",
+              "expired"
+            ],
+            "title": "Freshness"
+          },
+          "repeat_recommended": {
+            "type": "boolean",
+            "title": "Repeat Recommended"
+          },
+          "retry_available": {
+            "type": "boolean",
+            "title": "Retry Available"
+          },
+          "next_attempt_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Next Attempt At"
+          },
+          "grade_change_available_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Grade Change Available At"
+          },
+          "recommended_next_grade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Grade"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "feedback": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Feedback"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "default": "qualification-advice-demo-v1"
+          },
+          "calibrated": {
+            "type": "boolean",
+            "title": "Calibrated",
+            "default": false
+          },
+          "demo": {
+            "type": "boolean",
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision_id",
+          "specialization",
+          "assessed_at",
+          "current_grade",
+          "freshness",
+          "repeat_recommended",
+          "retry_available",
+          "next_attempt_at",
+          "grade_change_available_at",
+          "recommended_next_grade",
+          "feedback"
+        ],
+        "title": "QualificationAdvice"
+      },
+      "QualificationEvidence": {
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Id"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest"
+          },
+          "assessed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Assessed At"
+          },
+          "score": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "competency_scores": {
+            "additionalProperties": {
+              "type": "integer",
+              "maximum": 100.0,
+              "minimum": 0.0
+            },
+            "type": "object",
+            "maxProperties": 20,
+            "minProperties": 1,
+            "title": "Competency Scores"
+          },
+          "competency_minimums": {
+            "additionalProperties": {
+              "type": "integer",
+              "maximum": 100.0,
+              "minimum": 0.0
+            },
+            "type": "object",
+            "maxProperties": 20,
+            "title": "Competency Minimums"
+          },
+          "next_attempt_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Next Attempt At"
+          },
+          "grade_change_available_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Grade Change Available At"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "policy_id",
+          "evidence_digest",
+          "assessed_at",
+          "score",
+          "competency_scores",
+          "next_attempt_at",
+          "grade_change_available_at"
+        ],
+        "title": "QualificationEvidence"
+      },
+      "ResumeConfirmation": {
+        "properties": {
+          "declared_skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Declared Skills"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "declared_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Summary",
+            "default": ""
+          },
+          "experience": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Experience"
+          },
+          "education": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Education"
+          },
+          "contacts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContactsCommand"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profile_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Profile Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display_name",
+          "specialization",
+          "declared_grade",
+          "profile_version"
+        ],
+        "title": "ResumeConfirmation"
+      },
+      "ResumeFields": {
+        "properties": {
+          "declared_skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Declared Skills"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Display Name"
+          },
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "declared_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Summary",
+            "default": ""
+          },
+          "experience": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Experience"
+          },
+          "education": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Education"
+          },
+          "contacts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContactsCommand"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "display_name",
+          "specialization",
+          "declared_grade"
+        ],
+        "title": "ResumeFields"
+      },
+      "ResumePublication": {
+        "properties": {
+          "published": {
+            "type": "boolean",
+            "title": "Published"
+          },
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "published"
+        ],
+        "title": "ResumePublication"
+      },
+      "ResumeView": {
+        "properties": {
+          "fields": {
+            "$ref": "#/components/schemas/ResumeFields"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "published": {
+            "type": "boolean",
+            "title": "Published"
+          },
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fields",
+          "version",
+          "published",
+          "consent_id"
+        ],
+        "title": "ResumeView"
+      },
+      "RightsExchange": {
+        "properties": {
+          "requester": {
+            "type": "string",
+            "title": "Requester"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "permission",
+              "export",
+              "correct",
+              "export-page"
+            ],
+            "title": "Operation"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16384
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "requester",
+          "operation",
+          "candidate_id",
+          "request_id",
+          "revision",
+          "nonce",
+          "issued_at"
+        ],
+        "title": "RightsExchange"
+      },
+      "RightsReceipt": {
+        "properties": {
+          "request_digest": {
+            "type": "string",
+            "title": "Request Digest"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_digest",
+          "issued_at",
+          "data"
+        ],
+        "title": "RightsReceipt"
+      },
+      "StartWindow": {
+        "properties": {
+          "earliest": {
+            "type": "string",
+            "format": "date",
+            "title": "Earliest"
+          },
+          "latest": {
+            "type": "string",
+            "format": "date",
+            "title": "Latest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "earliest",
+          "latest"
+        ],
+        "title": "StartWindow"
       },
       "ValidationError": {
         "properties": {

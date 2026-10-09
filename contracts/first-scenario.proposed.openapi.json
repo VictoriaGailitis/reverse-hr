@@ -1468,7 +1468,14 @@
               "recording",
               "profile_publication",
               "ats_export",
-              "contact_disclosure"
+              "achievement_import",
+              "achievement_publication",
+              "contact_disclosure",
+              "company_result_disclosure",
+              "company_task_subscription",
+              "resume_publication",
+              "external_service_notifications",
+              "external_marketing_notifications"
             ],
             "title": "Purpose"
           },
@@ -1517,7 +1524,14 @@
               "recording",
               "profile_publication",
               "ats_export",
-              "contact_disclosure"
+              "achievement_import",
+              "achievement_publication",
+              "contact_disclosure",
+              "company_result_disclosure",
+              "company_task_subscription",
+              "resume_publication",
+              "external_service_notifications",
+              "external_marketing_notifications"
             ],
             "title": "Purpose"
           },

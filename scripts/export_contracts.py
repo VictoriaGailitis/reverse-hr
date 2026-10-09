@@ -12,7 +12,7 @@ from fastapi.security import HTTPBearer
 from reverse_hr import contracts as dto
 from reverse_hr.app import ErrorResponse, create_app
 from reverse_hr.events import EventEnvelope
-from reverse_hr.settings import SERVICES, Settings
+from reverse_hr.settings import SIGNING_SERVICES, Settings
 
 root = Path("contracts")
 root.mkdir(exist_ok=True)
@@ -22,7 +22,7 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
 
-for service in SERVICES:
+for service in SIGNING_SERVICES:
     app = create_app(Settings(service_name=service))
     write(root / f"{service}.openapi.json", app.openapi())
     app.state.engine.dispose()
