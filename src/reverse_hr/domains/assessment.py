@@ -69,6 +69,9 @@ class Task(Contract):
     duration_seconds: int = Field(strict=True, ge=60, le=3600)
     reference_answer: str = Field(min_length=1, max_length=20000, pattern=r"\S")
     rubric: list[Criterion] = Field(min_length=1, max_length=20)
+    follows_task_key: str | None = Field(
+        default=None, pattern=r"^[a-z][a-z0-9_]{0,63}$", exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def valid_rubric(self):
@@ -112,6 +115,11 @@ class ContentPackage(Contract):
             raise ValueError("Unique competencies must exactly match rubric references")
         if len({task.key for task in self.tasks}) != len(self.tasks):
             raise ValueError("Task keys must be unique")
+        previous = set()
+        for task in self.tasks:
+            if task.follows_task_key is not None and task.follows_task_key not in previous:
+                raise ValueError("A follow-up must reference an earlier task in the same family")
+            previous.add(task.key)
         if sum(task.duration_seconds for task in self.tasks) > 7200:
             raise ValueError("Content duration exceeds two hours")
         if len(canonical(self)) > 262144:
@@ -173,7 +181,7 @@ def revision(session, family_id, number, body, actor):
         revision_id=str(uuid4()),
         family_id=str(family_id),
         number=number,
-        content=body.model_dump(mode="json"),
+        content=body.model_dump(mode="json", exclude_none=True),
         status="draft",
         version=1,
         created_by=str(actor.subject),

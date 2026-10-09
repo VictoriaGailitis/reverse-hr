@@ -52,6 +52,9 @@ class PracticalSession(AssessmentBase):
     plan_version_id: Mapped[str] = mapped_column(ForeignKey("plan_versions.plan_version_id"))
     grade_policy_id: Mapped[str | None] = mapped_column(String(36))
     grade_policy_digest: Mapped[str | None] = mapped_column(String(64))
+    selection_policy_id: Mapped[str | None] = mapped_column(String(36))
+    selection_policy_digest: Mapped[str | None] = mapped_column(String(64))
+    selection_policy_snapshot: Mapped[dict | None] = mapped_column(JSON)
     consent_id: Mapped[str] = mapped_column(String(36))
     stages: Mapped[list] = mapped_column(JSON)
     test_pins: Mapped[list | None] = mapped_column(JSON)
@@ -144,9 +147,22 @@ class StageProgress(Contract):
     digest: str | None
 
 
+class FollowupLink(Contract):
+    stage_id: UUID
+    parent_stage_id: UUID
+    available: bool
+
+
+class SelectionReceipt(Contract):
+    policy_id: UUID
+    policy_digest: str
+
+
 class SessionView(SessionSummary):
     stages: list[StageView]
     progress: list[StageProgress] = Field(default_factory=list)
+    followups: list[FollowupLink] = Field(default_factory=list)
+    selection: SelectionReceipt | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ReasonCommand(Contract):
@@ -214,18 +230,47 @@ def progress_view(row):
 
 
 def session_view(row):
+    if row.selection_policy_id:
+        from reverse_hr.domains.assessment_selection import selection_digest
+
+        if (
+            row.selection_policy_snapshot is None
+            or selection_digest(row.selection_policy_snapshot) != row.selection_policy_digest
+        ):
+            raise HTTPException(409, "Corrupted selection policy receipt")
     try:
         stored_pins(row, for_session=True)
     except ValueError as exc:
         raise HTTPException(409, "Corrupted session pins") from exc
+    progress = progress_view(row)
+    submitted = {str(stage.stage_id) for stage in progress if stage.status == "submitted"}
+    links = []
+    stages = []
+    for stage in row.stages:
+        visible = {key: stage[key] for key in StageView.model_fields}
+        parent = stage.get("follows_stage_id")
+        if parent:
+            available = parent in submitted
+            links.append(
+                {"stage_id": stage["stage_id"], "parent_stage_id": parent, "available": available}
+            )
+            if not available:
+                visible["instruction"] = "Уточнение откроется после отправки исходного решения."
+        stages.append(visible)
     return SessionView(
         session_id=row.session_id,
         plan_version_id=row.plan_version_id,
         status=row.status,
         version=row.version,
-        stages=row.stages,
+        stages=stages,
         current_stage_id=row.current_stage_id,
-        progress=progress_view(row),
+        progress=progress,
+        followups=links,
+        selection=SelectionReceipt(
+            policy_id=row.selection_policy_id, policy_digest=row.selection_policy_digest
+        )
+        if row.selection_policy_id
+        else None,
     ).model_dump(mode="json")
 
 
@@ -295,6 +340,8 @@ def create_plan(request: Request, actor: Actor, body: PlanCommand, idempotency: 
                         "duration_seconds": task["duration_seconds"],
                     }
                 )
+                if task.get("follows_task_key"):
+                    stages[-1]["follows_task_key"] = task["follows_task_key"]
         duration = sum(stage["duration_seconds"] for stage in stages)
         if len(stages) > 20 or duration > 7200:
             raise HTTPException(422)
@@ -443,110 +490,126 @@ def retire_plan(
     )
 
 
-@router.post("/assessment-sessions", response_model=SessionView, status_code=201)
-def create_session(request: Request, actor: Actor, body: SessionCommand, idempotency: CommandKey):
-    actor.require("candidate")
-    from reverse_hr.domains.assessment_plan_tests import check_pins, guard_owners, lock_suites
+def guard_session_admission(request, actor, body, session):
+    from reverse_hr.domains.assessment_plan_tests import guard_owners
 
-    def guard(session):
-        plan = session.get(PlanVersion, str(body.plan_version_id))
-        try:
-            pins = stored_pins(plan) if plan else []
-        except ValueError as exc:
-            raise HTTPException(409, "Corrupted plan pins") from exc
-        if body.grade_policy_id:
-            from reverse_hr.domains.assessment_grades import GradePolicy, calibration_owners
+    plan = session.get(PlanVersion, str(body.plan_version_id))
+    try:
+        pins = stored_pins(plan) if plan else []
+    except ValueError as exc:
+        raise HTTPException(409, "Corrupted plan pins") from exc
+    if body.grade_policy_id:
+        from reverse_hr.domains.assessment_grades import GradePolicy, calibration_owners
 
-            policy = session.get(GradePolicy, str(body.grade_policy_id))
-            if policy is None:
-                raise HTTPException(409)
-            policy_owners = calibration_owners(policy)
-            from reverse_hr.domains.assessment_plan_tests import owner_ids
-
-            all_owners = owner_ids(session, actor.subject, pins) | policy_owners
-            for owner in sorted(all_owners):
-                subject_lock(session, owner)
-                request.app.state.processing_access.check(UUID(owner))
-        if pins:
-            guard_owners(request, session, actor.subject, pins)
-        else:
-            subject_lock(session, actor.subject)
-        request.app.state.processing_access.check_assessment(
-            actor.subject, body.assessment_consent_id
-        )
-
-    def change(session):
-        if session.scalar(
-            select(PracticalSession.session_id)
-            .where(
-                PracticalSession.candidate_id == str(actor.subject),
-                PracticalSession.status.in_(["preflight", "in_progress"]),
-            )
-            .limit(1)
-        ):
+        policy = session.get(GradePolicy, str(body.grade_policy_id))
+        if policy is None:
             raise HTTPException(409)
-        plan = session.scalar(
-            select(PlanVersion)
-            .where(PlanVersion.plan_version_id == str(body.plan_version_id))
+        policy_owners = calibration_owners(policy)
+        from reverse_hr.domains.assessment_plan_tests import owner_ids
+
+        all_owners = owner_ids(session, actor.subject, pins) | policy_owners
+        for owner in sorted(all_owners):
+            subject_lock(session, owner)
+            request.app.state.processing_access.check(UUID(owner))
+    if pins:
+        guard_owners(request, session, actor.subject, pins)
+    else:
+        subject_lock(session, actor.subject)
+    request.app.state.processing_access.check_assessment(actor.subject, body.assessment_consent_id)
+
+
+def admit_session(request, actor, body, session):
+    from reverse_hr.domains.assessment_plan_tests import check_pins, lock_suites
+
+    if session.scalar(
+        select(PracticalSession.session_id)
+        .where(
+            PracticalSession.candidate_id == str(actor.subject),
+            PracticalSession.status.in_(["preflight", "in_progress"]),
+        )
+        .limit(1)
+    ):
+        raise HTTPException(409)
+    plan = session.scalar(
+        select(PlanVersion)
+        .where(PlanVersion.plan_version_id == str(body.plan_version_id))
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if plan is None:
+        raise HTTPException(404)
+    if plan.status != "published":
+        raise HTTPException(409)
+    try:
+        pins = stored_pins(plan)
+    except ValueError as exc:
+        raise HTTPException(409, "Corrupted plan pins") from exc
+    lock_suites(session, pins)
+    for revision_id in sorted(plan.revision_ids):
+        content = session.scalar(
+            select(ContentRevision)
+            .where(ContentRevision.revision_id == revision_id)
             .with_for_update()
             .execution_options(populate_existing=True)
         )
-        if plan is None:
-            raise HTTPException(404)
-        if plan.status != "published":
+        if content is None or content.status != "published":
             raise HTTPException(409)
-        try:
-            pins = stored_pins(plan)
-        except ValueError as exc:
-            raise HTTPException(409, "Corrupted plan pins") from exc
-        lock_suites(session, pins)
-        for revision_id in sorted(plan.revision_ids):
-            content = session.scalar(
-                select(ContentRevision)
-                .where(ContentRevision.revision_id == revision_id)
-                .with_for_update()
-                .execution_options(populate_existing=True)
-            )
-            if content is None or content.status != "published":
-                raise HTTPException(409)
-        check_pins(request, session, pins, plan.stages, current=True)
-        if body.grade_policy_id is not None:
-            from reverse_hr.domains.assessment_grades import admission, policy_digest
+    check_pins(request, session, pins, plan.stages, current=True)
+    from reverse_hr.domains.assessment_selection import enforce_limits
 
-            grade_policy = admission(session, actor.subject, plan, body.grade_policy_id)
-        stages = [dict(stage, stage_id=str(uuid4())) for stage in plan.stages]
-        session_pins = [
-            SessionSuitePin(**pin.model_dump(), stage_id=stages[pin.position]["stage_id"])
-            for pin in pins
-        ]
-        row = PracticalSession(
-            session_id=str(uuid4()),
-            candidate_id=str(actor.subject),
-            plan_version_id=plan.plan_version_id,
-            consent_id=str(body.assessment_consent_id),
-            grade_policy_id=str(body.grade_policy_id) if body.grade_policy_id else None,
-            grade_policy_digest=policy_digest(grade_policy) if body.grade_policy_id else None,
-            stages=stages,
-            test_pins=[pin.model_dump(mode="json") for pin in session_pins],
-            test_pins_digest=test_digest(SessionPins(pins=session_pins)),
-            status="preflight",
-            version=1,
-            created_at=datetime.now(UTC),
-        )
-        session.add(row)
-        emit(
-            session,
-            request,
-            row.session_id,
-            1,
-            "session_created",
-            {
-                "session_id": UUID(row.session_id),
-                "candidate_id": actor.subject,
-                "plan_version_id": body.plan_version_id,
-            },
-        )
-        return session_view(row)
+    enforce_limits(session, actor.subject, plan, body.grade_policy_id)
+    if body.grade_policy_id is not None:
+        from reverse_hr.domains.assessment_grades import admission, policy_digest
+
+        grade_policy = admission(session, actor.subject, plan, body.grade_policy_id)
+    stages = [dict(stage, stage_id=str(uuid4())) for stage in plan.stages]
+    by_task = {(stage["revision_id"], stage["task_key"]): stage["stage_id"] for stage in stages}
+    for stage in stages:
+        if stage.get("follows_task_key"):
+            stage["follows_stage_id"] = by_task[(stage["revision_id"], stage["follows_task_key"])]
+    session_pins = [
+        SessionSuitePin(**pin.model_dump(), stage_id=stages[pin.position]["stage_id"])
+        for pin in pins
+    ]
+    row = PracticalSession(
+        session_id=str(uuid4()),
+        candidate_id=str(actor.subject),
+        plan_version_id=plan.plan_version_id,
+        consent_id=str(body.assessment_consent_id),
+        grade_policy_id=str(body.grade_policy_id) if body.grade_policy_id else None,
+        grade_policy_digest=policy_digest(grade_policy) if body.grade_policy_id else None,
+        stages=stages,
+        test_pins=[pin.model_dump(mode="json") for pin in session_pins],
+        test_pins_digest=test_digest(SessionPins(pins=session_pins)),
+        status="preflight",
+        version=1,
+        created_at=datetime.now(UTC),
+    )
+    session.add(row)
+    emit(
+        session,
+        request,
+        row.session_id,
+        1,
+        "session_created",
+        {
+            "session_id": UUID(row.session_id),
+            "candidate_id": actor.subject,
+            "plan_version_id": body.plan_version_id,
+        },
+    )
+    return session_view(row)
+
+
+@router.post("/assessment-sessions", response_model=SessionView, status_code=201)
+def create_session(request: Request, actor: Actor, body: SessionCommand, idempotency: CommandKey):
+    actor.require("candidate")
+
+    def guard(session):
+        guard_session_admission(request, actor, body, session)
+
+    def change(session):
+        return admit_session(request, actor, body, session)
 
     def present(session, result):
         row = session.get(PracticalSession, result["session_id"])
@@ -663,6 +726,8 @@ def process_deletion_request(session, event):
             raise HTTPException(409)
         first = row.request_id is None
         row.blocked, row.request_id = True, str(event.aggregate_id)
+        from reverse_hr.domains.assessment_appeals import AppealAction, AppealDecision
+        from reverse_hr.domains.assessment_appeals import purge as purge_appeals
         from reverse_hr.domains.assessment_grades import (
             GradeDecision,
             GradePolicy,
@@ -670,9 +735,12 @@ def process_deletion_request(session, event):
             purge,
         )
 
+        purge_appeals(session, subject)
         purge(session, subject)
+        from reverse_hr.domains.company_assignments import purge as purge_assignments
         from reverse_hr.domains.company_tasks import purge as purge_company_proposals
 
+        purge_assignments(session, subject)
         purge_company_proposals(session, subject)
         operations = select(literal("grade_decision:") + PracticalSession.session_id).where(
             PracticalSession.candidate_id == subject
@@ -736,9 +804,36 @@ def process_deletion_request(session, event):
             )
             .limit(1)
         )
+        from reverse_hr.domains.assessment_selection import (
+            GeneratedVariant,
+            SelectionPolicy,
+            VariantTemplate,
+        )
+
+        selection_retained = session.scalar(
+            select(GeneratedVariant.revision_id)
+            .where(GeneratedVariant.created_by == subject)
+            .limit(1)
+        ) or any(
+            session.scalar(
+                select(model)
+                .where((model.created_by == subject) | (model.reviewed_by == subject))
+                .limit(1)
+            )
+            is not None
+            for model in (SelectionPolicy, VariantTemplate)
+        )
+        from reverse_hr.domains.company_assignments import CompanyAssignment
+
         row.status = (
             "restricted"
-            if retained_content
+            if session.scalar(
+                select(CompanyAssignment.assignment_id)
+                .where(CompanyAssignment.created_by == subject)
+                .limit(1)
+            )
+            or retained_content
+            or selection_retained
             or retained_plans
             or retained_suites
             or session.scalar(
@@ -749,6 +844,14 @@ def process_deletion_request(session, event):
             or any(
                 subject in calibration_owners(policy)
                 for policy in session.scalars(select(GradePolicy))
+            )
+            or session.scalar(
+                select(AppealAction.action_id).where(AppealAction.actor_id == subject).limit(1)
+            )
+            or session.scalar(
+                select(AppealDecision.decision_id)
+                .where(AppealDecision.reviewer_id == subject)
+                .limit(1)
             )
             or session.scalar(
                 select(GradeDecision.decision_id)

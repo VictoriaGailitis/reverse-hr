@@ -122,6 +122,10 @@ def start_stage(
         if stage is None or stage.session_id != row.session_id:
             raise HTTPException(404)
         spec = next(s for s in row.stages if s["stage_id"] == str(stage_id))
+        if spec.get("follows_stage_id"):
+            parent = session.get(StageState, spec["follows_stage_id"])
+            if parent is None or parent.status != "submitted":
+                raise HTTPException(409, "The initial solution must be submitted first")
         if stage.status != "pending" or spec["format"] not in {
             "code",
             "sql",
@@ -227,6 +231,9 @@ def submit_stage(
                     "plan_version_id": UUID(row.plan_version_id),
                 },
             )
+            from reverse_hr.domains.company_schedules import queue_result
+
+            queue_result(session, row)
         return session_view(row)
 
     return command(

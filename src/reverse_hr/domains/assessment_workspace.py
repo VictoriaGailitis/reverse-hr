@@ -83,6 +83,10 @@ def workspace_stage(
                     ),
                     None,
                 )
+            if stage and stage.get("follows_stage_id") and body.requester != "proctoring":
+                parent = session.get(StageState, stage["follows_stage_id"])
+                if parent is None or parent.status != "submitted":
+                    stage = None
             if (
                 stage
                 and body.purpose == "write"

@@ -350,3 +350,26 @@ def test_empty_pin_migration_roundtrip(service):
     assert empty.client.get("/health/ready").status_code == 503
     command.upgrade(config, "head")
     assert empty.client.get("/health/ready").status_code == 200
+
+
+def test_rotating_session_preserves_signed_hidden_suite_pins(setup, token):
+    from test_assessment_selection import policy
+
+    s = setup
+    second = publish(s, key="rotation-alternative")
+    assert second.status_code == 201
+    key, _ = policy(s.assessment, token, [s.version, second.json()])
+    body = dict(selection_policy_id=key, assessment_consent_id=str(uuid4()))
+    result = s.assessment.client.post(
+        "/v1/assessment-selected-sessions", headers=headers(s.auth, "rotate"), json=body
+    )
+    assert result.status_code == 201, result.text
+    assert "cases" not in result.text and "reference_answer" not in result.text
+    with Session(s.assessment.app.state.engine) as session:
+        row = session.get(PracticalSession, result.json()["session_id"])
+        original = session.get(PlanVersion, row.plan_version_id)
+        pins = stored_pins(row, for_session=True)
+        assert len(pins) == 1
+        assert pins[0].pin == stored_pins(original)[0].pin
+        assert str(pins[0].stage_id) == result.json()["stages"][0]["stage_id"]
+        assert row.selection_policy_id == key
