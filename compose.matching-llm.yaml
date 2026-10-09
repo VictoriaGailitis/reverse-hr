@@ -1,0 +1,9 @@
+# Optional egress/credential mount for the employer-query parser.
+# Use together with compose.yaml only after configuring MATCHING_LLM_*.
+services:
+  matching:
+    networks: [backend, llm-egress]
+    environment:
+      HR_MATCHING_LLM_KEY_FILE: /run/secrets/matching-llm-api-key
+    volumes:
+      - ./.secrets/matching-llm-api-key:/run/secrets/matching-llm-api-key:ro

@@ -16,6 +16,7 @@ from reverse_hr.processing_access import (
     sign,
     verify,
 )
+from reverse_hr.qualification_contracts import QualificationEvidence
 
 REQUEST = b"reverse-hr.confirmed-grade-request.v1\0"
 RESPONSE = b"reverse-hr.confirmed-grade-response.v1\0"
@@ -35,10 +36,15 @@ class DecisionSummary(Contract):
     target_grade: Grade
     status: Literal["confirmed", "rejected", "technical_failure"]
     decided_at: datetime
+    decision_revision: int = Field(default=1, strict=True, ge=1, le=2)
+    supersedes_decision_id: UUID | None = None
     demo: Literal[True] = True
+    qualification: QualificationEvidence | None = None
 
     @model_validator(mode="after")
     def aware(self):
+        if (self.decision_revision == 1) != (self.supersedes_decision_id is None):
+            raise ValueError("Invalid decision revision chain")
         if self.decided_at.tzinfo is None or self.decided_at > datetime.now(UTC):
             raise ValueError("Invalid decision time")
         return self
@@ -64,8 +70,9 @@ class ConfirmedGradeAccess(ProcessingAccess):
                 canonical(body),
                 sign(self.signatures, REQUEST, body),
                 origin=self.settings.assessment_api_url,
+                max_bytes=32768,
             )
-            if len(raw) > 4096:
+            if len(raw) > 32768:
                 raise ValueError("Oversized decision receipt")
             receipt = DecisionReceipt.model_validate_json(raw)
             verify(self.signatures, "assessment", signature, RESPONSE, receipt)

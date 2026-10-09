@@ -1,11 +1,11 @@
-"""Export minimal final decisions, without scores, submissions or reviewer reasoning."""
+"""Signed reviewed decisions and bounded competency evidence; no raw submissions."""
 
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Header, HTTPException, Request, Response
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -16,11 +16,26 @@ from reverse_hr.confirmed_grade_access import (
     DecisionRequest,
     DecisionSummary,
 )
+from reverse_hr.contracts import Contract
+from reverse_hr.domains.assessment_appeals import AppealDecision
 from reverse_hr.domains.assessment_evaluation import MaterialNonce
-from reverse_hr.domains.assessment_grades import GradeDecision, policy_owners, utc
+from reverse_hr.domains.assessment_grades import (
+    GradeDecision,
+    GradePolicy,
+    Rules,
+    policy_owners,
+    utc,
+)
 from reverse_hr.domains.assessment_sessions import PracticalSession, subject_lock
 from reverse_hr.event_transport import Signatures
 from reverse_hr.processing_access import canonical, fresh, sign, verify
+from reverse_hr.qualification_contracts import QualificationEvidence
+from reverse_hr.test_suites import digest
+
+
+class DecisionEvidence(Contract):
+    data: dict
+
 
 router = APIRouter(prefix="/internal/v1", tags=["internal-confirmed-grade"])
 
@@ -53,12 +68,27 @@ def confirmed_grade(
             session.flush()
             row = session.get(PracticalSession, str(body.session_id))
             decision = session.get(GradeDecision, str(body.decision_id))
+            corrected = session.get(AppealDecision, str(body.decision_id))
+            if corrected:
+                decision = corrected
+            correction = session.scalar(
+                select(AppealDecision).where(AppealDecision.session_id == str(body.session_id))
+            )
+            expected_version = (
+                corrected.session_version
+                if corrected
+                else correction.previous_session_version
+                if correction
+                else row.version
+                if row
+                else 0
+            )
             result = None
             if (
                 row
                 and decision
                 and row.status == "completed"
-                and row.version == body.session_version
+                and expected_version == body.session_version
                 and row.candidate_id == str(body.candidate_id)
                 and decision.session_id == row.session_id
                 and decision.candidate_id == row.candidate_id
@@ -72,11 +102,31 @@ def confirmed_grade(
                     request.app.state.processing_access.check_assessment(
                         body.candidate_id, UUID(row.consent_id)
                     )
+                    qualification = None
+                    policy = session.get(GradePolicy, decision.evidence.get("policy_id"))
+                    if policy and decision.score is not None and decision.competency_scores:
+                        rules = Rules.model_validate(policy.rules)
+                        qualification = QualificationEvidence(
+                            policy_id=policy.policy_id,
+                            evidence_digest=digest(DecisionEvidence(data=decision.evidence)),
+                            assessed_at=utc(decision.created_at),
+                            score=decision.score,
+                            competency_scores=decision.competency_scores,
+                            competency_minimums=rules.minimums,
+                            next_attempt_at=utc(decision.next_attempt_at),
+                            grade_change_available_at=utc(decision.created_at)
+                            + timedelta(seconds=rules.grade_change_seconds),
+                        )
                     result = DecisionSummary(
+                        qualification=qualification,
                         specialization=decision.specialization,
                         target_grade=decision.target_grade,
                         status=decision.status,
                         decided_at=utc(decision.created_at),
+                        decision_revision=2 if corrected else 1,
+                        supersedes_decision_id=corrected.original_decision_id
+                        if corrected
+                        else None,
                     )
                 except HTTPException as exc:
                     if exc.status_code != 409:

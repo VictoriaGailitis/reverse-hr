@@ -4,14 +4,15 @@ from datetime import UTC
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
-from sqlalchemy import JSON, String, select
+from sqlalchemy import JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from reverse_hr.auth import Actor
 from reverse_hr.commands import CommandKey, ExpectedVersion, execute
+from reverse_hr.confirmed_grade_access import DecisionSummary
 from reverse_hr.contracts import Grade
 from reverse_hr.domains.candidate import CandidateBase, CandidateProfile, router, subject_lock
-from reverse_hr.domains.candidate_grades import CandidateDecision, current_grade
+from reverse_hr.domains.candidate_grades import active_decisions, current_grade
 from reverse_hr.market_access import Signature, respond
 from reverse_hr.market_contracts import (
     CandidateCard,
@@ -36,6 +37,7 @@ class Contacts(CandidateBase):
     candidate_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     email: Mapped[str] = mapped_column(String(320))
     phone: Mapped[str | None] = mapped_column(String(30))
+    version: Mapped[int] = mapped_column(default=1, server_default="1")
 
 
 class CandidateNonce(NonceColumns, CandidateBase):
@@ -122,6 +124,9 @@ def update_contacts(request: Request, actor: Actor, body: ContactsCommand, idemp
         if row is None:
             row = Contacts(candidate_id=str(actor.subject))
             session.add(row)
+            row.version = 1
+        else:
+            row.version += 1
         row.email, row.phone = body.email, body.phone
         return body.model_dump(mode="json")
 
@@ -161,9 +166,7 @@ def profile_card(request: Request, body: MarketRequest, signature: Signature = N
         grade = current_grade(session, body.candidate_id, row.specialization)
         evidence = [
             d
-            for d in session.scalars(
-                select(CandidateDecision).where(CandidateDecision.candidate_id == row.candidate_id)
-            )
+            for d in active_decisions(session, row.candidate_id)
             if d.summary["specialization"] == row.specialization
             and d.summary["status"] == "confirmed"
             and Grade(d.summary["target_grade"]) == grade
@@ -177,8 +180,15 @@ def profile_card(request: Request, body: MarketRequest, signature: Signature = N
                 d.decision_id,
             )
         )
-        decision = evidence[0].decision_id if evidence else None
-        return CandidateCard(
+        # Refresh reviewed evidence on same-grade retests, without changing the grade.
+        from reverse_hr.domains.candidate_grades import grade_binding
+
+        _, decision = grade_binding(session, body.candidate_id, row.specialization)
+        chosen = next((item for item in evidence if item.decision_id == decision), None)
+        from reverse_hr.domains.candidate_preferences import public_preferences
+
+        card = CandidateCard(
+            preferences=public_preferences(session, body.candidate_id),
             candidate_id=body.candidate_id,
             display_name=row.display_name,
             specialization=row.specialization,
@@ -186,7 +196,24 @@ def profile_card(request: Request, body: MarketRequest, signature: Signature = N
             decision_id=decision,
             version=row.version,
             declared_skills=listing.declared_skills,
-        ).model_dump(mode="json"), revision
+            qualification=DecisionSummary.model_validate(chosen.summary).qualification
+            if chosen
+            else None,
+        ).model_dump(mode="json")
+        try:
+            request.app.state.processing_access.check(body.candidate_id)
+            request.app.state.market_access.require(
+                "privacy",
+                "purpose-permission",
+                candidate_id=body.candidate_id,
+                consent_id=UUID(listing.consent_id),
+                consent_purpose="profile_publication",
+            )
+        except HTTPException as exc:
+            if exc.status_code != 409:
+                raise
+            return None, revision
+        return card, revision
 
     return respond(
         request,
@@ -195,7 +222,7 @@ def profile_card(request: Request, body: MarketRequest, signature: Signature = N
         "candidate",
         "profile",
         CandidateNonce,
-        {"matching", "hiring"},
+        {"matching", "hiring", "integration"},
         check,
     )
 
@@ -227,6 +254,17 @@ def disclose(request: Request, body: MarketRequest, signature: Signature = None)
             if exc.status_code != 409:
                 raise
             return None, 0
+        from reverse_hr.audit_access import record_disclosure
+
+        record_disclosure(
+            session,
+            request,
+            "contacts",
+            body.invitation_id,
+            body.actor_id,
+            body.candidate_id,
+            body.organization_id,
+        )
         return dict(
             candidate_id=str(body.candidate_id),
             organization_id=str(body.organization_id),
@@ -236,5 +274,12 @@ def disclose(request: Request, body: MarketRequest, signature: Signature = None)
         ), 0
 
     return respond(
-        request, body, signature, "candidate", "contacts", CandidateNonce, {"hiring"}, check
+        request,
+        body,
+        signature,
+        "candidate",
+        "contacts",
+        CandidateNonce,
+        {"hiring", "integration"},
+        check,
     )
