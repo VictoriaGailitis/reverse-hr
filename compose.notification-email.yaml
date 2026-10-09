@@ -1,0 +1,43 @@
+# Optional real email delivery. Enable only with configured provider and consent policies.
+x-notification-email: &notification-email
+  HR_NOTIFICATION_DELIVERY_ENABLED: 'true'
+  HR_NOTIFICATION_PROVIDER_URL: ${NOTIFICATION_PROVIDER_URL:?Configure provider origin}
+  HR_NOTIFICATION_APPLICATION_LINK: ${NOTIFICATION_APPLICATION_LINK:?Configure static application link}
+  HR_NOTIFICATION_PROVIDER_KEY_FILE: /run/secrets/notification-provider-key
+  HR_NOTIFICATION_PROVIDER_CALLBACK_PUBLIC_KEY_FILE: /run/secrets/notification-callback.pub
+  HR_NOTIFICATION_CHALLENGE_KEY_FILE: /run/secrets/notification-challenge.key
+services:
+  notification:
+    environment:
+      <<: *notification-email
+    volumes:
+      - ./.secrets/notification-challenge.key:/run/secrets/notification-challenge.key:ro
+      - ./.secrets/notification-callback.pub:/run/secrets/notification-callback.pub:ro
+  notification-delivery:
+    build: .
+    profiles: [notification-email]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    networks: [backend, notification-egress]
+    environment:
+      <<: *notification-email
+      HR_SERVICE_NAME: notification
+      HR_DATABASE_URL: postgresql+psycopg://notification:${NOTIFICATION_DB_PASSWORD:?Generate .env first}@postgres:5432/notification
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/notification.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+      - ./.secrets/notification-provider-key:/run/secrets/notification-provider-key:ro
+      - ./.secrets/notification-callback.pub:/run/secrets/notification-callback.pub:ro
+      - ./.secrets/notification-challenge.key:/run/secrets/notification-challenge.key:ro
+    command: [python, -m, reverse_hr.worker, notification-delivery]
+    depends_on:
+      notification: {condition: service_healthy}
+      postgres: {condition: service_healthy}
+networks:
+  notification-egress:
+    driver: bridge
