@@ -152,7 +152,15 @@ def evaluation_material(
                         )
                         for c in suite.cases
                     ]
+                from sqlalchemy import select
+
+                from reverse_hr.domains.company_assignments import CompanyAssignment
+
+                assignment = session.scalar(
+                    select(CompanyAssignment).where(CompanyAssignment.session_id == row.session_id)
+                )
                 material = PinnedMaterial(
+                    company_organization_id=assignment.organization_id if assignment else None,
                     consent_id=row.consent_id,
                     plan_version_id=row.plan_version_id,
                     revision_id=revision.revision_id,

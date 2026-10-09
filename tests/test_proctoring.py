@@ -721,6 +721,12 @@ def test_generated_broker_topology_keeps_runner_contract_and_routes_proctoring(t
     assert result.returncode == 0
     definitions = json.loads((tmp_path / ".secrets/rabbitmq-definitions.json").read_text())
     bindings = definitions["bindings"]
+    assert any(
+        b["destination"] == "notification.incoming"
+        and b["source"] == "events.assessment"
+        and b["routing_key"] == "assessment.company_notification_requested.v1"
+        for b in bindings
+    )
     assert {
         b["routing_key"]
         for b in bindings
