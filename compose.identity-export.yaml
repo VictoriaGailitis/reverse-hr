@@ -1,0 +1,19 @@
+# Optional read-only Keycloak source for the signed Privacy archive.
+services:
+  privacy:
+    environment:
+      HR_IDENTITY_EXPORT_ENABLED: 'true'
+  identity:
+    networks: [backend, identity-export-egress]
+    environment:
+      HR_IDENTITY_EXPORT_ENABLED: 'true'
+      HR_IDENTITY_EXPORT_ORIGIN: ${IDENTITY_EXPORT_ORIGIN:?Configure fixed Keycloak origin}
+      HR_IDENTITY_EXPORT_REALM: ${IDENTITY_EXPORT_REALM:-reverse-hr}
+      HR_IDENTITY_EXPORT_CLIENT_ID: ${IDENTITY_EXPORT_CLIENT_ID:?Configure read-only service account}
+      HR_IDENTITY_EXPORT_KEY_FILE: /run/secrets/identity-export-client-secret
+      HR_IDENTITY_EXPORT_TRUSTED_LOCAL: ${IDENTITY_EXPORT_TRUSTED_LOCAL:-false}
+    volumes:
+      - ./.secrets/identity-export-client-secret:/run/secrets/identity-export-client-secret:ro
+networks:
+  identity-export-egress:
+    driver: bridge

@@ -189,7 +189,11 @@ def process_deletion_request(session, event):
         # Repeat the scrub even after inbox replay is assigned a new event ID.
         # Reusing the same request with a new event ID never creates another ACK.
         from reverse_hr.domains.candidate_grades import CandidateDecision
+        from reverse_hr.domains.candidate_preferences import PreferenceRow
+        from reverse_hr.domains.candidate_resume import purge
 
+        session.execute(delete(PreferenceRow).where(PreferenceRow.candidate_id == str(subject)))
+        purge(session, subject)
         session.execute(
             delete(CandidateDecision).where(CandidateDecision.candidate_id == str(subject))
         )

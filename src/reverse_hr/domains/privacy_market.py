@@ -6,10 +6,12 @@ from fastapi import APIRouter, Request
 from sqlalchemy import select
 
 from reverse_hr.domains.privacy import (
+    EXTERNAL_NOTIFICATION_PURPOSES,
     POLICIES,
     ConsentRecord,
     ContactGrant,
     ProcessingNonce,
+    processing_restricted,
     subject_lock,
 )
 from reverse_hr.market_access import Signature, respond
@@ -25,6 +27,9 @@ def purpose_permission(request: Request, body: MarketRequest, signature: Signatu
         consent = session.get(ConsentRecord, str(body.consent_id))
         allowed = bool(
             (subject is None or not subject.blocked)
+            and not processing_restricted(
+                session, body.candidate_id, domain=body.requester, purpose=body.consent_purpose
+            )
             and consent
             and consent.candidate_id == str(body.candidate_id)
             and consent.purpose == body.consent_purpose
@@ -40,7 +45,8 @@ def purpose_permission(request: Request, body: MarketRequest, signature: Signatu
         "privacy",
         "purpose-permission",
         ProcessingNonce,
-        {"candidate", "hiring"},
+        {"candidate", "hiring", "assessment", "achievements", "integration"}
+        | ({"notification"} if body.consent_purpose in EXTERNAL_NOTIFICATION_PURPOSES else set()),
         check,
     )
 
@@ -49,7 +55,9 @@ def purpose_permission(request: Request, body: MarketRequest, signature: Signatu
 def contact_permission(request: Request, body: MarketRequest, signature: Signature = None):
     def check(session):
         subject = subject_lock(session, body.candidate_id, allow_blocked=True)
-        if subject and subject.blocked:
+        if (subject and subject.blocked) or processing_restricted(
+            session, body.candidate_id, domain=body.requester, purpose="contact_disclosure"
+        ):
             return None, 0
         row = session.scalar(
             select(ContactGrant)
@@ -75,6 +83,6 @@ def contact_permission(request: Request, body: MarketRequest, signature: Signatu
         "privacy",
         "contact-permission",
         ProcessingNonce,
-        {"candidate", "hiring"},
+        {"candidate", "hiring", "integration"},
         check,
     )

@@ -200,6 +200,11 @@ def permitted_contact_grant(session, candidate_id, organization_id, *, now=None)
 
 router = APIRouter(prefix="/v1/consents", tags=["privacy"])
 # Technical demo policy. Not legally reviewed consent wording.
+EXTERNAL_NOTIFICATION_PURPOSES = {
+    "external_service_notifications",
+    "external_marketing_notifications",
+}
+
 POLICIES = {
     purpose: "demo-v1"
     for purpose in (
@@ -207,7 +212,14 @@ POLICIES = {
         "recording",
         "profile_publication",
         "ats_export",
+        "achievement_import",
+        "achievement_publication",
         "contact_disclosure",
+        "company_result_disclosure",
+        "company_task_subscription",
+        "resume_publication",
+        "external_service_notifications",
+        "external_marketing_notifications",
     )
 }
 
@@ -224,13 +236,15 @@ def view(row):
 
 @router.get("/policies")
 def policies(actor: Actor) -> dict[str, str]:
-    actor.require("candidate")
-    return POLICIES
+    return (
+        POLICIES
+        if "candidate" in actor.roles
+        else {purpose: POLICIES[purpose] for purpose in EXTERNAL_NOTIFICATION_PURPOSES}
+    )
 
 
 @router.get("", response_model=list[Consent])
 def list_consents(request: Request, actor: Actor):
-    actor.require("candidate")
     with Session(request.app.state.engine) as session, session.begin():
         subject_lock(session, actor.subject)
         return [
@@ -238,6 +252,11 @@ def list_consents(request: Request, actor: Actor):
             for row in session.scalars(
                 select(ConsentRecord)
                 .where(ConsentRecord.candidate_id == str(actor.subject))
+                .where(
+                    ConsentRecord.purpose.in_(EXTERNAL_NOTIFICATION_PURPOSES)
+                    if "candidate" not in actor.roles
+                    else True
+                )
                 .order_by(ConsentRecord.granted_at)
             )
         ]
@@ -245,7 +264,8 @@ def list_consents(request: Request, actor: Actor):
 
 @router.post("", response_model=Consent, status_code=201)
 def grant_consent(request: Request, actor: Actor, body: ConsentCommand, idempotency: CommandKey):
-    actor.require("candidate")
+    if body.purpose not in EXTERNAL_NOTIFICATION_PURPOSES:
+        actor.require("candidate")
     if POLICIES[body.purpose] != body.document_version:
         raise HTTPException(409)
 
@@ -293,8 +313,15 @@ def revoke_consent(
     idempotency: CommandKey,
     if_match: ExpectedVersion,
 ):
-    actor.require("candidate")
     version = int(if_match.strip('"'))
+
+    def guard(session):
+        subject_lock(session, actor.subject)
+        row = session.get(ConsentRecord, str(consent_id))
+        if row is None or row.candidate_id != str(actor.subject):
+            raise HTTPException(404)
+        if row.purpose not in EXTERNAL_NOTIFICATION_PURPOSES:
+            actor.require("candidate")
 
     def change(session):
         row = session.get(ConsentRecord, str(consent_id))
@@ -347,7 +374,7 @@ def revoke_consent(
         idempotency,
         {"version": version},
         change,
-        guard=lambda session: subject_lock(session, actor.subject),
+        guard=guard,
     )
 
 
@@ -548,7 +575,6 @@ deletions_router = APIRouter(prefix="/v1/deletion-requests", tags=["privacy"])
 
 @deletions_router.post("", response_model=DeletionView, status_code=202)
 def request_deletion(request: Request, actor: Actor, idempotency: CommandKey):
-    actor.require("candidate")
 
     def change(session):
         state = subject_lock(session, actor.subject, allow_blocked=True)
@@ -620,7 +646,6 @@ def request_deletion(request: Request, actor: Actor, idempotency: CommandKey):
 
 @deletions_router.get("/me", response_model=DeletionView)
 def get_deletion(request: Request, actor: Actor):
-    actor.require("candidate")
     with Session(request.app.state.engine) as session:
         row = session.scalar(
             select(DeletionRequest).where(DeletionRequest.candidate_id == str(actor.subject))
@@ -653,7 +678,10 @@ def processing_status(
         REQUEST_CONTEXT,
         RESPONSE_CONTEXT,
         ProcessingStatus,
-        lambda session, body, subject: subject is None or not subject.blocked,
+        lambda session, body, subject: (
+            (subject is None or not subject.blocked)
+            and not processing_restricted(session, body.candidate_id, domain=body.requester)
+        ),
     )
 
 
@@ -673,6 +701,9 @@ def assessment_permission(
             (subject is None or not subject.blocked)
             and consent is not None
             and consent.candidate_id == str(body.candidate_id)
+            and not processing_restricted(
+                session, body.candidate_id, domain=body.requester, purpose="assessment"
+            )
             and consent.purpose == "assessment"
             and consent.status == "active"
             and consent.document_version == "demo-v1"
@@ -762,6 +793,14 @@ def finalize_deletion(session, row, correlation_id, *, purge_backups=False):
         if not purge_backups:
             return False
         archive.purge_subject(row.candidate_id)
+    from reverse_hr.domains.privacy_company_results import CompanyResultGrant
+
+    session.execute(
+        delete(CompanyResultGrant).where(CompanyResultGrant.candidate_id == row.candidate_id)
+    )
+    from reverse_hr.domains.privacy_requests import scrub as scrub_requests
+
+    scrub_requests(session, row.candidate_id)
     session.execute(delete(ContactGrant).where(ContactGrant.candidate_id == row.candidate_id))
     session.execute(delete(ConsentRecord).where(ConsentRecord.candidate_id == row.candidate_id))
     session.execute(
@@ -822,6 +861,9 @@ def recording_permission(
             (subject is None or not subject.blocked)
             and consent is not None
             and consent.candidate_id == str(body.candidate_id)
+            and not processing_restricted(
+                session, body.candidate_id, domain=body.requester, purpose="recording"
+            )
             and consent.purpose == "recording"
             and consent.status == "active"
             and consent.document_version == "demo-v1"
@@ -830,3 +872,9 @@ def recording_permission(
     return signed_status(
         request, body, signature, RECORDING_REQUEST, RECORDING_RESPONSE, RecordingStatus, allowed
     )
+
+
+def processing_restricted(session, candidate, *, domain=None, purpose=None):
+    from reverse_hr.domains.privacy_requests import restriction
+
+    return restriction(session, candidate, domain=domain, purpose=purpose)
