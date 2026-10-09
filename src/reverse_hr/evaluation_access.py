@@ -5,7 +5,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
-from pydantic import Field, model_validator
+from pydantic import Field, model_serializer, model_validator
 
 from reverse_hr.contracts import Contract
 from reverse_hr.domains.assessment import Competency, Task
@@ -39,6 +39,7 @@ class TestCaseMetadata(Contract):
 
 
 class PinnedMaterial(Contract):
+    company_organization_id: UUID | None = None
     consent_id: UUID
     plan_version_id: UUID
     revision_id: UUID
@@ -50,6 +51,13 @@ class PinnedMaterial(Contract):
     test_suite: SessionSuitePin | None = None
     test_cases: list[TestCaseMetadata] = Field(default_factory=list, max_length=20)
     demo: Literal[True] = True
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler):
+        result = handler(self)
+        if self.company_organization_id is None:
+            result.pop("company_organization_id", None)
+        return result
 
     @model_validator(mode="after")
     def consistent(self):

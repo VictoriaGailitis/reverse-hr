@@ -444,6 +444,9 @@ def admission(session, candidate, plan, policy_id):
             )
         )
     )
+    from reverse_hr.domains.assessment_appeals import effective_decision
+
+    prior = [effective_decision(session, d) for d in prior]
     if any(utc(d.next_attempt_at) > now for d in prior):
         raise HTTPException(409, "Repeat attempt cooldown active")
     # A second scored attempt cannot bypass an unfinished first decision.
@@ -562,6 +565,9 @@ def evaluation(session, row, stages=None):
         select(GradeDecision).where(GradeDecision.session_id == row.session_id)
     )
     if decision:
+        from reverse_hr.domains.assessment_appeals import effective_decision
+
+        decision = effective_decision(session, decision)
         return SessionEvaluation(
             **base,
             status=decision.status,

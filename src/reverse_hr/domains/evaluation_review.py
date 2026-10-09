@@ -174,6 +174,19 @@ def result(session, row):
     )
 
 
+def independent_company_reviewer(request, actor, material):
+    if material.company_organization_id is not None:
+        receipt = request.app.state.market_access.fetch(
+            "employer",
+            "affiliation",
+            candidate_id=actor.subject,
+            actor_id=actor.subject,
+            organization_id=material.company_organization_id,
+        )
+        if receipt.allowed:
+            raise HTTPException(403, "Independent company task review required")
+
+
 def authorize(request, actor, stage_id):
     actor.require("assessment_reviewer", mfa=True)
     with Session(request.app.state.engine) as session:
@@ -197,6 +210,7 @@ def authorize(request, actor, stage_id):
     current = request.app.state.material_access.fetch(**refs)
     if current != material:
         raise HTTPException(503)
+    independent_company_reviewer(request, actor, material)
     fresh_source = request.app.state.artifact_access.fetch(
         **refs,
         format=material.task.format,
@@ -222,6 +236,7 @@ def guarded(request, actor, stage_id, candidate_id, authorized_version, session)
     if row.version != authorized_version:
         raise HTTPException(409)
     request.app.state.processing_access.check(actor.subject)
+    independent_company_reviewer(request, actor, PinnedMaterial.model_validate(row.material))
     request.app.state.processing_access.check_assessment(
         candidate_id, UUID(row.material["consent_id"])
     )
