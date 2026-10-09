@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 # Identifiers are a fixed allowlist; passwords are psql variables, not SQL interpolation.
-for service in identity privacy candidate employer assessment coding_workspace code_runner whiteboard media proctoring evaluation matching hiring achievements integration notification audit keycloak; do
+for service in identity privacy candidate employer assessment coding_workspace code_runner whiteboard media proctoring evaluation matching hiring achievements integration notification audit demo_fsp demo_codenrock demo_ats keycloak; do
   key="$(echo "$service" | tr '[:lower:]' '[:upper:]')_DB_PASSWORD"
   password="$(printenv "$key")"
   test -n "$password"

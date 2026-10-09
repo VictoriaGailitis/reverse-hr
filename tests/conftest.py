@@ -36,6 +36,9 @@ def service(tmp_path, keys):
         command.upgrade(migration_config(settings), "head")
         app = create_app(settings)
         if name in {
+            "achievements",
+            "integration",
+            "demo-ats",
             "candidate",
             "employer",
             "assessment",
