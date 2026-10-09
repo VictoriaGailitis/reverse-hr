@@ -113,8 +113,12 @@ def authorize(request, actor, session, data):
 
 
 def guard_case(request, actor, session, complaint_id):
+    from reverse_hr.review_sla import assignment_guard
+
     actor.require("company_moderator", mfa=True)
     data = related(session, complaint_id)
+    if data[1].status == "open":
+        assignment_guard(session, "hiring", "complaint", complaint_id, actor)
     for subject in sorted(data[-1] | {str(actor.subject)}):
         lock(session, HiringSubject, subject)
     authorize(request, actor, session, data)

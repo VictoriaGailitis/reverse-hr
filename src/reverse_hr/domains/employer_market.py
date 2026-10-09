@@ -10,6 +10,7 @@ from reverse_hr.domains.employer import (
     subject_lock,
     subject_visible,
 )
+from reverse_hr.domains.employer_trust import permitted
 from reverse_hr.market_access import Signature, respond
 from reverse_hr.market_contracts import MarketReceipt, MarketRequest
 from reverse_hr.market_state import NonceColumns
@@ -40,6 +41,7 @@ def membership(request: Request, body: MarketRequest, signature: Signature = Non
             or row is None
             or org is None
             or org.verification_status != "verified"
+            or not permitted(session, request, org)
             or not org.verified_by
             or not subject_visible(session, request, body.actor_id)
             or not subject_visible(session, request, org.verified_by)
@@ -54,7 +56,7 @@ def membership(request: Request, body: MarketRequest, signature: Signature = Non
         "employer",
         "membership",
         EmployerNonce,
-        {"matching", "hiring", "candidate"},
+        {"matching", "hiring", "candidate", "integration", "demo-ats"},
         check,
     )
 
@@ -83,7 +85,7 @@ def affiliation(request: Request, body: MarketRequest, signature: Signature = No
         "employer",
         "affiliation",
         EmployerNonce,
-        {"hiring", "assessment"},
+        {"hiring", "assessment", "evaluation"},
         check,
     )
 
@@ -105,6 +107,7 @@ def content_membership(request: Request, body: MarketRequest, signature: Signatu
             or row is None
             or org is None
             or org.verification_status != "verified"
+            or not permitted(session, request, org)
             or not org.verified_by
             or not subject_visible(session, request, body.actor_id)
             or not subject_visible(session, request, org.verified_by)

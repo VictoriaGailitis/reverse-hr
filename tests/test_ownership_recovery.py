@@ -380,5 +380,7 @@ def test_ownership_history_downgrade_is_protected(service, token):
                 decided_at=datetime.now(UTC),
             )
         )
-    with pytest.raises(RuntimeError, match="populated ownership recovery"):
+    # Newer heads preflight the entire path before dropping any tables.
+    with pytest.raises(RuntimeError, match="populated"):
         command.downgrade(config, "0004_employer")
+    assert employer.client.get("/health/ready").status_code == 200

@@ -395,11 +395,19 @@ def test_empty_domain_migration_round_trip(service, name):
 
 
 def test_hiring_upgrade_backfills_preexisting_accepted_dialog_without_fake_notices(flow):
+    from reverse_hr.domains.hiring import InvitationRevision
+
     s = flow
     config = migration_config(s.hiring.app.state.settings)
     with Session(s.hiring.app.state.engine) as session, session.begin():
         session.query(Dialog).delete()
         session.query(Notice).delete()
+    with pytest.raises(RuntimeError, match="populated"):
+        command.downgrade(config, "0002_hiring")
+    assert s.hiring.client.get("/health/ready").status_code == 200
+    # Explicitly construct pre-history data for this legacy upgrade fixture.
+    with Session(s.hiring.app.state.engine) as session, session.begin():
+        session.query(InvitationRevision).delete()
     command.downgrade(config, "0002_hiring")
     command.upgrade(config, "head")
     with Session(s.hiring.app.state.engine) as session:

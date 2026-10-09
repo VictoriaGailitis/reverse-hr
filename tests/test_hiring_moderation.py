@@ -148,6 +148,10 @@ def test_moderation_case_backfill_and_guarded_downgrade(case):
         command.downgrade(config, "0003_hiring")
     with Session(s.hiring.app.state.engine) as session, session.begin():
         session.query(ComplaintCase).delete()
+        # This legacy backfill fixture intentionally removes newer immutable history.
+        from reverse_hr.domains.hiring import InvitationRevision
+
+        session.query(InvitationRevision).delete()
     command.downgrade(config, "0003_hiring")
     command.upgrade(config, "head")
     assert s.hiring.client.get(s.casepath, headers=s.reviewer).json()["status"] == "open"

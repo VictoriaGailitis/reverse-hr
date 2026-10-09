@@ -65,7 +65,8 @@ class Complaint(HiringBase):
 class Notice(HiringBase):
     __tablename__ = "hiring_notices"
     notice_id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    invitation_id: Mapped[str] = mapped_column(String(36), index=True)
+    invitation_id: Mapped[str | None] = mapped_column(String(36), index=True)
+    application_id: Mapped[str | None] = mapped_column(String(36), index=True)
     recipient_id: Mapped[str] = mapped_column(String(36), index=True)
     author_id: Mapped[str] = mapped_column(String(36), index=True)
     kind: Mapped[str] = mapped_column(String(32))
@@ -237,6 +238,9 @@ def send_message(
             created_at=datetime.now(UTC),
         )
         session.add(msg)
+        from reverse_hr.domains.hiring_communication_risk import screen
+
+        screen(session, request, row, msg)
         notify(
             session,
             request,
@@ -384,6 +388,10 @@ def export_notice(request: Request, body: MarketRequest, signature: Signature):
         notice = session.get(Notice, str(body.notice_id))
         if notice is None or notice.recipient_id != str(body.candidate_id):
             return None, 0
+        if notice.application_id:
+            from reverse_hr.domains.hiring_vacancies import application_notice
+
+            return application_notice(request, session, notice)
         row = session.get(InvitationRow, notice.invitation_id)
         if row is None:
             return None, 0
@@ -421,8 +429,17 @@ def export_notice(request: Request, body: MarketRequest, signature: Signature):
 
 
 def scrub_dialogs(session, subject):
+    from reverse_hr.domains.hiring_communication_risk import scrub as scrub_risks
+
+    scrub_risks(session, subject)
+    from reverse_hr.domains.hiring_vacancies import Application
+
     ids = select(InvitationRow.invitation_id).where(
-        (InvitationRow.candidate_id == subject) | (InvitationRow.created_by == subject)
+        (InvitationRow.candidate_id == subject)
+        | (InvitationRow.created_by == subject)
+        | InvitationRow.invitation_id.in_(
+            select(Application.invitation_id).where(Application.created_by == subject)
+        )
     )
     affected_ids = list(session.scalars(ids))
     message_condition = Message.dialog_id.in_(affected_ids) | (Message.author_id == subject)

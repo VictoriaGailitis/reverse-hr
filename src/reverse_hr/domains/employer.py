@@ -26,6 +26,7 @@ class Organization(EmployerBase):
     verification_reason: Mapped[str | None] = mapped_column(String(2000))
     verified_by: Mapped[str | None] = mapped_column(String(36))
     version: Mapped[int]
+    trust_required: Mapped[bool] = mapped_column(default=False, server_default="0")
 
 
 class Membership(EmployerBase):
@@ -688,6 +689,9 @@ def process_deletion_request(session, event):
                         },
                     ),
                 )
+        from reverse_hr.domains.employer_trust import scrub
+
+        scrub(session, subject)
         # Other actors' cached add_member responses also contain this subject's UUID.
         session.execute(
             delete(IdempotencyRecord).where(

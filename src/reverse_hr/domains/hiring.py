@@ -9,7 +9,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
 from reverse_hr.auth import Actor
 from reverse_hr.commands import CommandKey, ExpectedVersion, execute
-from reverse_hr.contracts import ContactView
+from reverse_hr.contracts import ContactView, Contract
 from reverse_hr.db import enqueue
 from reverse_hr.events import EventEnvelope
 from reverse_hr.market_access import Signature, respond
@@ -60,6 +60,39 @@ class InvitationRow(HiringBase):
     consent_id: Mapped[str | None] = mapped_column(String(36))
 
 
+class InvitationRevision(HiringBase):
+    __tablename__ = "hiring_invitation_revisions"
+    invitation_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    version: Mapped[int] = mapped_column(primary_key=True)
+    candidate_id: Mapped[str] = mapped_column(String(36), index=True)
+    created_by: Mapped[str] = mapped_column(String(36), index=True)
+    predecessor_id: Mapped[str | None] = mapped_column(String(36))
+    terms: Mapped[dict] = mapped_column(JSON)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class RevisionView(Contract):
+    invitation_id: UUID
+    version: int
+    predecessor_id: UUID | None
+    terms: InvitationCreate
+    recorded_at: datetime
+
+
+def record_terms(session, row, predecessor=None):
+    session.add(
+        InvitationRevision(
+            invitation_id=row.invitation_id,
+            version=row.version,
+            candidate_id=row.candidate_id,
+            created_by=row.created_by,
+            predecessor_id=predecessor,
+            terms=dict(row.spec),
+            recorded_at=datetime.now(UTC),
+        )
+    )
+
+
 router = APIRouter(prefix="/v1", tags=["hiring"])
 internal_router = APIRouter(prefix="/internal/v1/market", tags=["internal-hiring"])
 
@@ -89,7 +122,7 @@ def invitation_view(row):
     data = {k: v for k, v in row.spec.items() if k != "expires_in_days"}
     status = (
         "expired"
-        if row.status == "sent" and utc(row.expires_at) <= datetime.now(UTC)
+        if row.status in {"sent", "viewed"} and utc(row.expires_at) <= datetime.now(UTC)
         else row.status
     )
     return InvitationView(
@@ -173,6 +206,10 @@ def update_need(
         existing = session.get(Need, str(need_id))
         if existing is None or existing.organization_id != str(body.organization_id):
             raise HTTPException(404)
+        from reverse_hr.domains.hiring_vacancies import Vacancy
+
+        if session.scalar(select(Vacancy.vacancy_id).where(Vacancy.need_id == str(need_id))):
+            raise HTTPException(409, "Managed vacancy requirements use the vacancy API")
         for subject in sorted({str(actor.subject), existing.created_by}):
             lock(session, HiringSubject, subject)
         request.app.state.processing_access.check(UUID(existing.created_by))
@@ -217,6 +254,20 @@ def export_need(request: Request, body: MarketRequest, signature: Signature = No
     def check(session):
         row = session.get(Need, str(body.need_id))
         owners = {str(body.actor_id)} | ({row.created_by} if row else set())
+        from reverse_hr.domains.hiring_vacancies import Vacancy, VacancyDecision, owner_active
+
+        vacancy = session.scalar(select(Vacancy).where(Vacancy.need_id == str(body.need_id)))
+        decision = (
+            session.scalar(
+                select(VacancyDecision).where(
+                    VacancyDecision.vacancy_id == vacancy.vacancy_id,
+                    VacancyDecision.revision == vacancy.revision,
+                )
+            )
+            if vacancy
+            else None
+        )
+        owners |= {decision.reviewer_id} if decision else set()
         states = [
             lock(session, HiringSubject, subject, allow_blocked=True) for subject in sorted(owners)
         ]
@@ -235,6 +286,23 @@ def export_need(request: Request, body: MarketRequest, signature: Signature = No
             return None, row.version if row else 0
         try:
             request.app.state.processing_access.check(UUID(row.created_by))
+            if vacancy:
+                session.refresh(vacancy)
+                current = session.scalar(
+                    select(VacancyDecision).where(
+                        VacancyDecision.vacancy_id == vacancy.vacancy_id,
+                        VacancyDecision.revision == vacancy.revision,
+                    )
+                )
+                if (
+                    vacancy.status != "published"
+                    or not current
+                    or current.outcome != "approved"
+                    or current.reviewer_id not in owners
+                ):
+                    return None, row.version
+                request.app.state.processing_access.check(UUID(current.reviewer_id))
+                owner_active(request, vacancy)
             request.app.state.market_access.require(
                 "employer",
                 "membership",
@@ -272,33 +340,7 @@ def invite(request: Request, actor: Actor, body: InvitationCreate, idempotency: 
             raise HTTPException(409)
 
     def change(session):
-        row = InvitationRow(
-            invitation_id=str(uuid4()),
-            candidate_id=str(body.candidate_id),
-            organization_id=str(body.organization_id),
-            created_by=str(actor.subject),
-            spec=body.model_dump(mode="json"),
-            status="sent",
-            version=1,
-            expires_at=datetime.now(UTC) + timedelta(days=body.expires_in_days),
-        )
-        session.add(row)
-        emit(
-            session,
-            request,
-            row.invitation_id,
-            1,
-            "invitation_sent",
-            dict(
-                invitation_id=UUID(row.invitation_id),
-                organization_id=body.organization_id,
-                candidate_id=body.candidate_id,
-            ),
-        )
-        from reverse_hr.domains.hiring_dialogs import notify
-
-        notify(session, request, row, row.candidate_id, "invitation_sent", actor.subject)
-        return invitation_view(row)
+        return invitation_view(create_invitation(session, request, actor, body))
 
     return execute(
         request.app.state.engine,
@@ -315,10 +357,49 @@ def invite(request: Request, actor: Actor, body: InvitationCreate, idempotency: 
     )
 
 
+def create_invitation(session, request, actor, body, *, draft=False, predecessor=None):
+    row = InvitationRow(
+        invitation_id=str(uuid4()),
+        candidate_id=str(body.candidate_id),
+        organization_id=str(body.organization_id),
+        created_by=str(actor.subject),
+        spec=body.model_dump(mode="json"),
+        status="draft" if draft else "sent",
+        version=1,
+        expires_at=datetime.now(UTC) + timedelta(days=body.expires_in_days),
+    )
+    session.add(row)
+    record_terms(session, row, predecessor)
+    if draft:
+        return row
+    emit(
+        session,
+        request,
+        row.invitation_id,
+        1,
+        "invitation_sent",
+        dict(
+            invitation_id=UUID(row.invitation_id),
+            organization_id=body.organization_id,
+            candidate_id=body.candidate_id,
+        ),
+    )
+    from reverse_hr.domains.hiring_dialogs import notify
+
+    notify(session, request, row, row.candidate_id, "invitation_sent", actor.subject)
+    return row
+
+
 def invitation_guard(request, actor, invitation_id, session, candidate_only=False, subjects=()):
     row = session.get(InvitationRow, str(invitation_id))
     if row is None:
         raise HTTPException(404)
+    from reverse_hr.domains.hiring_vacancies import Application
+
+    application = session.scalar(
+        select(Application).where(Application.invitation_id == str(invitation_id))
+    )
+    subjects = set(subjects) | ({application.created_by} if application else set())
     for subject in sorted({str(actor.subject), row.candidate_id, row.created_by} | set(subjects)):
         lock(session, HiringSubject, subject)
     row = session.scalar(
@@ -331,8 +412,12 @@ def invitation_guard(request, actor, invitation_id, session, candidate_only=Fals
         raise HTTPException(404)
     request.app.state.processing_access.check(UUID(row.candidate_id))
     request.app.state.processing_access.check(UUID(row.created_by))
+    for subject in sorted(subjects):
+        request.app.state.processing_access.check(UUID(str(subject)))
     if row.candidate_id == str(actor.subject):
         actor.require("candidate")
+        if row.status == "draft":
+            raise HTTPException(404)
     elif candidate_only:
         raise HTTPException(404)
     else:
@@ -370,7 +455,11 @@ def list_invitations(
             raise HTTPException(409)
         result = []
         for row in rows:
-            if states[row.candidate_id].blocked or states[row.created_by].blocked:
+            if (
+                (not organization_id and row.status == "draft")
+                or states[row.candidate_id].blocked
+                or states[row.created_by].blocked
+            ):
                 continue
             try:
                 request.app.state.processing_access.check(UUID(row.candidate_id))
@@ -444,7 +533,7 @@ def accept(
     def change(session):
         row = session.get(InvitationRow, str(invitation_id))
         if (
-            row.status != "sent"
+            row.status not in {"sent", "viewed"}
             or utc(row.expires_at) <= datetime.now(UTC)
             or row.version != int(if_match.strip('"'))
         ):
@@ -494,12 +583,15 @@ def transition(request, actor, invitation_id, idempotency, if_match, status):
     def change(session):
         row = session.get(InvitationRow, str(invitation_id))
         if (
-            row.status != "sent"
+            row.status not in {"sent", "viewed"}
             or utc(row.expires_at) <= datetime.now(UTC)
             or row.version != int(if_match.strip('"'))
         ):
             raise HTTPException(409)
         row.status, row.version = status, row.version + 1
+        from reverse_hr.domains.hiring_vacancies import invitation_closed
+
+        invitation_closed(session, request, actor, row)
         emit(
             session,
             request,
@@ -582,9 +674,24 @@ def process_deletion_request(session, event):
     from reverse_hr.market_cleanup import erase
 
     def scrub(subject):
+        from reverse_hr.domains.hiring_trust import scrub as scrub_trust
+
+        scrub_trust(session, subject)
         from reverse_hr.domains.hiring_dialogs import scrub_dialogs
 
         scrub_dialogs(session, subject)
+        from reverse_hr.domains.hiring_ats import scrub as scrub_ats
+
+        scrub_ats(session, subject)
+        from reverse_hr.domains.hiring_vacancies import scrub_vacancies
+
+        scrub_vacancies(session, subject)
+        session.execute(
+            delete(InvitationRevision).where(
+                (InvitationRevision.candidate_id == subject)
+                | (InvitationRevision.created_by == subject)
+            )
+        )
         session.execute(delete(Need).where(Need.created_by == subject))
         session.execute(
             delete(InvitationRow).where(
@@ -593,3 +700,304 @@ def process_deletion_request(session, event):
         )
 
     return erase(session, event, "hiring", HiringSubject, scrub)
+
+
+@internal_router.post("/resume-permission", response_model=MarketReceipt)
+def resume_permission(request: Request, body: MarketRequest, signature: Signature):
+    def checker(session):
+        from reverse_hr.auth import Principal
+        from reverse_hr.domains.hiring_dialogs import blocked
+
+        actor = Principal(body.actor_id, frozenset({"employer"}), False)
+        try:
+            row = invitation_guard(request, actor, body.invitation_id, session)
+            if (
+                row.candidate_id != str(body.candidate_id)
+                or row.organization_id != str(body.organization_id)
+                or row.status != "accepted"
+                or blocked(session, row.candidate_id, row.organization_id)
+            ):
+                return None, 0
+            request.app.state.market_access.require(
+                "privacy",
+                "contact-permission",
+                candidate_id=body.candidate_id,
+                organization_id=body.organization_id,
+                invitation_id=body.invitation_id,
+            )
+            return {"invitation_id": str(body.invitation_id)}, row.version
+        except HTTPException as exc:
+            if exc.status_code in {403, 404, 409}:
+                return None, 0
+            raise
+
+    return respond(
+        request,
+        body,
+        signature,
+        "hiring",
+        "resume-permission",
+        HiringNonce,
+        {"candidate", "integration"},
+        checker,
+    )
+
+
+@router.post("/invitation-drafts", response_model=InvitationView, status_code=201)
+def draft_invitation(
+    request: Request, actor: Actor, body: InvitationCreate, idempotency: CommandKey
+):
+    def guard(session):
+        for subject in sorted({str(actor.subject), str(body.candidate_id)}):
+            lock(session, HiringSubject, subject)
+        member(request, actor, body.organization_id)
+        request.app.state.processing_access.check(body.candidate_id)
+
+    return execute(
+        request.app.state.engine,
+        actor.subject,
+        "invitation_draft",
+        idempotency,
+        body.model_dump(mode="json"),
+        lambda session: invitation_view(
+            create_invitation(session, request, actor, body, draft=True)
+        ),
+        201,
+        guard=guard,
+        present=lambda session, value: invitation_view(
+            session.get(InvitationRow, value["invitation_id"])
+        ),
+    )
+
+
+@router.put("/invitations/{invitation_id}/draft", response_model=InvitationView)
+def edit_draft(
+    request: Request,
+    actor: Actor,
+    invitation_id: UUID,
+    body: InvitationCreate,
+    idempotency: CommandKey,
+    if_match: ExpectedVersion,
+):
+    def guard(session):
+        row = invitation_guard(request, actor, invitation_id, session)
+        member(request, actor, UUID(row.organization_id))
+        if (
+            row.status != "draft"
+            or row.candidate_id != str(body.candidate_id)
+            or row.organization_id != str(body.organization_id)
+        ):
+            raise HTTPException(409)
+
+    def change(session):
+        row = session.get(InvitationRow, str(invitation_id))
+        if row.version != int(if_match.strip('"')):
+            raise HTTPException(409)
+        row.spec, row.version = body.model_dump(mode="json"), row.version + 1
+        record_terms(session, row)
+        return invitation_view(row)
+
+    return execute(
+        request.app.state.engine,
+        actor.subject,
+        "edit_draft:" + str(invitation_id),
+        idempotency,
+        dict(body=body.model_dump(mode="json"), version=if_match),
+        change,
+        guard=guard,
+        present=lambda session, _: invitation_view(session.get(InvitationRow, str(invitation_id))),
+    )
+
+
+@router.post("/invitations/{invitation_id}/send", response_model=InvitationView)
+def send_draft(
+    request: Request,
+    actor: Actor,
+    invitation_id: UUID,
+    idempotency: CommandKey,
+    if_match: ExpectedVersion,
+):
+    def guard(session):
+        row = invitation_guard(request, actor, invitation_id, session)
+        member(request, actor, UUID(row.organization_id))
+        from reverse_hr.domains.hiring_dialogs import blocked
+
+        if blocked(session, row.candidate_id, row.organization_id):
+            raise HTTPException(409)
+        request.app.state.market_access.require(
+            "candidate", "profile", candidate_id=UUID(row.candidate_id)
+        )
+
+    def change(session):
+        row = session.get(InvitationRow, str(invitation_id))
+        if row.status != "draft" or row.version != int(if_match.strip('"')):
+            raise HTTPException(409)
+        row.status, row.version = "sent", row.version + 1
+        row.expires_at = datetime.now(UTC) + timedelta(days=row.spec["expires_in_days"])
+        record_terms(session, row)
+        emit(
+            session,
+            request,
+            row.invitation_id,
+            row.version,
+            "invitation_sent",
+            dict(
+                invitation_id=invitation_id,
+                candidate_id=UUID(row.candidate_id),
+                organization_id=UUID(row.organization_id),
+            ),
+        )
+        from reverse_hr.domains.hiring_dialogs import notify
+
+        notify(session, request, row, row.candidate_id, "invitation_sent", actor.subject)
+        return invitation_view(row)
+
+    return execute(
+        request.app.state.engine,
+        actor.subject,
+        "send_draft:" + str(invitation_id),
+        idempotency,
+        dict(version=if_match),
+        change,
+        guard=guard,
+        present=lambda session, _: invitation_view(session.get(InvitationRow, str(invitation_id))),
+    )
+
+
+@router.post("/invitations/{invitation_id}/view", response_model=InvitationView)
+def mark_viewed(
+    request: Request,
+    actor: Actor,
+    invitation_id: UUID,
+    idempotency: CommandKey,
+    if_match: ExpectedVersion,
+):
+    def change(session):
+        row = session.get(InvitationRow, str(invitation_id))
+        if (
+            row.status not in {"sent", "viewed"}
+            or utc(row.expires_at) <= datetime.now(UTC)
+            or row.version != int(if_match.strip('"'))
+        ):
+            raise HTTPException(409)
+        if row.status == "sent":
+            row.status, row.version = "viewed", row.version + 1
+            emit(
+                session,
+                request,
+                row.invitation_id,
+                row.version,
+                "invitation_viewed",
+                dict(
+                    invitation_id=invitation_id,
+                    candidate_id=actor.subject,
+                    organization_id=UUID(row.organization_id),
+                ),
+            )
+        return invitation_view(row)
+
+    return execute(
+        request.app.state.engine,
+        actor.subject,
+        "view:" + str(invitation_id),
+        idempotency,
+        dict(version=if_match),
+        change,
+        guard=lambda session: invitation_guard(request, actor, invitation_id, session, True),
+        present=lambda session, _: invitation_view(session.get(InvitationRow, str(invitation_id))),
+    )
+
+
+@router.post(
+    "/invitations/{invitation_id}/revisions", response_model=InvitationView, status_code=201
+)
+def revise_invitation(
+    request: Request,
+    actor: Actor,
+    invitation_id: UUID,
+    body: InvitationCreate,
+    idempotency: CommandKey,
+    if_match: ExpectedVersion,
+):
+    def guard(session):
+        row = invitation_guard(request, actor, invitation_id, session)
+        member(request, actor, UUID(row.organization_id))
+        from reverse_hr.domains.hiring_dialogs import blocked
+
+        if blocked(session, row.candidate_id, row.organization_id):
+            raise HTTPException(409)
+        if row.candidate_id != str(body.candidate_id) or row.organization_id != str(
+            body.organization_id
+        ):
+            raise HTTPException(409)
+        request.app.state.market_access.require(
+            "candidate", "profile", candidate_id=body.candidate_id
+        )
+
+    def change(session):
+        row = session.get(InvitationRow, str(invitation_id))
+        if row.status not in {"sent", "viewed", "accepted"} or row.version != int(
+            if_match.strip('"')
+        ):
+            raise HTTPException(409)
+        if row.status != "accepted" and utc(row.expires_at) <= datetime.now(UTC):
+            raise HTTPException(409)
+        if row.spec == body.model_dump(mode="json"):
+            raise HTTPException(409, "Terms are unchanged")
+        # Grants identify a concrete invitation. A replacement never inherits the old grant.
+        row.status, row.version = "revoked", row.version + 1
+        emit(
+            session,
+            request,
+            row.invitation_id,
+            row.version,
+            "invitation_revoked",
+            dict(
+                invitation_id=invitation_id,
+                candidate_id=UUID(row.candidate_id),
+                organization_id=UUID(row.organization_id),
+            ),
+        )
+        replacement = create_invitation(
+            session, request, actor, body, predecessor=str(invitation_id)
+        )
+        from reverse_hr.domains.hiring_vacancies import invitation_replaced
+
+        invitation_replaced(session, request, actor, row, replacement)
+        return invitation_view(replacement)
+
+    return execute(
+        request.app.state.engine,
+        actor.subject,
+        "revise:" + str(invitation_id),
+        idempotency,
+        dict(body=body.model_dump(mode="json"), version=if_match),
+        change,
+        201,
+        guard=guard,
+        present=lambda session, value: invitation_view(
+            session.get(InvitationRow, value["invitation_id"])
+        ),
+    )
+
+
+@router.get("/invitations/{invitation_id}/history", response_model=list[RevisionView])
+def invitation_history(request: Request, actor: Actor, invitation_id: UUID):
+    with Session(request.app.state.engine) as session, session.begin():
+        row = invitation_guard(request, actor, invitation_id, session)
+        values = session.scalars(
+            select(InvitationRevision)
+            .where(InvitationRevision.invitation_id == row.invitation_id)
+            .order_by(InvitationRevision.version)
+            .limit(100)
+        )
+        return [
+            RevisionView(
+                invitation_id=item.invitation_id,
+                version=item.version,
+                predecessor_id=item.predecessor_id,
+                terms=item.terms,
+                recorded_at=utc(item.recorded_at),
+            )
+            for item in values
+        ]
