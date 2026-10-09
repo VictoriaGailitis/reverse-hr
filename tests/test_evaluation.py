@@ -103,11 +103,14 @@ def test_same_stage_conflicting_reference_rolls_back_inbox(service, field):
         {"aggregate_id": uuid4()},
         {"producer": "hiring"},
         {"event_type": "assessment.stage_started.v1"},
-        {"occurred_at": datetime.now(UTC) + timedelta(minutes=5)},
+        {"occurred_at": None},
     ],
 )
 def test_malformed_submission_no_effect(service, change):
     target = service("evaluation")
+    if "occurred_at" in change:
+        # Compute at execution, not collection: a full run may take > 5 minutes.
+        change = change | {"occurred_at": datetime.now(UTC) + timedelta(minutes=5)}
     with pytest.raises(HTTPException):
         apply(target.app, submission().model_copy(update=change))
     assert not rows(target.app, Inbox)

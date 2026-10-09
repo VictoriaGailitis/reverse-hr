@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from dotenv import dotenv_values
 
-from reverse_hr.settings import SERVICES
+from reverse_hr.settings import SERVICES, SIGNING_SERVICES
 
 root = Path(".secrets")
 root.mkdir(mode=0o700, exist_ok=True)
@@ -49,7 +49,7 @@ users = [
 ]
 permissions = [{"user": "hr", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*"}]
 exchanges, queues, bindings = [], [], []
-for service in SERVICES:
+for service in SIGNING_SERVICES:
     path = root / f"{service}.key"
     if not path.exists():
         private = Ed25519PrivateKey.generate().private_bytes(
@@ -64,6 +64,8 @@ for service in SERVICES:
     public[service] = base64.b64encode(
         key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
     ).decode()
+    if service not in SERVICES:
+        continue
     users.append(
         {
             "name": service,
@@ -220,6 +222,16 @@ bindings.append(
         "arguments": {},
     }
 )
+bindings.append(
+    {
+        "source": "events.assessment",
+        "vhost": "/",
+        "destination": "notification.incoming",
+        "destination_type": "queue",
+        "routing_key": "assessment.company_notification_requested.v1",
+        "arguments": {},
+    }
+)
 # Proctoring consumes immutable environment references, never clipboard/source content.
 for event_type in (
     "whiteboard.board_created.v1",
@@ -275,6 +287,36 @@ for service in SERVICES:
             "arguments": {},
         }
     )
+bindings.append(
+    {
+        "source": "events.assessment",
+        "vhost": "/",
+        "destination": "notification.incoming",
+        "destination_type": "queue",
+        "routing_key": "assessment.appeal_notification_requested.v1",
+        "arguments": {},
+    }
+)
+bindings.append(
+    {
+        "source": "events.privacy",
+        "vhost": "/",
+        "destination": "integration.incoming",
+        "destination_type": "queue",
+        "routing_key": "privacy.consent_revoked.v1",
+        "arguments": {},
+    }
+)
+bindings.append(
+    {
+        "source": "events.integration",
+        "vhost": "/",
+        "destination": "hiring.incoming",
+        "destination_type": "queue",
+        "routing_key": "integration.ats_status_changed.v1",
+        "arguments": {},
+    }
+)
 definitions = {
     "vhosts": [{"name": "/"}],
     "users": users,

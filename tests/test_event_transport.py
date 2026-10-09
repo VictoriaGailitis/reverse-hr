@@ -18,12 +18,12 @@ from reverse_hr.domains.privacy import ConsentRecord, ContactGrant, PrivacyBase
 from reverse_hr.event_transport import InvalidEvent, PrivacyConsumer, Signatures, publish_one
 from reverse_hr.events import EventEnvelope
 from reverse_hr.replay import replay_outbox
-from reverse_hr.settings import SERVICES, Settings
+from reverse_hr.settings import SERVICES, SIGNING_SERVICES, Settings
 
 
 @pytest.fixture
 def signatures():
-    keys = {name: Ed25519PrivateKey.generate() for name in SERVICES}
+    keys = {name: Ed25519PrivateKey.generate() for name in SIGNING_SERVICES}
     public = {
         name: base64.b64encode(
             key.public_key().public_bytes(

@@ -7,7 +7,9 @@ from uuid import UUID
 from pydantic import Field, field_validator, model_validator
 
 from reverse_hr.contracts import Contract, Grade, SalaryRange
+from reverse_hr.matching_conditions import CandidatePreferences, EmploymentConditions
 from reverse_hr.processing_access import ProcessingRequest
+from reverse_hr.qualification_contracts import QualificationEvidence
 
 
 class Skills(Contract):
@@ -43,6 +45,8 @@ class CandidateCard(Skills):
     decision_id: UUID | None
     version: int = Field(strict=True, ge=1)
     demo: Literal[True] = True
+    qualification: QualificationEvidence | None = None
+    preferences: CandidatePreferences | None = None
 
 
 class ContactsCommand(Contract):
@@ -51,6 +55,7 @@ class ContactsCommand(Contract):
 
 
 class NeedCommand(Contract):
+    conditions: EmploymentConditions | None = None
     organization_id: UUID
     specialization: str = Field(min_length=1, max_length=100)
     confirmed_grade: Grade
@@ -70,7 +75,17 @@ class NeedView(NeedCommand):
 
 
 class MarketRequest(ProcessingRequest):
-    requester: Literal["candidate", "matching", "hiring", "notification", "assessment"]
+    requester: Literal[
+        "achievements",
+        "integration",
+        "demo-ats",
+        "candidate",
+        "matching",
+        "hiring",
+        "notification",
+        "assessment",
+        "evaluation",
+    ]
     purpose: Literal[
         "profile",
         "membership",
@@ -79,22 +94,44 @@ class MarketRequest(ProcessingRequest):
         "need",
         "purpose-permission",
         "contact-permission",
+        "resume-permission",
+        "company-result-permission",
+        "company-notice",
+        "appeal-notice",
         "contacts",
         "notice",
     ]
+    assignment_id: UUID | None = None
+    result_grant_id: UUID | None = None
     organization_id: UUID | None = None
     actor_id: UUID | None = None
     notice_id: UUID | None = None
     need_id: UUID | None = None
     invitation_id: UUID | None = None
     consent_id: UUID | None = None
-    consent_purpose: Literal["profile_publication", "contact_disclosure"] | None = None
+    consent_purpose: (
+        Literal[
+            "achievement_import",
+            "achievement_publication",
+            "ats_export",
+            "profile_publication",
+            "contact_disclosure",
+            "company_task_subscription",
+            "resume_publication",
+            "external_service_notifications",
+            "external_marketing_notifications",
+        ]
+        | None
+    ) = None
 
     @model_validator(mode="after")
     def refs(self):
         needed = {
             "profile": set(),
+            "company-result-permission": {"assignment_id", "organization_id", "result_grant_id"},
             "notice": {"notice_id"},
+            "company-notice": {"notice_id"},
+            "appeal-notice": {"notice_id"},
             "membership": {"organization_id", "actor_id"},
             "affiliation": {"organization_id", "actor_id"},
             "content-membership": {"organization_id", "actor_id"},
@@ -102,10 +139,13 @@ class MarketRequest(ProcessingRequest):
             "purpose-permission": {"consent_id", "consent_purpose"},
             "contact-permission": {"organization_id", "invitation_id"},
             "contacts": {"organization_id", "invitation_id", "actor_id"},
+            "resume-permission": {"organization_id", "invitation_id", "actor_id"},
         }[self.purpose]
         actual = {
             k
             for k in (
+                "assignment_id",
+                "result_grant_id",
                 "notice_id",
                 "organization_id",
                 "actor_id",
@@ -137,6 +177,7 @@ class MarketReceipt(MarketRequest):
 
 
 class InvitationCreate(Contract):
+    conditions: EmploymentConditions | None = None
     organization_id: UUID
     candidate_id: UUID
     description: str = Field(min_length=1, max_length=5000, pattern=r"\S")
@@ -144,15 +185,26 @@ class InvitationCreate(Contract):
     salary: SalaryRange
     expires_in_days: int = Field(default=14, strict=True, ge=1, le=90)
 
+    @model_validator(mode="after")
+    def salary_conditions(self):
+        if (
+            self.conditions
+            and self.conditions.salary
+            and self.conditions.salary.model_dump() != self.salary.model_dump()
+        ):
+            raise ValueError("Invitation and matching salary must agree")
+        return self
+
 
 class InvitationView(Contract):
+    conditions: EmploymentConditions | None = None
     invitation_id: UUID
     organization_id: UUID
     candidate_id: UUID
     description: str
     employer_contact: str
     salary: SalaryRange
-    status: Literal["sent", "accepted", "declined", "revoked", "expired"]
+    status: Literal["draft", "sent", "viewed", "accepted", "declined", "revoked", "expired"]
     version: int
     expires_at: datetime
 
@@ -167,11 +219,44 @@ class NoticeView(Contract):
     author_id: UUID
     notice_id: UUID
     recipient_id: UUID
-    invitation_id: UUID
+    invitation_id: UUID | None = None
+    application_id: UUID | None = None
     kind: Literal[
         "invitation_sent",
         "invitation_accepted",
         "invitation_declined",
         "invitation_revoked",
         "dialog_message",
+        "application_submitted",
+        "application_status_changed",
     ]
+
+    @model_validator(mode="after")
+    def notice_scope(self):
+        application = self.kind.startswith("application_")
+        if application != (self.application_id is not None) or application == (
+            self.invitation_id is not None
+        ):
+            raise ValueError("Invalid notice scope")
+        return self
+
+
+class CompanyNoticeView(Contract):
+    notice_id: UUID
+    assignment_id: UUID
+    organization_id: UUID
+    candidate_id: UUID
+    creator_id: UUID
+    author_id: UUID
+    recipient_id: UUID
+    kind: Literal["new_assignment", "deadline_reminder", "result_ready"]
+    category: Literal["service", "marketing"]
+
+
+class AppealNoticeView(Contract):
+    notice_id: UUID
+    appeal_id: UUID
+    candidate_id: UUID
+    recipient_id: UUID
+    author_id: UUID
+    kind: Literal["appeal_submitted", "appeal_review_started", "appeal_resolved"]

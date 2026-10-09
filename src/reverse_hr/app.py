@@ -16,7 +16,7 @@ from starlette.exceptions import HTTPException
 from reverse_hr.auth import TokenVerifier
 from reverse_hr.db import make_engine
 from reverse_hr.migrate import migration_config
-from reverse_hr.settings import Settings
+from reverse_hr.settings import SERVICES, Settings
 
 logger = logging.getLogger("reverse_hr.http")
 
@@ -58,6 +58,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.engine = engine
     app.state.token_verifier = TokenVerifier(config)
     if config.service_name in {
+        "achievements",
+        "integration",
+        "demo-ats",
         "candidate",
         "employer",
         "assessment",
@@ -70,10 +73,44 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "media",
         "whiteboard",
         "proctoring",
+        "audit",
+        "identity",
     }:
         from reverse_hr.processing_access import ProcessingAccess
 
         app.state.processing_access = ProcessingAccess(config)
+    if config.service_name in {
+        "achievements",
+        "integration",
+        "demo-ats",
+        "matching",
+        "hiring",
+        "candidate",
+    }:
+        from reverse_hr.exchange import ExchangeAccess
+        from reverse_hr.market_access import MarketAccess
+
+        app.state.exchange_access = ExchangeAccess(config)
+        if config.service_name != "matching":
+            app.state.market_access = MarketAccess(config)
+    if config.service_name in {
+        "achievements",
+        "integration",
+        "demo-ats",
+        "demo-fsp",
+        "demo-codenrock",
+    }:
+        from importlib import import_module
+
+        module = (
+            "demo_sources"
+            if config.service_name in {"demo-fsp", "demo-codenrock"}
+            else config.service_name.replace("-", "_")
+        )
+        domain = import_module("reverse_hr.domains." + module)
+        app.include_router(domain.router)
+        if hasattr(domain, "internal_router"):
+            app.include_router(domain.internal_router)
     if config.service_name in {"media", "whiteboard", "proctoring", "coding-workspace"}:
         from importlib import import_module
 
@@ -136,7 +173,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         configure_backups(engine, config)
     if config.service_name == "candidate":
-        from reverse_hr.domains import candidate_grades  # noqa: F401
+        from reverse_hr.domains import (
+            candidate_grades,  # noqa: F401
+            candidate_preferences,  # noqa: F401
+            candidate_resume,
+        )
+        from reverse_hr.media_antivirus import ClamdScanner
+        from reverse_hr.resume_access import PDFGuest
+
+        candidate_resume.configure(engine, config)
+        app.state.resume_guest = PDFGuest(config)
+        app.state.resume_scanner = (
+            ClamdScanner(config) if config.resume_antivirus_required else None
+        )
+        app.include_router(candidate_resume.router)
 
     if config.service_name == "code-runner":
         from reverse_hr.runner_exchange import ManifestAccess
@@ -180,27 +230,77 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
         app.state.stage_access = StageAccess(config)
         app.state.artifact_permit_access = ArtifactPermitAccess(config)
-    if config.service_name in {"candidate", "hiring", "matching", "notification", "assessment"}:
+    if config.service_name in {
+        "candidate",
+        "hiring",
+        "matching",
+        "notification",
+        "assessment",
+        "evaluation",
+    }:
         from reverse_hr.market_access import MarketAccess
 
         app.state.market_access = MarketAccess(config)
+    if config.service_name == "identity" and config.identity_export_enabled:
+        from reverse_hr.identity_export import KeycloakIdentityExport
+
+        provider = KeycloakIdentityExport(config)
+        app.state.identity_export_provider = engine.identity_export_provider = provider
+    if config.service_name == "notification":
+        from reverse_hr.domains.notification_delivery import (
+            internal_router as callback_router,
+        )
+        from reverse_hr.domains.notification_delivery import (
+            router as delivery_router,
+        )
+
+        app.include_router(delivery_router)
+        app.include_router(callback_router)
     if config.service_name == "candidate":
         from reverse_hr.domains.candidate_market import internal_router as market_router
 
         app.include_router(market_router)
+    if config.service_name == "candidate":
+        from reverse_hr.qualification_policy_access import QualificationPolicyAccess
+
+        app.state.qualification_policy_access = QualificationPolicyAccess(config)
+    if config.service_name in SERVICES:
+        from reverse_hr.privacy_request_exchange import RightsAccess
+        from reverse_hr.privacy_request_exchange import router as rights_exchange_router
+
+        app.state.rights_access = RightsAccess(config)
+        app.include_router(rights_exchange_router)
     if config.service_name == "privacy":
         from reverse_hr.domains.privacy_market import router as market_router
 
         app.include_router(market_router)
+        from reverse_hr.domains.privacy_company_results import router as company_results_router
+
+        app.include_router(company_results_router)
+        from reverse_hr.domains.privacy_requests import router as subject_requests_router
+
+        app.include_router(subject_requests_router)
+        from reverse_hr.domains.privacy_archives import router as archives_router
+
+        app.include_router(archives_router)
     if config.service_name == "employer":
         from reverse_hr.domains.employer_market import router as market_router
+        from reverse_hr.domains.employer_trust import router as trust_router
 
         app.include_router(market_router)
+        app.include_router(trust_router)
     if config.service_name == "hiring":
-        from reverse_hr.domains import hiring_dialogs, hiring_moderation  # noqa: F401
+        from reverse_hr.domains import (  # noqa: F401
+            hiring_communication_risk,
+            hiring_dialogs,
+            hiring_moderation,
+            hiring_trust,
+            hiring_vacancies,
+        )
         from reverse_hr.domains.hiring import internal_router as market_router
 
         app.include_router(market_router)
+        app.include_router(hiring_vacancies.router)
     if config.service_name in (
         "candidate",
         "privacy",
@@ -215,6 +315,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         "media",
         "whiteboard",
         "proctoring",
+        "audit",
     ):
         from importlib import import_module
 
@@ -224,8 +325,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             domain.router,
             responses={code: {"model": ErrorResponse} for code in (401, 403, 404, 409, 422, 503)},
         )
+        if config.service_name == "audit":
+            app.include_router(domain.internal_router)
         if config.service_name == "assessment":
+            app.include_router(import_module("reverse_hr.domains.assessment_selection").router)
             app.include_router(import_module("reverse_hr.domains.company_tasks").router)
+            app.include_router(import_module("reverse_hr.domains.company_assignments").router)
+            app.include_router(import_module("reverse_hr.domains.company_schedules").router)
             app.include_router(
                 import_module("reverse_hr.domains.assessment_sessions").router,
                 responses={
@@ -233,6 +339,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 },
             )
 
+    if config.service_name in {"hiring", "employer", "assessment"}:
+        from reverse_hr import review_sla
+
+        app.include_router(getattr(review_sla, config.service_name + "_router"))
     if config.service_name == "evaluation":
         from reverse_hr.evaluation_llm import router as model_router
 
@@ -249,10 +359,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             review_router,
             responses={code: {"model": ErrorResponse} for code in (401, 403, 404, 409, 422, 503)},
         )
+    if config.service_name == "matching":
+        from reverse_hr.qualification_policy_access import router as qualification_policy_router
+
+        app.include_router(qualification_policy_router)
+        app.state.matching_intent_gateway = None
+        if config.matching_llm_enabled:
+            from reverse_hr.matching_gateway import MatchingIntentGateway
+
+            app.state.matching_intent_gateway = MatchingIntentGateway(config)
+    if config.service_name == "hiring":
+        from reverse_hr.domains.hiring_ats import router as ats_router
+
+        app.include_router(ats_router)
     if config.service_name == "assessment":
         from reverse_hr.domains.assessment_grades import router as grade_router
 
         app.include_router(grade_router)
+        from reverse_hr.domains.assessment_appeals import internal_router as appeal_notices_router
+        from reverse_hr.domains.assessment_appeals import router as appeals_router
+
+        app.include_router(appeal_notices_router)
+
+        app.include_router(appeals_router)
         from reverse_hr.domains.assessment_confirmed_grade import router as confirmed_router
 
         app.include_router(confirmed_router)
@@ -398,6 +527,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     )
                     for name in tables:
                         connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
+                if config.service_name == "audit":
+                    from reverse_hr.domains.audit import AuditBase
+
+                    for table in AuditBase.metadata.sorted_tables:
+                        connection.execute(text(f"SELECT 1 FROM {table.name} LIMIT 0"))
+                if config.service_name == "candidate":
+                    connection.execute(text("SELECT version FROM candidate_contacts LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM candidate_preferences LIMIT 0"))
                 if config.service_name == "media":
                     if getattr(engine, "media_store", None) is None:
                         raise RuntimeError("Media storage unavailable")
@@ -405,7 +542,65 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         app.state.media_scanner.ready()
                     if config.media_decoder_required:
                         app.state.media_validator.ready()
+                if config.service_name in {
+                    "achievements",
+                    "integration",
+                    "demo-ats",
+                    "demo-fsp",
+                    "demo-codenrock",
+                }:
+                    from importlib import import_module
+
+                    module = (
+                        "demo_sources"
+                        if config.service_name in {"demo-fsp", "demo-codenrock"}
+                        else config.service_name.replace("-", "_")
+                    )
+                    domain = import_module("reverse_hr.domains." + module)
+                    base = {
+                        "achievements": "AchievementsBase",
+                        "integration": "IntegrationBase",
+                        "demo-ats": "DemoATSBase",
+                        "demo-fsp": "DemoSourceBase",
+                        "demo-codenrock": "DemoSourceBase",
+                    }[config.service_name]
+                    for table in getattr(domain, base).metadata.sorted_tables:
+                        connection.execute(text(f"SELECT 1 FROM {table.name} LIMIT 0"))
+                if config.service_name == "hiring":
+                    connection.execute(text("SELECT 1 FROM hiring_ats_statuses LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM hiring_employer_reviews LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM hiring_moderation_appeals LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM hiring_invitation_revisions LIMIT 0"))
+                if config.service_name == "employer":
+                    for table in (
+                        "employer_trust_decisions",
+                        "employer_sanctions",
+                        "employer_trust_appeals",
+                    ):
+                        connection.execute(text(f"SELECT 1 FROM {table} LIMIT 0"))
+                if config.service_name == "notification":
+                    connection.execute(
+                        text(
+                            "SELECT appeal_id, owner, category, assignment_id, application_id "
+                            "FROM notification_notices LIMIT 0"
+                        )
+                    )
+                    connection.execute(
+                        text("SELECT marketing_in_app FROM notification_preferences LIMIT 0")
+                    )
+                if config.service_name in {"hiring", "employer", "assessment"}:
+                    for suffix in ("review_pool", "review_sla", "review_actions"):
+                        connection.execute(
+                            text(f"SELECT 1 FROM {config.service_name}_{suffix} LIMIT 0")
+                        )
+                if config.service_name == "hiring":
+                    connection.execute(text("SELECT 1 FROM hiring_communication_risks LIMIT 0"))
                 if config.service_name == "privacy":
+                    connection.execute(text("SELECT 1 FROM company_result_grants LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM privacy_subject_requests LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM privacy_request_history LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM privacy_archives LIMIT 0"))
+                    connection.execute(text("SELECT 1 FROM privacy_archive_pages LIMIT 0"))
                     connection.execute(text("SELECT 1 FROM backup_store_identity LIMIT 0"))
                     from reverse_hr.backup_archive import bind as backup_bind
 
@@ -426,11 +621,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         "notification_subjects",
                         "notification_notices",
                         "notification_preferences",
+                        "notification_email_rate_windows",
+                        "notification_email_targets",
+                        "notification_email_preferences",
+                        "notification_email_challenges",
+                        "notification_deliveries",
+                        "notification_delivery_attempts",
+                        "notification_delivery_callbacks",
                     ):
                         connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
                 if config.service_name in {"matching", "hiring"}:
                     names = (
-                        ("matching_candidates", "matching_snapshots", "matching_subjects")
+                        (
+                            "matching_candidates",
+                            "matching_snapshots",
+                            "matching_subjects",
+                            "matching_governance_versions",
+                            "matching_intent_previews",
+                            "matching_policy_nonces",
+                        )
                         if config.service_name == "matching"
                         else (
                             "hiring_needs",
@@ -444,6 +653,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                             "hiring_complaint_cases",
                             "hiring_complaint_decisions",
                             "hiring_notices",
+                            "hiring_vacancies",
+                            "hiring_vacancy_decisions",
+                            "hiring_applications",
+                            "hiring_application_changes",
                         )
                     )
                     for name in names:
@@ -486,9 +699,29 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                             "candidate_publication",
                             "candidate_contacts",
                             "candidate_market_nonces",
+                            "candidate_resume_imports",
+                            "candidate_resumes",
+                            "candidate_resume_store",
                         ):
                             connection.execute(text(f"SELECT 1 FROM {name} LIMIT 0"))
                     if config.service_name == "assessment":
+                        for table in (
+                            "assessment_selection_policies",
+                            "assessment_variant_templates",
+                            "assessment_generated_variants",
+                            "assessment_appeals",
+                            "assessment_appeal_actions",
+                            "assessment_appeal_decisions",
+                            "assessment_appeal_notices",
+                            "company_subscriptions",
+                            "company_schedules",
+                            "company_jobs",
+                            "company_notice_sources",
+                            "company_assignment_origins",
+                            "company_delivery_limits",
+                        ):
+                            connection.execute(text(f"SELECT 1 FROM {table} LIMIT 0"))
+                        connection.execute(text("SELECT 1 FROM company_assignments LIMIT 0"))
                         connection.execute(text("SELECT 1 FROM company_task_proposals LIMIT 0"))
                         connection.execute(
                             text(
@@ -565,6 +798,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return error(
                 request, 503, "dependency_unavailable", "Database or migration unavailable"
             )
+        if config.service_name == "candidate" and config.resume_storage_root:
+            try:
+                from reverse_hr.domains.candidate_resume import storage
+
+                with Session(engine) as session, session.begin():
+                    storage(session)
+                app.state.resume_guest.ready()
+                if config.resume_antivirus_required:
+                    app.state.resume_scanner.ready()
+            except Exception as exc:
+                raise HTTPException(503) from exc
         return HealthResponse(status="ready", service=config.service_name)
 
     @app.get("/metrics", include_in_schema=False)

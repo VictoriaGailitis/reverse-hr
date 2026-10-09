@@ -42,6 +42,15 @@
         }
       },
       {
+        "name": "privacy_officer",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "requires_mfa"
+          ]
+        }
+      },
+      {
         "name": "technical_admin",
         "composite": true,
         "composites": {
@@ -52,6 +61,24 @@
       },
       {
         "name": "requires_mfa"
+      },
+      {
+        "name": "integration_admin"
+      },
+      {
+        "name": "achievement_partner"
+      },
+      {
+        "name": "achievement_moderator"
+      },
+      {
+        "name": "audit_reviewer",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "requires_mfa"
+          ]
+        }
       }
     ]
   },
@@ -265,7 +292,9 @@
         "company_moderator",
         "assessment_reviewer",
         "content_admin",
-        "technical_admin"
+        "technical_admin",
+        "privacy_officer",
+        "audit_reviewer"
       ]
     }
   ]

@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session
 from reverse_hr.contracts import ContactView
 from reverse_hr.evaluation_artifact_access import bound
 from reverse_hr.market_contracts import (
+    AppealNoticeView,
     CandidateCard,
+    CompanyNoticeView,
     MarketReceipt,
     MarketRequest,
     NeedView,
@@ -53,7 +55,23 @@ class MarketAccess(ProcessingAccess):
             if raw != canonical(receipt) or not bound(body, receipt):
                 raise ValueError("Unbound recruitment receipt")
             if receipt.allowed:
-                if purpose == "notice":
+                if purpose == "appeal-notice":
+                    notice = AppealNoticeView.model_validate(receipt.data)
+                    if (
+                        notice.notice_id != body.notice_id
+                        or notice.recipient_id != body.candidate_id
+                        or receipt.revision != 1
+                    ):
+                        raise ValueError("Unbound appeal notice")
+                elif purpose == "company-notice":
+                    notice = CompanyNoticeView.model_validate(receipt.data)
+                    if (
+                        notice.notice_id != body.notice_id
+                        or notice.recipient_id != body.candidate_id
+                        or receipt.revision != 1
+                    ):
+                        raise ValueError("Unbound company notice")
+                elif purpose == "notice":
                     notice = NoticeView.model_validate(receipt.data)
                     if (
                         notice.notice_id != body.notice_id
@@ -98,6 +116,15 @@ class MarketAccess(ProcessingAccess):
                         or UUID(receipt.data["consent_id"]) != body.consent_id
                     ):
                         raise ValueError("Unbound consent")
+                elif purpose == "company-result-permission":
+                    if receipt.data != {"result_grant_id": str(body.result_grant_id)}:
+                        raise ValueError("Invalid company result permission")
+                elif purpose == "resume-permission":
+                    if (
+                        receipt.data != {"invitation_id": str(body.invitation_id)}
+                        or receipt.revision < 1
+                    ):
+                        raise ValueError("Invalid resume permission")
                 elif purpose == "contact-permission":
                     if set(receipt.data) != {"grant_id"}:
                         raise ValueError("Invalid grant")

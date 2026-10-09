@@ -25,7 +25,7 @@ from reverse_hr.domains.coding_workspace import (
 from reverse_hr.domains.employer import process_deletion_request as process_employer_deletion
 from reverse_hr.domains.privacy import process_accepted_invitation, process_deletion_ack
 from reverse_hr.events import EventEnvelope
-from reverse_hr.settings import SERVICES, Settings
+from reverse_hr.settings import SERVICES, SIGNING_SERVICES, Settings
 
 MAX_EVENT_BYTES = 65536
 
@@ -40,7 +40,7 @@ def canonical(event: EventEnvelope) -> bytes:
 
 class Signatures:
     def __init__(self, service, private_key: bytes, public_keys: dict[str, str]):
-        if service not in SERVICES:
+        if service not in SIGNING_SERVICES:
             raise ValueError("Unknown signing identity")
         self.service = service
         self.private = Ed25519PrivateKey.from_private_bytes(private_key)
@@ -374,11 +374,25 @@ class MatchingConsumer(SignedConsumer):
 class HiringConsumer(SignedConsumer):
     service = "hiring"
 
+    def __init__(self, engine, signatures, settings):
+        super().__init__(engine, signatures, settings)
+        from reverse_hr.exchange import ExchangeAccess
+
+        self.exchange = ExchangeAccess(settings)
+        self.exchange._signatures = signatures
+
     def handler(self, event):
         from reverse_hr.domains.hiring import process_deletion_request
 
         if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
             return process_deletion_request
+        if (
+            event.producer == "integration"
+            and event.event_type == "integration.ats_status_changed.v1"
+        ):
+            from reverse_hr.domains.hiring_ats import process_status
+
+            return lambda session, event: process_status(session, event, self.exchange)
         raise InvalidEvent()
 
 
@@ -393,10 +407,25 @@ class NotificationConsumer(SignedConsumer):
         self.access._signatures = signatures
 
     def handler(self, event):
-        from reverse_hr.domains.notification import process_deletion_request, process_notice
+        from reverse_hr.domains.notification import (
+            process_appeal_notice,
+            process_company_notice,
+            process_deletion_request,
+            process_notice,
+        )
 
         if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
             return process_deletion_request
+        if (
+            event.producer == "assessment"
+            and event.event_type == "assessment.company_notification_requested.v1"
+        ):
+            return lambda session, event: process_company_notice(session, event, self.access)
+        if (
+            event.producer == "assessment"
+            and event.event_type == "assessment.appeal_notification_requested.v1"
+        ):
+            return lambda session, event: process_appeal_notice(session, event, self.access)
         if event.producer == "hiring" and event.event_type == "hiring.notification_requested.v1":
             return lambda session, event: process_notice(session, event, self.access)
         raise InvalidEvent()
@@ -438,3 +467,39 @@ class ProctoringConsumer(PracticalConsumer):
                 session, event, self.processing, self.stages
             )
         return super().handler(event)
+
+
+class AchievementsConsumer(SignedConsumer):
+    service = "achievements"
+
+    def handler(self, event):
+        from reverse_hr.domains.achievements import process_deletion_request
+
+        if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
+            return process_deletion_request
+        raise InvalidEvent()
+
+
+class IntegrationConsumer(SignedConsumer):
+    service = "integration"
+
+    def __init__(self, engine, signatures, settings):
+        super().__init__(engine, signatures, settings)
+        from types import SimpleNamespace
+
+        from reverse_hr.exchange import ExchangeAccess
+
+        access = ExchangeAccess(settings)
+        access._signatures = signatures
+        self.request = SimpleNamespace(
+            app=SimpleNamespace(state=SimpleNamespace(settings=settings, exchange_access=access))
+        )
+
+    def handler(self, event):
+        from reverse_hr.domains.integration import process_consent_revoked, process_deletion_request
+
+        if event.producer == "privacy" and event.event_type == "privacy.deletion_requested.v1":
+            return lambda session, message: process_deletion_request(session, message, self.request)
+        if event.producer == "privacy" and event.event_type == "privacy.consent_revoked.v1":
+            return lambda session, message: process_consent_revoked(session, message, self.request)
+        raise InvalidEvent()

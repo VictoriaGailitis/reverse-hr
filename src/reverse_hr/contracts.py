@@ -53,7 +53,18 @@ class Profile(ProfileUpdate):
 
 class ConsentCommand(Contract):
     purpose: Literal[
-        "assessment", "recording", "profile_publication", "ats_export", "contact_disclosure"
+        "assessment",
+        "recording",
+        "profile_publication",
+        "ats_export",
+        "achievement_import",
+        "achievement_publication",
+        "contact_disclosure",
+        "company_result_disclosure",
+        "company_task_subscription",
+        "resume_publication",
+        "external_service_notifications",
+        "external_marketing_notifications",
     ]
     document_version: str = Field(min_length=1, max_length=100)
 

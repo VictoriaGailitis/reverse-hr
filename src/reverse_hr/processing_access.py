@@ -23,6 +23,11 @@ class ProcessingRequest(Contract):
     candidate_id: UUID
     nonce: UUID
     requester: Literal[
+        "audit",
+        "identity",
+        "achievements",
+        "integration",
+        "demo-ats",
         "candidate",
         "employer",
         "assessment",

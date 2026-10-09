@@ -41,13 +41,27 @@ def main():
             "evaluate",
             "transcribe",
             "purge-backups",
+            "company-dispatch",
+            "review-sla",
+            "audit-retention",
+            "notification-delivery",
+            "resume-import",
+            "achievement-import",
+            "integrate",
+            "ats-callback",
         ],
     )
     args = parser.parse_args()
     settings = Settings()
     if args.mode in {"prepare", "collect", "evaluate"} and settings.service_name != "evaluation":
         parser.error("Material preparation requires Evaluation")
+    from reverse_hr.audit_transport import AuditConsumer
+    from reverse_hr.event_transport import AchievementsConsumer, IntegrationConsumer
+
     consumers = {
+        "audit": AuditConsumer,
+        "achievements": AchievementsConsumer,
+        "integration": IntegrationConsumer,
         "privacy": PrivacyConsumer,
         "proctoring": ProctoringConsumer,
         "candidate": CandidateConsumer,
@@ -62,6 +76,18 @@ def main():
         "media": MediaConsumer,
         "whiteboard": WhiteboardConsumer,
     }
+    if args.mode == "audit-retention" and settings.service_name != "audit":
+        parser.error("Audit retention requires Audit")
+    delivery_provider = None
+    if args.mode == "notification-delivery":
+        if settings.service_name != "notification":
+            parser.error("External delivery requires Notification")
+        from reverse_hr.notification_provider import HttpMailProvider
+
+        try:
+            delivery_provider = HttpMailProvider(settings)
+        except Exception:
+            parser.error("External delivery requires an enabled configured HTTPS provider")
     if args.mode == "consume" and settings.service_name not in consumers:
         parser.error("Consumer is not implemented for this service")
     if args.mode == "diagnose" and (
@@ -107,8 +133,29 @@ def main():
             )
     if args.mode == "purge-backups" and settings.service_name != "privacy":
         parser.error("Backup cleanup requires Privacy")
+    if args.mode == "company-dispatch" and settings.service_name != "assessment":
+        parser.error("Company dispatch requires Assessment")
+    if args.mode == "review-sla" and settings.service_name not in {
+        "hiring",
+        "employer",
+        "assessment",
+    }:
+        parser.error("Review SLA requires Hiring, Employer or Assessment")
+    if args.mode == "resume-import" and settings.service_name != "candidate":
+        parser.error("Resume imports require Candidate")
+    expected = {
+        "achievement-import": "achievements",
+        "integrate": "integration",
+        "ats-callback": "demo-ats",
+    }
+    if args.mode in expected and settings.service_name != expected[args.mode]:
+        parser.error("Exchange worker mode does not match service")
     signatures = Signatures.from_settings(settings)
     engine = make_engine(settings.database_url.get_secret_value())
+    if settings.service_name == "candidate":
+        from reverse_hr.domains.candidate_resume import configure
+
+        configure(engine, settings)
     if settings.service_name == "privacy":
         from reverse_hr.backup_archive import configure as configure_backups
 
@@ -139,6 +186,122 @@ def main():
     try:
         while True:
             try:
+                if args.mode in {"achievement-import", "integrate", "ats-callback"}:
+                    from types import SimpleNamespace
+                    from uuid import uuid4
+
+                    from reverse_hr.exchange import ExchangeAccess
+                    from reverse_hr.market_access import MarketAccess
+                    from reverse_hr.processing_access import ProcessingAccess
+
+                    exchange, market, processing = (
+                        ExchangeAccess(settings),
+                        MarketAccess(settings),
+                        ProcessingAccess(settings),
+                    )
+                    exchange._signatures = market._signatures = processing._signatures = signatures
+                    request = SimpleNamespace(
+                        app=SimpleNamespace(
+                            state=SimpleNamespace(
+                                engine=engine,
+                                settings=settings,
+                                exchange_access=exchange,
+                                market_access=market,
+                                processing_access=processing,
+                            )
+                        ),
+                        state=SimpleNamespace(trace_id=uuid4()),
+                    )
+                    if args.mode == "achievement-import":
+                        from reverse_hr.domains.achievements import run_import as perform
+                    elif args.mode == "integrate":
+                        from reverse_hr.domains.integration import run_one as perform
+                    else:
+                        from reverse_hr.domains.demo_ats import run_callback as perform
+                    if not perform(request):
+                        time.sleep(1)
+                    continue
+                if args.mode == "notification-delivery":
+                    from types import SimpleNamespace
+                    from uuid import uuid4
+
+                    from reverse_hr.domains.notification_delivery import run_one
+                    from reverse_hr.market_access import MarketAccess
+                    from reverse_hr.processing_access import ProcessingAccess
+
+                    processing, market = ProcessingAccess(settings), MarketAccess(settings)
+                    processing._signatures = market._signatures = signatures
+                    request = SimpleNamespace(
+                        app=SimpleNamespace(
+                            state=SimpleNamespace(
+                                engine=engine,
+                                settings=settings,
+                                processing_access=processing,
+                                market_access=market,
+                            )
+                        ),
+                        state=SimpleNamespace(trace_id=uuid4()),
+                    )
+                    if not run_one(request, delivery_provider):
+                        time.sleep(1)
+                    continue
+                if args.mode == "resume-import":
+                    from reverse_hr.domains.candidate_resume import run_import_one
+                    from reverse_hr.media_antivirus import ClamdScanner
+                    from reverse_hr.processing_access import ProcessingAccess
+                    from reverse_hr.resume_access import PDFGuest
+
+                    processing = ProcessingAccess(settings)
+                    processing._signatures = signatures
+                    scanner = ClamdScanner(settings) if settings.resume_antivirus_required else None
+                    if not run_import_one(engine, processing, PDFGuest(settings), scanner):
+                        time.sleep(1)
+                    continue
+                if args.mode == "audit-retention":
+                    from reverse_hr.domains.audit import run_retention_one
+
+                    if not run_retention_one(engine, settings, signatures=signatures):
+                        time.sleep(1)
+                    continue
+                if args.mode == "review-sla":
+                    from types import SimpleNamespace
+                    from uuid import uuid4
+
+                    from reverse_hr.market_access import MarketAccess
+                    from reverse_hr.processing_access import ProcessingAccess
+                    from reverse_hr.review_sla import run_one as review_sla_one
+
+                    processing, market = ProcessingAccess(settings), MarketAccess(settings)
+                    processing._signatures = market._signatures = signatures
+                    request = SimpleNamespace(
+                        app=SimpleNamespace(
+                            state=SimpleNamespace(
+                                engine=engine,
+                                settings=settings,
+                                processing_access=processing,
+                                market_access=market,
+                            )
+                        ),
+                        state=SimpleNamespace(trace_id=uuid4()),
+                    )
+                    if not review_sla_one(request):
+                        time.sleep(1)
+                    continue
+                if args.mode == "company-dispatch":
+                    from reverse_hr.company_dispatch import run_one as dispatch_one
+                    from reverse_hr.grade_access import GradeAccess
+                    from reverse_hr.market_access import MarketAccess
+                    from reverse_hr.processing_access import ProcessingAccess
+
+                    processing, market, scores = (
+                        ProcessingAccess(settings),
+                        MarketAccess(settings),
+                        GradeAccess(settings),
+                    )
+                    processing._signatures = market._signatures = scores._signatures = signatures
+                    if not dispatch_one(engine, processing, market, scores):
+                        time.sleep(1)
+                    continue
                 if args.mode == "purge-backups":
                     from reverse_hr.backup_archive import run_one as purge_backups_one
 
