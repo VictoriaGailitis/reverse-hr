@@ -1,0 +1,470 @@
+[
+  {
+    "nodeId": "405:2840",
+    "target": "dashboard"
+  },
+  {
+    "nodeId": "405:2842",
+    "target": "profile"
+  },
+  {
+    "nodeId": "405:2844",
+    "target": "achievements"
+  },
+  {
+    "nodeId": "405:2846",
+    "target": "assessment"
+  },
+  {
+    "nodeId": "405:2848",
+    "target": "invitations"
+  },
+  {
+    "nodeId": "405:2850",
+    "target": "vacancies"
+  },
+  {
+    "nodeId": "405:2852",
+    "target": "messages"
+  },
+  {
+    "nodeId": "405:2854",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:2857",
+    "target": "start"
+  },
+  {
+    "nodeId": "405:2860",
+    "target": "organization"
+  },
+  {
+    "nodeId": "405:2862",
+    "target": "need"
+  },
+  {
+    "nodeId": "405:2864",
+    "target": "search"
+  },
+  {
+    "nodeId": "405:2866",
+    "target": "offer"
+  },
+  {
+    "nodeId": "405:2868",
+    "target": "vacancies"
+  },
+  {
+    "nodeId": "405:2870",
+    "target": "messages"
+  },
+  {
+    "nodeId": "405:2872",
+    "target": "constructor"
+  },
+  {
+    "nodeId": "405:2874",
+    "target": "ats"
+  },
+  {
+    "nodeId": "405:2877",
+    "target": "start"
+  },
+  {
+    "nodeId": "405:2880",
+    "target": "admin"
+  },
+  {
+    "nodeId": "405:2882",
+    "target": "review"
+  },
+  {
+    "nodeId": "405:2884",
+    "target": "constructor"
+  },
+  {
+    "nodeId": "405:2886",
+    "target": "organization"
+  },
+  {
+    "nodeId": "405:2888",
+    "target": "vacancies"
+  },
+  {
+    "nodeId": "405:2890",
+    "target": "achievements"
+  },
+  {
+    "nodeId": "405:2892",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:2895",
+    "target": "start"
+  },
+  {
+    "nodeId": "405:3985",
+    "target": "ats"
+  },
+  {
+    "nodeId": "405:3987",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:4056",
+    "target": "login"
+  },
+  {
+    "nodeId": "405:4060",
+    "target": "organization"
+  },
+  {
+    "nodeId": "405:4064",
+    "target": "admin"
+  },
+  {
+    "nodeId": "405:4071",
+    "target": "dashboard"
+  },
+  {
+    "nodeId": "405:4073",
+    "target": "dashboard"
+  },
+  {
+    "nodeId": "405:4087",
+    "target": "assessment"
+  },
+  {
+    "nodeId": "405:4092",
+    "target": "profile"
+  },
+  {
+    "nodeId": "405:4098",
+    "target": "assessment"
+  },
+  {
+    "nodeId": "405:4105",
+    "target": "achievements"
+  },
+  {
+    "nodeId": "405:4111",
+    "target": "result"
+  },
+  {
+    "nodeId": "405:4116",
+    "target": "states"
+  },
+  {
+    "nodeId": "405:4120",
+    "target": "states"
+  },
+  {
+    "nodeId": "405:4124",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:4129",
+    "target": "equipment"
+  },
+  {
+    "nodeId": "405:4134",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:4147",
+    "target": "editor"
+  },
+  {
+    "nodeId": "405:4149",
+    "target": "video"
+  },
+  {
+    "nodeId": "405:4161",
+    "target": "video"
+  },
+  {
+    "nodeId": "405:4170",
+    "target": "board"
+  },
+  {
+    "nodeId": "405:4182",
+    "target": "video"
+  },
+  {
+    "nodeId": "405:4184",
+    "target": "processing"
+  },
+  {
+    "nodeId": "405:4189",
+    "target": "result"
+  },
+  {
+    "nodeId": "405:4194",
+    "target": "dashboard"
+  },
+  {
+    "nodeId": "405:4196",
+    "target": "review"
+  },
+  {
+    "nodeId": "405:4201",
+    "target": "review"
+  },
+  {
+    "nodeId": "405:4207",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:4211",
+    "target": "assessment"
+  },
+  {
+    "nodeId": "405:4215",
+    "target": "invitations"
+  },
+  {
+    "nodeId": "405:4217",
+    "target": "search"
+  },
+  {
+    "nodeId": "405:4224",
+    "target": "disclose"
+  },
+  {
+    "nodeId": "405:4226",
+    "target": "messages"
+  },
+  {
+    "nodeId": "405:4232",
+    "target": "disclose"
+  },
+  {
+    "nodeId": "405:4237",
+    "target": "disclosure-pending"
+  },
+  {
+    "nodeId": "405:4239",
+    "target": "invitations"
+  },
+  {
+    "nodeId": "405:4256",
+    "target": "states"
+  },
+  {
+    "nodeId": "405:4259",
+    "target": "states"
+  },
+  {
+    "nodeId": "405:4272",
+    "target": "need"
+  },
+  {
+    "nodeId": "405:4278",
+    "target": "ats"
+  },
+  {
+    "nodeId": "405:4290",
+    "target": "search"
+  },
+  {
+    "nodeId": "405:4297",
+    "target": "candidate"
+  },
+  {
+    "nodeId": "405:4303",
+    "target": "candidate"
+  },
+  {
+    "nodeId": "405:4311",
+    "target": "offer"
+  },
+  {
+    "nodeId": "405:4313",
+    "target": "search"
+  },
+  {
+    "nodeId": "405:4324",
+    "target": "invitations"
+  },
+  {
+    "nodeId": "405:4329",
+    "target": "invitations"
+  },
+  {
+    "nodeId": "405:4335",
+    "target": "disclose"
+  },
+  {
+    "nodeId": "405:4337",
+    "target": "messages"
+  },
+  {
+    "nodeId": "405:4342",
+    "target": "offer"
+  },
+  {
+    "nodeId": "405:4367",
+    "target": "admin"
+  },
+  {
+    "nodeId": "405:4369",
+    "target": "review"
+  },
+  {
+    "nodeId": "405:4377",
+    "target": "states"
+  },
+  {
+    "nodeId": "405:4383",
+    "target": "messages"
+  },
+  {
+    "nodeId": "405:4389",
+    "target": "review"
+  },
+  {
+    "nodeId": "405:4394",
+    "target": "constructor"
+  },
+  {
+    "nodeId": "405:4398",
+    "target": "review"
+  },
+  {
+    "nodeId": "405:4402",
+    "target": "states"
+  },
+  {
+    "nodeId": "405:4413",
+    "target": "result"
+  },
+  {
+    "nodeId": "405:4415",
+    "target": "processing"
+  },
+  {
+    "nodeId": "405:4419",
+    "target": "achievements"
+  },
+  {
+    "nodeId": "405:4423",
+    "target": "achievements"
+  },
+  {
+    "nodeId": "405:4427",
+    "target": "dashboard"
+  },
+  {
+    "nodeId": "405:4431",
+    "target": "editor"
+  },
+  {
+    "nodeId": "405:4435",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:4454",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:4516",
+    "target": "disclose"
+  },
+  {
+    "nodeId": "405:4518",
+    "target": "privacy"
+  },
+  {
+    "nodeId": "405:4536",
+    "target": "editor"
+  },
+  {
+    "nodeId": "405:4538",
+    "target": "video"
+  },
+  {
+    "nodeId": "405:4540",
+    "target": "board"
+  },
+  {
+    "nodeId": "405:5047",
+    "target": "assessment"
+  },
+  {
+    "nodeId": "405:5050",
+    "target": "mobile-invite"
+  },
+  {
+    "nodeId": "405:5060",
+    "target": "mobile-disclose"
+  },
+  {
+    "nodeId": "405:5062",
+    "target": "mobile-dashboard"
+  },
+  {
+    "nodeId": "405:5070",
+    "target": "disclosure-pending"
+  },
+  {
+    "nodeId": "405:5072",
+    "target": "mobile-invite"
+  },
+  {
+    "nodeId": "405:5108",
+    "target": "video-preview"
+  },
+  {
+    "nodeId": "405:5109",
+    "target": "video-preview"
+  },
+  {
+    "nodeId": "405:5114",
+    "target": "video-preview"
+  },
+  {
+    "nodeId": "405:5115",
+    "target": "video"
+  },
+  {
+    "nodeId": "405:5172",
+    "target": "board"
+  },
+  {
+    "nodeId": "405:5173",
+    "target": "video-recording"
+  },
+  {
+    "nodeId": "405:5178",
+    "target": "board"
+  },
+  {
+    "nodeId": "405:4466",
+    "target": "video-recording"
+  },
+  {
+    "nodeId": "405:4468",
+    "target": "video-preview"
+  },
+  {
+    "nodeId": "405:4155",
+    "target": "code-queued"
+  },
+  {
+    "nodeId": "405:5237",
+    "target": "editor"
+  },
+  {
+    "nodeId": "405:4141",
+    "target": "equipment-ready"
+  },
+  {
+    "nodeId": "405:5356",
+    "target": "editor"
+  },
+  {
+    "nodeId": "405:5357",
+    "target": "video"
+  }
+]

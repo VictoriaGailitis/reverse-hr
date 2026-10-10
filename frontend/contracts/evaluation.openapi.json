@@ -1,0 +1,3487 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Reverse HR / evaluation",
+    "description": "Service API; implemented routes are listed below.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/evaluations/{stage_id}/integrity": {
+      "get": {
+        "tags": [
+          "integrity"
+        ],
+        "summary": "Evaluation Integrity",
+        "operationId": "evaluation_integrity_v1_evaluations__stage_id__integrity_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegritySummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/recording/chunks/{number}": {
+      "get": {
+        "tags": [
+          "reviewer-recording-playback"
+        ],
+        "summary": "Reviewer Chunk",
+        "operationId": "reviewer_chunk_v1_evaluation_reviews_stages__stage_id__recording_chunks__number__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/collection-retry": {
+      "post": {
+        "tags": [
+          "evaluation-recovery"
+        ],
+        "summary": "Retry",
+        "operationId": "retry_v1_evaluation_reviews_stages__stage_id__collection_retry_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/subject-rights/{operation}": {
+      "post": {
+        "tags": [
+          "internal-subject-rights"
+        ],
+        "summary": "Exchange",
+        "operationId": "exchange_internal_v1_subject_rights__operation__post",
+        "parameters": [
+          {
+            "name": "operation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Operation"
+            }
+          },
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RightsExchange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RightsReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluations/stages/{stage_id}": {
+      "get": {
+        "tags": [
+          "evaluation"
+        ],
+        "summary": "Get Intake",
+        "operationId": "get_intake_v1_evaluations_stages__stage_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeView"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/model-attempts": {
+      "post": {
+        "tags": [
+          "evaluation-models"
+        ],
+        "summary": "Request Model",
+        "operationId": "request_model_v1_evaluation_reviews_stages__stage_id__model_attempts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelAttemptView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "evaluation-models"
+        ],
+        "summary": "Attempts",
+        "operationId": "attempts_v1_evaluation_reviews_stages__stage_id__model_attempts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModelAttemptView"
+                  },
+                  "title": "Response Attempts V1 Evaluation Reviews Stages  Stage Id  Model Attempts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/model-attempts/{attempt_id}/interrupt": {
+      "post": {
+        "tags": [
+          "evaluation-models"
+        ],
+        "summary": "Interrupt Attempt",
+        "operationId": "interrupt_attempt_v1_evaluation_reviews_stages__stage_id__model_attempts__attempt_id__interrupt_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "attempt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Attempt Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelAttemptView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/stage-score": {
+      "post": {
+        "tags": [
+          "internal-session-scores"
+        ],
+        "summary": "Stage Score",
+        "operationId": "stage_score_internal_v1_stage_score_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScoreReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/submitted-test-result": {
+      "post": {
+        "tags": [
+          "internal-test-results"
+        ],
+        "summary": "Receive Result",
+        "operationId": "receive_result_internal_v1_submitted_test_result_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResultDelivery"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultReceipt"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}": {
+      "get": {
+        "tags": [
+          "evaluation-review"
+        ],
+        "summary": "Get Workspace",
+        "operationId": "get_workspace_v1_evaluation_reviews_stages__stage_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewWorkspace"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/history": {
+      "get": {
+        "tags": [
+          "evaluation-review"
+        ],
+        "summary": "History",
+        "operationId": "history_v1_evaluation_reviews_stages__stage_id__history_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/reverse_hr__domains__evaluation_review__ReviewView"
+                  },
+                  "title": "Response History V1 Evaluation Reviews Stages  Stage Id  History Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/evaluation-reviews/stages/{stage_id}/reviews": {
+      "post": {
+        "tags": [
+          "evaluation-review"
+        ],
+        "summary": "Record Review",
+        "operationId": "record_review_v1_evaluation_reviews_stages__stage_id__reviews_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "summary": "Live",
+        "operationId": "live_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "summary": "Ready",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BoardCitation": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "object_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Object Id"
+          },
+          "object_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Object Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "snapshot_digest",
+          "object_id",
+          "object_digest"
+        ],
+        "title": "BoardCitation"
+      },
+      "BoardDocument": {
+        "properties": {
+          "state": {
+            "items": {
+              "$ref": "#/components/schemas/Shape"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "BoardDocument"
+      },
+      "Citation": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Path"
+          },
+          "file_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "File Digest"
+          },
+          "start_line": {
+            "type": "integer",
+            "maximum": 65537.0,
+            "minimum": 1.0,
+            "title": "Start Line"
+          },
+          "end_line": {
+            "type": "integer",
+            "maximum": 65537.0,
+            "minimum": 1.0,
+            "title": "End Line"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "path",
+          "file_digest",
+          "start_line",
+          "end_line"
+        ],
+        "title": "Citation"
+      },
+      "Competency": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Key"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "description"
+        ],
+        "title": "Competency"
+      },
+      "Criterion": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Key"
+          },
+          "competency": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Competency"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Description"
+          },
+          "points": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Points"
+          },
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "test_result",
+              "artifact",
+              "timestamped_recording",
+              "board_snapshot"
+            ],
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "competency",
+          "description",
+          "points",
+          "evidence"
+        ],
+        "title": "Criterion"
+      },
+      "CriterionDecision": {
+        "properties": {
+          "criterion_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Criterion Key"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          },
+          "test_proof_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Proof Digest"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Citations"
+          },
+          "recording_citations": {
+            "items": {
+              "$ref": "#/components/schemas/RecordingCitation"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Recording Citations"
+          },
+          "board_citations": {
+            "items": {
+              "$ref": "#/components/schemas/BoardCitation"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Board Citations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "criterion_key",
+          "reason"
+        ],
+        "title": "CriterionDecision"
+      },
+      "CriterionScore": {
+        "properties": {
+          "criterion_key": {
+            "type": "string",
+            "title": "Criterion Key"
+          },
+          "competency": {
+            "type": "string",
+            "title": "Competency"
+          },
+          "max_points": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Points"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "evidence_type": {
+            "type": "string",
+            "enum": [
+              "artifact",
+              "test_result",
+              "timestamped_recording",
+              "board_snapshot"
+            ],
+            "title": "Evidence Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "criterion_key",
+          "competency",
+          "max_points",
+          "evidence_type"
+        ],
+        "title": "CriterionScore"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Fields"
+          },
+          "trace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Trace Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "trace_id"
+        ],
+        "title": "ErrorResponse"
+      },
+      "File": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Path"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 65536,
+            "title": "Content"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "path",
+          "content"
+        ],
+        "title": "File"
+      },
+      "FilesCommand": {
+        "properties": {
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/File"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Files"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "files"
+        ],
+        "title": "FilesCommand"
+      },
+      "GatewayConfiguration": {
+        "properties": {
+          "origin": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Origin"
+          },
+          "max_request_bytes": {
+            "type": "integer",
+            "maximum": 262144.0,
+            "minimum": 1024.0,
+            "title": "Max Request Bytes",
+            "default": 65536
+          },
+          "max_input_tokens": {
+            "type": "integer",
+            "maximum": 262144.0,
+            "minimum": 1024.0,
+            "title": "Max Input Tokens"
+          },
+          "max_output_tokens": {
+            "type": "integer",
+            "maximum": 16384.0,
+            "minimum": 256.0,
+            "title": "Max Output Tokens"
+          },
+          "input_microusd_per_million_tokens": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 1.0,
+            "title": "Input Microusd Per Million Tokens"
+          },
+          "output_microusd_per_million_tokens": {
+            "type": "integer",
+            "maximum": 1000000000.0,
+            "minimum": 1.0,
+            "title": "Output Microusd Per Million Tokens"
+          },
+          "stage_budget_microusd": {
+            "type": "integer",
+            "maximum": 2147483647.0,
+            "minimum": 1.0,
+            "title": "Stage Budget Microusd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "origin",
+          "max_input_tokens",
+          "max_output_tokens",
+          "input_microusd_per_million_tokens",
+          "output_microusd_per_million_tokens",
+          "stage_budget_microusd"
+        ],
+        "title": "GatewayConfiguration"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "service": {
+            "type": "string",
+            "title": "Service"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "service"
+        ],
+        "title": "HealthResponse"
+      },
+      "IntakeView": {
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_material",
+              "material_retry",
+              "material_ready",
+              "material_blocked",
+              "material_unavailable",
+              "artifact_ready",
+              "artifact_retry",
+              "artifact_blocked",
+              "artifact_unavailable",
+              "needs_evidence",
+              "reviewed"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Received At"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "confirmed_grade": {
+            "type": "null",
+            "title": "Confirmed Grade"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_id",
+          "session_id",
+          "status",
+          "version",
+          "received_at"
+        ],
+        "title": "IntakeView"
+      },
+      "IntegritySummary": {
+        "properties": {
+          "track_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Id"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "timeline_version": {
+            "type": "integer",
+            "title": "Timeline Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "no_material",
+              "needs_review",
+              "clear",
+              "inconclusive",
+              "concern"
+            ],
+            "title": "Status"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "title": "Evidence Digest"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "gaps": {
+            "additionalProperties": {
+              "items": {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Gaps"
+          },
+          "streams": {
+            "items": {
+              "$ref": "#/components/schemas/StreamTiming"
+            },
+            "type": "array",
+            "title": "Streams"
+          },
+          "latest_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/reverse_hr__domains__proctoring__ReviewView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_telemetry_trusted": {
+            "type": "boolean",
+            "const": false,
+            "title": "Client Telemetry Trusted",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "track_id",
+          "candidate_id",
+          "session_id",
+          "stage_id",
+          "version",
+          "timeline_version",
+          "status",
+          "evidence_digest",
+          "flags",
+          "gaps",
+          "streams",
+          "latest_review"
+        ],
+        "title": "IntegritySummary"
+      },
+      "ModelAttemptView": {
+        "properties": {
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Attempt Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "prompt_version": {
+            "type": "string",
+            "title": "Prompt Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "ready",
+              "technical_failure",
+              "interrupted",
+              "blocked"
+            ],
+            "title": "Status"
+          },
+          "gateway_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GatewayConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "proposal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewCommand"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "cost_microusd": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Microusd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "attempt_id",
+          "stage_id",
+          "number",
+          "model",
+          "prompt_version",
+          "status",
+          "duration_ms",
+          "input_tokens",
+          "output_tokens",
+          "cost_microusd"
+        ],
+        "title": "ModelAttemptView"
+      },
+      "PinnedMaterial": {
+        "properties": {
+          "company_organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Organization Id"
+          },
+          "consent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Consent Id"
+          },
+          "plan_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Plan Version Id"
+          },
+          "revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision Id"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Digest"
+          },
+          "task": {
+            "$ref": "#/components/schemas/Task"
+          },
+          "competencies": {
+            "items": {
+              "$ref": "#/components/schemas/Competency"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Competencies"
+          },
+          "snapshot_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Snapshot Version"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "test_suite": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionSuitePin"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "test_cases": {
+            "items": {
+              "$ref": "#/components/schemas/TestCaseMetadata"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Test Cases"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "consent_id",
+          "plan_version_id",
+          "revision_id",
+          "content_digest",
+          "task",
+          "competencies",
+          "snapshot_version",
+          "snapshot_digest"
+        ],
+        "title": "PinnedMaterial"
+      },
+      "Point": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Y"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "Point"
+      },
+      "PracticalSource": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "voice",
+              "vcv",
+              "whiteboard"
+            ],
+            "title": "Format"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Digest"
+          },
+          "board": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BoardDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcript_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Id"
+          },
+          "transcript_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Digest"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TranscriptDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "format",
+          "digest"
+        ],
+        "title": "PracticalSource"
+      },
+      "ProbeRecord": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "maximum": 1.0,
+            "minimum": 1.0,
+            "title": "Version",
+            "default": 1
+          },
+          "node_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Node Id"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "fingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Fingerprint"
+          },
+          "passed": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 12.0,
+            "title": "Passed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "node_id",
+          "checked_at",
+          "fingerprint",
+          "passed"
+        ],
+        "title": "ProbeRecord"
+      },
+      "RecordingCitation": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "recording_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Recording Digest"
+          },
+          "transcript_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Transcript Id"
+          },
+          "transcript_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Transcript Digest"
+          },
+          "segment_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Segment Key"
+          },
+          "start_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 0.0,
+            "title": "Start Ms"
+          },
+          "end_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 1.0,
+            "title": "End Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "recording_digest",
+          "transcript_id",
+          "transcript_digest",
+          "segment_key",
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "RecordingCitation"
+      },
+      "ResultDelivery": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "code-runner",
+            "title": "Requester",
+            "default": "code-runner"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "submitted-test-delivery",
+            "title": "Purpose",
+            "default": "submitted-test-delivery"
+          },
+          "proof": {
+            "$ref": "#/components/schemas/TestProof"
+          },
+          "proof_signature": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Proof Signature"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "proof",
+          "proof_signature"
+        ],
+        "title": "ResultDelivery"
+      },
+      "ResultReceipt": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "code-runner",
+            "title": "Requester",
+            "default": "code-runner"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "submitted-test-delivery",
+            "title": "Purpose",
+            "default": "submitted-test-delivery"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "proof_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Proof Digest"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "stage_id",
+          "proof_digest",
+          "allowed"
+        ],
+        "title": "ResultReceipt"
+      },
+      "RetryView": {
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_id",
+          "status",
+          "version"
+        ],
+        "title": "RetryView"
+      },
+      "ReviewCommand": {
+        "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionDecision"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Decisions"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decisions",
+          "reason"
+        ],
+        "title": "ReviewCommand"
+      },
+      "ReviewResult": {
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "artifact_ready",
+              "needs_evidence",
+              "reviewed"
+            ],
+            "title": "Status"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "confirmed_grade": {
+            "type": "null",
+            "title": "Confirmed Grade"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/reverse_hr__domains__evaluation_review__ReviewView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_id",
+          "version",
+          "status",
+          "score",
+          "latest"
+        ],
+        "title": "ReviewResult"
+      },
+      "ReviewWorkspace": {
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "artifact_ready",
+              "needs_evidence",
+              "reviewed"
+            ],
+            "title": "Status"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "confirmed_grade": {
+            "type": "null",
+            "title": "Confirmed Grade"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/reverse_hr__domains__evaluation_review__ReviewView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          },
+          "material": {
+            "$ref": "#/components/schemas/PinnedMaterial"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilesCommand"
+              },
+              {
+                "$ref": "#/components/schemas/PracticalSource"
+              }
+            ],
+            "title": "Source"
+          },
+          "trusted_test_points": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Trusted Test Points"
+          },
+          "test_proof_digest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Proof Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage_id",
+          "version",
+          "status",
+          "score",
+          "latest",
+          "material",
+          "source"
+        ],
+        "title": "ReviewWorkspace"
+      },
+      "RightsExchange": {
+        "properties": {
+          "requester": {
+            "type": "string",
+            "title": "Requester"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "permission",
+              "export",
+              "correct",
+              "export-page"
+            ],
+            "title": "Operation"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16384
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Request Id"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Revision"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "requester",
+          "operation",
+          "candidate_id",
+          "request_id",
+          "revision",
+          "nonce",
+          "issued_at"
+        ],
+        "title": "RightsExchange"
+      },
+      "RightsReceipt": {
+        "properties": {
+          "request_digest": {
+            "type": "string",
+            "title": "Request Digest"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_digest",
+          "issued_at",
+          "data"
+        ],
+        "title": "RightsReceipt"
+      },
+      "ScoreReceipt": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "assessment",
+            "title": "Requester",
+            "default": "assessment"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "session-score",
+            "title": "Purpose",
+            "default": "session-score"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "allowed": {
+            "type": "boolean",
+            "title": "Allowed"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StageScore"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "session_id",
+          "stage_id",
+          "workspace_id",
+          "snapshot_id",
+          "allowed"
+        ],
+        "title": "ScoreReceipt"
+      },
+      "ScoreRequest": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "assessment",
+            "title": "Requester",
+            "default": "assessment"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "session-score",
+            "title": "Purpose",
+            "default": "session-score"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "session_id",
+          "stage_id",
+          "workspace_id",
+          "snapshot_id"
+        ],
+        "title": "ScoreRequest"
+      },
+      "Segment": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Key"
+          },
+          "start_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 0.0,
+            "title": "Start Ms"
+          },
+          "end_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 1.0,
+            "title": "End Ms"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "start_ms",
+          "end_ms",
+          "text"
+        ],
+        "title": "Segment"
+      },
+      "SessionSuitePin": {
+        "properties": {
+          "position": {
+            "type": "integer",
+            "maximum": 19.0,
+            "minimum": 0.0,
+            "title": "Position"
+          },
+          "revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision Id"
+          },
+          "task_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Task Key"
+          },
+          "pin": {
+            "$ref": "#/components/schemas/SuitePin"
+          },
+          "validation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Validation Id"
+          },
+          "verdict_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Verdict Digest"
+          },
+          "attestation_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Attestation Digest"
+          },
+          "node_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Node Id"
+          },
+          "policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Policy Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "position",
+          "revision_id",
+          "task_key",
+          "pin",
+          "validation_id",
+          "verdict_digest",
+          "attestation_digest",
+          "node_id",
+          "policy_id",
+          "stage_id"
+        ],
+        "title": "SessionSuitePin"
+      },
+      "Shape": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "stroke",
+              "rectangle",
+              "ellipse",
+              "text"
+            ],
+            "title": "Kind"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/Point"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Points"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Text",
+            "default": ""
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "default": "#000000"
+          },
+          "width": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "default": 2
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "points"
+        ],
+        "title": "Shape"
+      },
+      "StageScore": {
+        "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
+          "llm_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Model"
+          },
+          "llm_prompt_digest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Prompt Digest"
+          },
+          "snapshot_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Snapshot Version"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision Id"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Digest"
+          },
+          "task_key": {
+            "type": "string",
+            "title": "Task Key"
+          },
+          "review_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Id"
+          },
+          "reviewer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewer Id"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionScore"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Criteria"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Evidence Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_version",
+          "snapshot_digest",
+          "revision_id",
+          "content_digest",
+          "task_key",
+          "review_id",
+          "reviewer_id",
+          "criteria",
+          "evidence_digest"
+        ],
+        "title": "StageScore"
+      },
+      "StreamTiming": {
+        "properties": {
+          "stream_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stream Id"
+          },
+          "client_started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Client Started At"
+          },
+          "server_received_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Server Received At"
+          },
+          "clock_or_delivery_offset_ms": {
+            "type": "integer",
+            "title": "Clock Or Delivery Offset Ms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stream_id",
+          "client_started_at",
+          "server_received_at",
+          "clock_or_delivery_offset_ms"
+        ],
+        "title": "StreamTiming"
+      },
+      "SuitePin": {
+        "properties": {
+          "suite_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Suite Id"
+          },
+          "revision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision Id"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Digest"
+          },
+          "definition_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Definition Digest"
+          },
+          "runtime_fingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Runtime Fingerprint"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "suite_id",
+          "revision_id",
+          "content_digest",
+          "definition_digest",
+          "runtime_fingerprint"
+        ],
+        "title": "SuitePin"
+      },
+      "Task": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Key"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "code",
+              "sql",
+              "vcv",
+              "voice",
+              "whiteboard"
+            ],
+            "title": "Format"
+          },
+          "instruction": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Instruction"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "maximum": 3600.0,
+            "minimum": 60.0,
+            "title": "Duration Seconds"
+          },
+          "reference_answer": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reference Answer"
+          },
+          "rubric": {
+            "items": {
+              "$ref": "#/components/schemas/Criterion"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Rubric"
+          },
+          "follows_task_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follows Task Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "format",
+          "instruction",
+          "duration_seconds",
+          "reference_answer",
+          "rubric"
+        ],
+        "title": "Task"
+      },
+      "TestCaseMetadata": {
+        "properties": {
+          "case_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Case Key"
+          },
+          "criterion_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Criterion Key"
+          },
+          "case_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Case Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_key",
+          "criterion_key",
+          "case_digest"
+        ],
+        "title": "TestCaseMetadata"
+      },
+      "TestOutcome": {
+        "properties": {
+          "case_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Case Key"
+          },
+          "criterion_key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,63}$",
+            "title": "Criterion Key"
+          },
+          "attempt_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Attempt Id"
+          },
+          "input_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Input Digest"
+          },
+          "case_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Case Digest"
+          },
+          "capture_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Capture Digest"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "inconclusive"
+            ],
+            "title": "Verdict"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "case_key",
+          "criterion_key",
+          "attempt_id",
+          "input_digest",
+          "case_digest",
+          "capture_digest",
+          "verdict"
+        ],
+        "title": "TestOutcome"
+      },
+      "TestProof": {
+        "properties": {
+          "producer": {
+            "type": "string",
+            "const": "code-runner",
+            "title": "Producer",
+            "default": "code-runner"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "submitted-test-result",
+            "title": "Purpose",
+            "default": "submitted-test-result"
+          },
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "stage_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stage Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "snapshot_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Snapshot Version"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Snapshot Digest"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/SessionSuitePin"
+          },
+          "probe": {
+            "$ref": "#/components/schemas/ProbeRecord"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/TestOutcome"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Outcomes"
+          },
+          "demo": {
+            "type": "boolean",
+            "const": true,
+            "title": "Demo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "session_id",
+          "stage_id",
+          "workspace_id",
+          "snapshot_id",
+          "snapshot_version",
+          "snapshot_digest",
+          "binding",
+          "probe",
+          "completed_at",
+          "outcomes"
+        ],
+        "title": "TestProof"
+      },
+      "TranscriptDocument": {
+        "properties": {
+          "duration_ms": {
+            "type": "integer",
+            "maximum": 7200000.0,
+            "minimum": 1.0,
+            "title": "Duration Ms"
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(?:-[A-Za-z]{2,8})?$",
+            "title": "Language"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/Segment"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Segments"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "duration_ms",
+          "language",
+          "segments"
+        ],
+        "title": "TranscriptDocument"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "reverse_hr__domains__evaluation_review__ReviewView": {
+        "properties": {
+          "model_attempt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Attempt Id"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionDecision"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Decisions"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Reason"
+          },
+          "review_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Review Id"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reviewer Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "intake_version": {
+            "type": "integer",
+            "title": "Intake Version"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decisions",
+          "reason",
+          "review_id",
+          "reviewer_id",
+          "number",
+          "intake_version",
+          "score",
+          "created_at"
+        ],
+        "title": "ReviewView"
+      },
+      "reverse_hr__domains__proctoring__ReviewView": {
+        "properties": {
+          "timeline_version": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Timeline Version"
+          },
+          "evidence_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Evidence Digest"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "clear",
+              "inconclusive",
+              "concern"
+            ],
+            "title": "Outcome"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Reason"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Evidence Ids"
+          },
+          "review_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Review Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "reviewer_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reviewer Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timeline_version",
+          "evidence_digest",
+          "outcome",
+          "reason",
+          "evidence_ids",
+          "review_id",
+          "number",
+          "reviewer_id",
+          "created_at"
+        ],
+        "title": "ReviewView"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
