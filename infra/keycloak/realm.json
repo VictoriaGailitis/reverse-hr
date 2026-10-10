@@ -127,6 +127,7 @@
       "serviceAccountsEnabled": false,
       "fullScopeAllowed": false,
       "defaultClientScopes": [
+        "basic",
         "web-origins",
         "acr",
         "profile",

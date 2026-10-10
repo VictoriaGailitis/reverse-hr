@@ -65,6 +65,7 @@ def test_pkce_and_token_contract_and_local_mail_boundary(realm):
     assert client["attributes"]["pkce.code.challenge.method"] == "S256"
     assert "*" not in "".join(client["redirectUris"])
     assert "email" in client["defaultClientScopes"] and "roles" in client["defaultClientScopes"]
+    assert "basic" in client["defaultClientScopes"]  # Keycloak 26: required sub claim.
     mappers = {mapper["protocolMapper"]: mapper for mapper in client["protocolMappers"]}
     assert mappers["oidc-amr-mapper"]["config"]["access.token.claim"] == "true"
     assert not any(

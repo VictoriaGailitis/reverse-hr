@@ -28,17 +28,28 @@ class Forms(HTMLParser):
     def __init__(self, html):
         super().__init__()
         self.forms, self.current = [], None
+        self.manual_url, self.otp_secret, self.in_secret = None, "", False
         self.feed(html)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if attrs.get("id") == "mode-manual":
+            self.manual_url = attrs.get("href")
+        if attrs.get("id") == "kc-totp-secret-key":
+            self.in_secret = True
         if tag == "form":
             self.current = {"action": attrs.get("action"), "inputs": {}}
             self.forms.append(self.current)
         elif tag == "input" and self.current is not None and attrs.get("name"):
             self.current["inputs"][attrs["name"]] = attrs.get("value", "")
 
+    def handle_data(self, data):
+        if self.in_secret:
+            self.otp_secret += data
+
     def handle_endtag(self, tag):
+        if tag == "span":
+            self.in_secret = False
         if tag == "form":
             self.current = None
 
@@ -154,6 +165,12 @@ def authorization(live_realm, username, password, secret=None, enroll=False):
             )
         )
         for _ in range(12):
+            # Browsers accept Secure cookies on trusted HTTP localhost; httpx does not.
+            # Only the synthetic loopback test client gets this compatibility adjustment.
+            if urlsplit(issuer).hostname == "localhost":
+                for cookie in browser.cookies.jar:
+                    if cookie.domain in {"localhost", "localhost.local"}:
+                        cookie.secure = False
             if response.is_redirect:
                 location = response.headers["Location"]
                 if location.startswith(redirect_uri + "?"):
@@ -177,7 +194,8 @@ def authorization(live_realm, username, password, secret=None, enroll=False):
                     pytest.fail("Unexpected authentication redirect", pytrace=False)
                 response = browser.get(location)
                 continue
-            forms = Forms(response.text).forms
+            parsed_form = Forms(response.text)
+            forms = parsed_form.forms
             form = next(
                 (
                     form
@@ -199,7 +217,14 @@ def authorization(live_realm, username, password, secret=None, enroll=False):
             elif "totpSecret" in fields:
                 if not enroll:
                     pytest.fail("Unexpected OTP enrollment requirement", pytrace=False)
-                secret = fields["totpSecret"]
+                if not parsed_form.otp_secret:
+                    if not parsed_form.manual_url or not parsed_form.manual_url.startswith(
+                        issuer + "/"
+                    ):
+                        pytest.fail("Missing local manual OTP enrollment link", pytrace=False)
+                    response = browser.get(parsed_form.manual_url)
+                    continue
+                secret = "".join(parsed_form.otp_secret.split())
                 fields.update(totp=otp(secret), userLabel="Synthetic test device", save="Save")
             else:
                 if not secret:
@@ -229,6 +254,8 @@ def test_live_privileged_role_enrolls_otp_and_emits_real_mfa(live_realm):
     username, password = account(live_realm, "company_moderator")
     _, secret = authorization(live_realm, username, password, enroll=True)
     assert secret is not None
+    # Keycloak rejects replay of the enrollment code in the same TOTP window.
+    time.sleep(30 - time.time() % 30 + 1)
     token, _ = authorization(live_realm, username, password, secret=secret)
     principal = verify(live_realm, token)
     principal.require("company_moderator", mfa=True)
