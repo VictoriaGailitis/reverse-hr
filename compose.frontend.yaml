@@ -1,0 +1,26 @@
+# Linux Docker deployment: built React app served by Nginx, API via gateway.
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/Dockerfile.frontend
+      args:
+        VITE_BACKEND_MODE: api
+        VITE_API_BASE_URL: /api
+        VITE_KEYCLOAK_URL: ${FRONTEND_KEYCLOAK_URL:-http://localhost:8080}
+        VITE_KEYCLOAK_REALM: reverse-hr
+        VITE_KEYCLOAK_CLIENT_ID: reverse-hr-web
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    ports: ['${FRONTEND_BIND_IP:-127.0.0.1}:${FRONTEND_PORT:-3000}:8080']
+    networks: [edge]
+    depends_on:
+      gateway: {condition: service_started}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:8080/health/live']
+      interval: 10s
+      timeout: 5s
+      retries: 5

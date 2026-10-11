@@ -1,0 +1,26 @@
+FROM node:22.14.0-alpine AS build
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/index.html frontend/tsconfig.json frontend/vite.config.ts ./
+COPY frontend/src ./src
+COPY frontend/public ./public
+ARG VITE_BACKEND_MODE=api
+ARG VITE_API_BASE_URL=/api
+ARG VITE_KEYCLOAK_URL=http://localhost:8080
+ARG VITE_KEYCLOAK_REALM=reverse-hr
+ARG VITE_KEYCLOAK_CLIENT_ID=reverse-hr-web
+ENV VITE_BACKEND_MODE=${VITE_BACKEND_MODE} \
+    VITE_API_BASE_URL=${VITE_API_BASE_URL} \
+    VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL} \
+    VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM} \
+    VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
+RUN npm run build
+
+FROM nginx:1.28.0-alpine
+COPY infra/nginx.frontend.conf /etc/nginx/nginx.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+USER nginx
+EXPOSE 8080
+ENTRYPOINT ["nginx"]
+CMD ["-g", "daemon off;"]
