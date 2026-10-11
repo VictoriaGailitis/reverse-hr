@@ -100,9 +100,9 @@ Presigned/public URLs не выдаются. Перед чтением/запи�
 архива, из окружения оператора с разрешением загрузки:
 
 ```sh
-PYTHONPATH=src .venv/bin/python -m reverse_hr.backup_archive publish \
+PYTHONPATH=src .venv/bin/python -m reverse_hr.services.privacy.backup_archive publish \
   --file /absolute/path/snapshot.enc --subjects-file /absolute/path/subjects.json
-PYTHONPATH=src .venv/bin/python -m reverse_hr.backup_archive restore-check \
+PYTHONPATH=src .venv/bin/python -m reverse_hr.services.privacy.backup_archive restore-check \
   --snapshot SNAPSHOT_UUID
 ```
 
@@ -137,8 +137,8 @@ DeletionRequest как постоянную очередь и удаляет **�
 ## Проверка
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/pytest -q tests/test_media_security.py \
-  tests/test_media_storage_validation.py tests/test_deletion_completion.py
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/pytest -q tests/services/media/test_media_security.py \
+  tests/services/media/test_media_storage_validation.py tests/integration/test_deletion_completion.py
 ```
 
 Тесты используют stateful S3 transport и настоящий botocore Stubber, проверяют

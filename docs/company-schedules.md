@@ -71,7 +71,7 @@ scores. Поздняя доставка после отписки не откр�
 
 ## Worker и удаление
 
-`python -m reverse_hr.worker company-dispatch` запускается только с Assessment
+`python -m reverse_hr.platform.worker company-dispatch` запускается только с Assessment
 settings. В Compose предусмотрен `assessment-company-dispatch` (profiles `events`,
 `all`), с зависимостями Assessment, Privacy, Employer, Evaluation. Миграции:
 Assessment `0014_assessment`, Notification `0003_notification`, Privacy `0008_privacy`.
@@ -90,7 +90,7 @@ Readiness проверяет новую схему. Существующий top
 источники уведомлений, caches/outbox и сами Notification строки; позднее событие
 не восстанавливает удалённые данные. Downgrade защищает непустые таблицы.
 
-Интеграционные проверки: `tests/test_company_schedules.py` — согласия, отказ,
+Интеграционные проверки: `tests/services/assessment/test_company_schedules.py` — согласия, отказ,
 отписка, частота, гонки, повторы, сбои, Privacy, настройки, миграции и уведомления
 для проверенных результатов всех пяти форматов. Брокерный маршрут проверяется
 генерацией topology во временном каталоге на синтетических credentials.

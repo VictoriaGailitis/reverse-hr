@@ -124,5 +124,5 @@ Privacy cleanup очищает отклики, переходы, уведомл�
 новые таблицы/колонки. Downgrade отказывает до изменения схемы при наличии защищаемых
 данных; прежние invitation notices и preferences сохраняются при upgrade.
 Runtime OpenAPI экспортируется scripts/export_contracts.py. Интеграционные сценарии:
-tests/test_hiring_vacancies.py, вместе с Matching/Hiring/Dialog/Privacy/Notification
+tests/services/hiring/test_hiring_vacancies.py, вместе с Matching/Hiring/Dialog/Privacy/Notification
 регрессией. Живой прогон PostgreSQL/RabbitMQ и пользовательские экраны — отдельная работа.

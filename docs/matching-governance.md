@@ -105,8 +105,8 @@ and resolves current approval on every fetch. Candidate rechecks the policy befo
 
 ## Validation
 
-`tests/test_matching_governance.py` exercises migrated services, signed Need/Privacy access,
+`tests/services/matching/test_matching_governance.py` exercises migrated services, signed Need/Privacy access,
 independent approval, actual confirmed-search behavior, all-required rubric mappings, source
 citation/unknown checks, expiration, calibration preregistration, signed policy retrieval and
 replay, withdrawal, advice thresholds, condition gates and Privacy erasure. Wire tests in
-`tests/test_matching_gateway.py` use only synthetic credentials and fake HTTPS responses.
+`tests/services/matching/test_matching_gateway.py` use only synthetic credentials and fake HTTPS responses.

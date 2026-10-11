@@ -53,7 +53,7 @@ request retry. Passwords, refresh tokens and provider tokens are never export
 records. Fresh Privacy authorization and cursor/revision binding remain the
 signed owner export protocol's responsibility on every page.
 
-Verification: `tests/test_identity_export.py` uses fake HTTP and temporary fake
+Verification: `tests/services/identity/test_identity_export.py` uses fake HTTP and temporary fake
 credentials. It covers lazy configuration, fixed paths, UUID ownership, credential
 redaction, token expiry/401, transport failures, duplicate JSON, input limits and
 changed source data. No live provider calls or account corrections are performed.

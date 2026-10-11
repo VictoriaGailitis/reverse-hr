@@ -86,7 +86,7 @@ consumers. Privacy tombstone немедленно закрывает разре�
 
 ## Проверки и границы этапа
 
-`tests/test_company_assignments.py` проверяет API назначения, Privacy scope,
+`tests/services/assessment/test_company_assignments.py` проверяет API назначения, Privacy scope,
 повторы/конфликты, отказ/отзыв/сроки, удаления, независимость reviewer и сквозную
 подписанную выдачу всех пяти форматов. Сквозные Code/SQL-сценарии используют артефактную
 рубрику; отдельная проверка назначения подтверждает сохранение runtime-admitted

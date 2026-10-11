@@ -79,7 +79,7 @@ the old binding.
 
 ## Tests
 
-`tests/test_matching_conditions.py` covers signed migrated services, hidden/public preferences,
+`tests/services/matching/test_matching_conditions.py` covers signed migrated services, hidden/public preferences,
 actual governed condition filtering, publication withdrawal, stale confirmation, net/gross and
 currency refusal, touching ranges, explicit tolerance, inclusive and elapsed date boundaries,
 source quotes and unknowns, typed confirmation → search → invitation acceptance, Privacy erasure,
