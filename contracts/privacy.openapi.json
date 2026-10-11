@@ -2577,6 +2577,7 @@
               "contact_disclosure",
               "company_result_disclosure",
               "company_task_subscription",
+              "task_recommendations",
               "resume_publication",
               "external_service_notifications",
               "external_marketing_notifications"
@@ -2633,6 +2634,7 @@
               "contact_disclosure",
               "company_result_disclosure",
               "company_task_subscription",
+              "task_recommendations",
               "resume_publication",
               "external_service_notifications",
               "external_marketing_notifications"
@@ -3012,10 +3014,25 @@
             "format": "date-time",
             "title": "Issued At"
           },
+          "specialization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialization"
+          },
           "purpose": {
             "type": "string",
             "enum": [
               "profile",
+              "task-catalog",
+              "task-notice",
               "membership",
               "affiliation",
               "content-membership",
@@ -3030,6 +3047,30 @@
               "notice"
             ],
             "title": "Purpose"
+          },
+          "catalog_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog After"
+          },
+          "catalog_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Version Id"
           },
           "assignment_id": {
             "anyOf": [
@@ -3138,6 +3179,7 @@
                   "profile_publication",
                   "contact_disclosure",
                   "company_task_subscription",
+                  "task_recommendations",
                   "resume_publication",
                   "external_service_notifications",
                   "external_marketing_notifications"
@@ -3216,10 +3258,25 @@
             "format": "date-time",
             "title": "Issued At"
           },
+          "specialization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialization"
+          },
           "purpose": {
             "type": "string",
             "enum": [
               "profile",
+              "task-catalog",
+              "task-notice",
               "membership",
               "affiliation",
               "content-membership",
@@ -3234,6 +3291,30 @@
               "notice"
             ],
             "title": "Purpose"
+          },
+          "catalog_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog After"
+          },
+          "catalog_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Version Id"
           },
           "assignment_id": {
             "anyOf": [
@@ -3342,6 +3423,7 @@
                   "profile_publication",
                   "contact_disclosure",
                   "company_task_subscription",
+                  "task_recommendations",
                   "resume_publication",
                   "external_service_notifications",
                   "external_marketing_notifications"

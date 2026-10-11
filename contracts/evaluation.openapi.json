@@ -345,6 +345,230 @@
         }
       }
     },
+    "/v1/evaluation-automatic/configuration": {
+      "get": {
+        "tags": [
+          "automatic-evaluation"
+        ],
+        "summary": "Configuration",
+        "operationId": "configuration_v1_evaluation_automatic_configuration_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/evaluation-automatic/queue": {
+      "get": {
+        "tags": [
+          "automatic-evaluation"
+        ],
+        "summary": "Queue",
+        "operationId": "queue_v1_evaluation_automatic_queue_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-risks/me": {
+      "get": {
+        "tags": [
+          "evaluation-risks"
+        ],
+        "summary": "Mine",
+        "operationId": "mine_v1_evaluation_risks_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/evaluation-risks/queue": {
+      "get": {
+        "tags": [
+          "evaluation-risks"
+        ],
+        "summary": "Queue",
+        "operationId": "queue_v1_evaluation_risks_queue_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/evaluation-risks/{stage_id}/decision": {
+      "post": {
+        "tags": [
+          "evaluation-risks"
+        ],
+        "summary": "Decide",
+        "operationId": "decide_v1_evaluation_risks__stage_id__decision_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiskDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/evaluation-reviews/stages/{stage_id}/model-attempts": {
       "post": {
         "tags": [
@@ -2503,6 +2727,45 @@
         ],
         "title": "RightsReceipt"
       },
+      "RiskDecision": {
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "dismiss",
+              "require_verification",
+              "complete_verification"
+            ],
+            "title": "Action"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "pattern": "\\S",
+            "title": "Reason"
+          },
+          "verification_stage_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verification Stage Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action",
+          "reason"
+        ],
+        "title": "RiskDecision"
+      },
       "ScoreReceipt": {
         "properties": {
           "candidate_id": {
@@ -2806,6 +3069,20 @@
       },
       "StageScore": {
         "properties": {
+          "additional_verification_required": {
+            "type": "boolean",
+            "title": "Additional Verification Required",
+            "default": false
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human",
+              "automatic"
+            ],
+            "title": "Origin",
+            "default": "human"
+          },
           "model_attempt_id": {
             "anyOf": [
               {
@@ -3353,6 +3630,15 @@
             "minLength": 1,
             "pattern": "\\S",
             "title": "Reason"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human",
+              "automatic"
+            ],
+            "title": "Origin",
+            "default": "human"
           },
           "review_id": {
             "type": "string",

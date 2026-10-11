@@ -6,6 +6,61 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/internal/v1/market/task-notice": {
+      "post": {
+        "summary": "Task Notice",
+        "operationId": "task_notice_internal_v1_market_task_notice_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/candidates/me/resume-imports": {
       "post": {
         "tags": [
@@ -1833,6 +1888,308 @@
         }
       }
     },
+    "/v1/candidates/me/task-subscription": {
+      "get": {
+        "tags": [
+          "candidate"
+        ],
+        "summary": "Get Subscription",
+        "operationId": "get_subscription_v1_candidates_me_task_subscription_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "candidate"
+        ],
+        "summary": "Update Subscription",
+        "operationId": "update_subscription_v1_candidates_me_task_subscription_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[0-9]+\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/v1/candidates/me/task-recommendations": {
+      "get": {
+        "tags": [
+          "candidate"
+        ],
+        "summary": "Recommendations",
+        "operationId": "recommendations_v1_candidates_me_task_recommendations_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "After"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "summary": "Live",
@@ -2083,6 +2440,15 @@
       },
       "HistoryItem": {
         "properties": {
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human",
+              "automatic"
+            ],
+            "title": "Origin",
+            "default": "human"
+          },
           "specialization": {
             "type": "string",
             "maxLength": 100,
@@ -2303,10 +2669,25 @@
             "format": "date-time",
             "title": "Issued At"
           },
+          "specialization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialization"
+          },
           "purpose": {
             "type": "string",
             "enum": [
               "profile",
+              "task-catalog",
+              "task-notice",
               "membership",
               "affiliation",
               "content-membership",
@@ -2321,6 +2702,30 @@
               "notice"
             ],
             "title": "Purpose"
+          },
+          "catalog_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog After"
+          },
+          "catalog_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Version Id"
           },
           "assignment_id": {
             "anyOf": [
@@ -2429,6 +2834,7 @@
                   "profile_publication",
                   "contact_disclosure",
                   "company_task_subscription",
+                  "task_recommendations",
                   "resume_publication",
                   "external_service_notifications",
                   "external_marketing_notifications"
@@ -2507,10 +2913,25 @@
             "format": "date-time",
             "title": "Issued At"
           },
+          "specialization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialization"
+          },
           "purpose": {
             "type": "string",
             "enum": [
               "profile",
+              "task-catalog",
+              "task-notice",
               "membership",
               "affiliation",
               "content-membership",
@@ -2525,6 +2946,30 @@
               "notice"
             ],
             "title": "Purpose"
+          },
+          "catalog_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog After"
+          },
+          "catalog_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Version Id"
           },
           "assignment_id": {
             "anyOf": [
@@ -2633,6 +3078,7 @@
                   "profile_publication",
                   "contact_disclosure",
                   "company_task_subscription",
+                  "task_recommendations",
                   "resume_publication",
                   "external_service_notifications",
                   "external_marketing_notifications"
@@ -2717,6 +3163,14 @@
           "declared_grade": {
             "$ref": "#/components/schemas/Grade"
           },
+          "additional_specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationChoice"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Additional Specializations"
+          },
           "candidate_id": {
             "type": "string",
             "format": "uuid",
@@ -2736,6 +3190,14 @@
             "type": "integer",
             "minimum": 1.0,
             "title": "Version"
+          },
+          "specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationProfile"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Specializations"
           }
         },
         "additionalProperties": false,
@@ -2765,6 +3227,14 @@
           },
           "declared_grade": {
             "$ref": "#/components/schemas/Grade"
+          },
+          "additional_specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationChoice"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Additional Specializations"
           }
         },
         "additionalProperties": false,
@@ -2915,6 +3385,15 @@
       },
       "QualificationEvidence": {
         "properties": {
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human",
+              "automatic"
+            ],
+            "title": "Origin",
+            "default": "human"
+          },
           "policy_id": {
             "type": "string",
             "format": "uuid",
@@ -3012,6 +3491,14 @@
           "declared_grade": {
             "$ref": "#/components/schemas/Grade"
           },
+          "additional_specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationChoice"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Additional Specializations"
+          },
           "summary": {
             "type": "string",
             "maxLength": 2000,
@@ -3084,6 +3571,14 @@
           },
           "declared_grade": {
             "$ref": "#/components/schemas/Grade"
+          },
+          "additional_specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationChoice"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Additional Specializations"
           },
           "summary": {
             "type": "string",
@@ -3282,6 +3777,56 @@
         ],
         "title": "RightsReceipt"
       },
+      "SpecializationChoice": {
+        "properties": {
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "declared_grade": {
+            "$ref": "#/components/schemas/Grade"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "specialization",
+          "declared_grade"
+        ],
+        "title": "SpecializationChoice"
+      },
+      "SpecializationProfile": {
+        "properties": {
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "declared_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "confirmed_grade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Grade"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "specialization",
+          "declared_grade"
+        ],
+        "title": "SpecializationProfile"
+      },
       "StartWindow": {
         "properties": {
           "earliest": {
@@ -3302,6 +3847,47 @@
           "latest"
         ],
         "title": "StartWindow"
+      },
+      "SubscriptionCommand": {
+        "properties": {
+          "declared_skills": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Declared Skills"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "consent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Id"
+          },
+          "interval_hours": {
+            "type": "integer",
+            "maximum": 168.0,
+            "minimum": 1.0,
+            "title": "Interval Hours",
+            "default": 24
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "SubscriptionCommand"
       },
       "ValidationError": {
         "properties": {

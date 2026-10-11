@@ -1473,6 +1473,7 @@
               "contact_disclosure",
               "company_result_disclosure",
               "company_task_subscription",
+              "task_recommendations",
               "resume_publication",
               "external_service_notifications",
               "external_marketing_notifications"
@@ -1529,6 +1530,7 @@
               "contact_disclosure",
               "company_result_disclosure",
               "company_task_subscription",
+              "task_recommendations",
               "resume_publication",
               "external_service_notifications",
               "external_marketing_notifications"
@@ -2006,6 +2008,14 @@
           "declared_grade": {
             "$ref": "#/components/schemas/Grade"
           },
+          "additional_specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationChoice"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Additional Specializations"
+          },
           "candidate_id": {
             "type": "string",
             "format": "uuid",
@@ -2025,6 +2035,14 @@
             "type": "integer",
             "minimum": 1.0,
             "title": "Version"
+          },
+          "specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationProfile"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Specializations"
           }
         },
         "additionalProperties": false,
@@ -2054,6 +2072,14 @@
           },
           "declared_grade": {
             "$ref": "#/components/schemas/Grade"
+          },
+          "additional_specializations": {
+            "items": {
+              "$ref": "#/components/schemas/SpecializationChoice"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Additional Specializations"
           }
         },
         "additionalProperties": false,
@@ -2175,6 +2201,56 @@
           "technical_failure"
         ],
         "title": "SessionStatus"
+      },
+      "SpecializationChoice": {
+        "properties": {
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "declared_grade": {
+            "$ref": "#/components/schemas/Grade"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "specialization",
+          "declared_grade"
+        ],
+        "title": "SpecializationChoice"
+      },
+      "SpecializationProfile": {
+        "properties": {
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Specialization"
+          },
+          "declared_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "confirmed_grade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Grade"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "specialization",
+          "declared_grade"
+        ],
+        "title": "SpecializationProfile"
       }
     },
     "securitySchemes": {
