@@ -159,7 +159,7 @@ npx playwright install --with-deps chromium
 npm test -- --config=playwright.linux.config.ts
 ```
 
-[Linux-конфигурация Playwright](frontend/playwright.linux.config.ts) использует установленный Chromium без локального пути браузера из базового конфига. Проверки PostgreSQL/RabbitMQ и контрактов описаны в [CI](.github/workflows/backend.yml); опубликованные схемы API находятся в [contracts](contracts/).
+[Linux-конфигурация Playwright](frontend/playwright.linux.config.ts) использует установленный Chromium без локального пути браузера из базового конфига. Проверки PostgreSQL/RabbitMQ запускаются через [scripts/integration_tests.py](scripts/integration_tests.py) на отдельном тестовом стенде; опубликованные схемы API находятся в [contracts](contracts/).
 
 ## Навигация по репозиторию
 
