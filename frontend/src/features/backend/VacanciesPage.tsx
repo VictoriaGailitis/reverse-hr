@@ -1,3 +1,4 @@
+import { SpecializationInput } from "../../components/SpecializationInput";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { components as H } from "../../api/generated/hiring";
@@ -327,7 +328,6 @@ function VacancyForm({
         ["Название вакансии", title, setTitle, 200],
         ["Описание вакансии", description, setDescription, 5000],
         ["Контакт для вакансии", contact, setContact, 300],
-        ["Специализация вакансии", specialization, setSpecialization, 100],
       ].map(([label, value, setter, max]) => (
         <Field key={String(label)} label={String(label)}>
           <input
@@ -338,6 +338,10 @@ function VacancyForm({
           />
         </Field>
       ))}
+      <Field label="Специализация вакансии">
+        <SpecializationInput required value={specialization}
+          onChange={(e) => setSpecialization(e.target.value)} />
+      </Field>
       <Field label="Грейд вакансии">
         <select
           value={grade}

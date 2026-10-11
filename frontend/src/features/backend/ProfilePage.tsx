@@ -1,3 +1,4 @@
+import { SpecializationInput } from "../../components/SpecializationInput";
 import { ProfileExtras } from "./ProfileExtras";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
@@ -91,7 +92,7 @@ function ProfileForm({ initial }: { initial: Profile | null }) {
         </label>
         <label className="form-field">
           <span>Специализация</span>
-          <input
+          <SpecializationInput
             required
             maxLength={100}
             value={specialization}
@@ -119,7 +120,7 @@ function ProfileForm({ initial }: { initial: Profile | null }) {
             <legend>Дополнительное направление {index + 1}</legend>
             <label className="form-field">
               <span>Специализация</span>
-              <input required maxLength={100} value={item.specialization}
+              <SpecializationInput required maxLength={100} value={item.specialization}
                 onChange={(event) => setAdditional((rows) => rows.map((row, position) =>
                   position === index ? { ...row, specialization: event.target.value } : row))} />
             </label>

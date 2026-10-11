@@ -1,3 +1,4 @@
+import { SpecializationInput } from "../../components/SpecializationInput";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import type { components as Hiring } from "../../api/generated/hiring";
@@ -224,7 +225,7 @@ function NeedForm({
     >
       <h2>{initial ? "Изменить потребность" : "Новая потребность"}</h2>
       <Field label="Специализация">
-        <input
+        <SpecializationInput
           required
           maxLength={100}
           value={specialization}

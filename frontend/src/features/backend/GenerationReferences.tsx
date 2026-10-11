@@ -1,3 +1,4 @@
+import { SpecializationInput, managerAssessmentHint } from "../../components/SpecializationInput";
 import { GenerationCalibration } from "./GenerationCalibration";
 import { useState } from "react";
 import type { components as A } from "../../api/generated/assessment";
@@ -220,12 +221,24 @@ function ReferenceForm({
         </select>
       </Field>
       <Field label="Специализация">
-        <input
+        <SpecializationInput
           required
           disabled={!!initial}
           value={specialization}
-          onChange={(e) => setSpecialization(e.target.value)}
+          onChange={(e) => {
+            setSpecialization(e.target.value);
+            if (!initial && managerAssessmentHint(e.target.value)) {
+              setFormat("vcv");
+              setRubric((rows) => rows.map((row) => ({
+                ...row, evidence: "timestamped_recording",
+              })));
+            }
+          }}
         />
+
+        {managerAssessmentHint(specialization) && (
+          <p className="api-muted">{managerAssessmentHint(specialization)}</p>
+        )}
       </Field>
       <Field label="Уровень">
         <select
