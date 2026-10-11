@@ -754,6 +754,245 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assessment-generation/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** References */
+        get: operations["references_v1_assessment_generation_references_get"];
+        put?: never;
+        /** Create Reference */
+        post: operations["create_reference_v1_assessment_generation_references_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/references/{version_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Edit Reference */
+        post: operations["edit_reference_v1_assessment_generation_references__version_id__versions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/references/{version_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview */
+        post: operations["preview_v1_assessment_generation_references__version_id__preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate */
+        post: operations["generate_v1_assessment_generation_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/references/{version_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Jobs */
+        get: operations["jobs_v1_assessment_generation_references__version_id__jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/references/{version_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish */
+        post: operations["publish_v1_assessment_generation_references__version_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/references/{version_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire */
+        post: operations["retire_v1_assessment_generation_references__version_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/references/{version_id}/grading-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bind Grading Policy */
+        post: operations["bind_grading_policy_v1_assessment_generation_references__version_id__grading_policy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/offers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Offers */
+        get: operations["offers_v1_assessment_generation_offers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-generation/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generated Session */
+        post: operations["generated_session_v1_assessment_generation_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/market/task-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Catalog */
+        post: operations["catalog_internal_v1_market_task_catalog_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-automatic/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Queue */
+        get: operations["queue_v1_assessment_automatic_queue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/assessment-automatic/{session_id}/recheck": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recheck */
+        post: operations["recheck_v1_assessment_automatic__session_id__recheck_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/generated-validation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generated Validation */
+        post: operations["generated_validation_internal_v1_generated_validation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/grade-policies": {
         parameters: {
             query?: never;
@@ -867,6 +1106,40 @@ export interface paths {
         put?: never;
         /** Retire Policy */
         post: operations["retire_policy_v1_grade_policies__policy_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/task-analytics/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report */
+        post: operations["report_v1_task_analytics_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/task-analytics/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Simulate */
+        post: operations["simulate_v1_task_analytics_simulate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1367,6 +1640,40 @@ export interface components {
              */
             result_grant_id: string;
         };
+        /** AnalyticsReport */
+        AnalyticsReport: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "live_demo" | "synthetic" | "expert";
+            scale: components["schemas"]["Scale"];
+            /** Sample Count */
+            sample_count: number;
+            /** Independent Label Count */
+            independent_label_count: number;
+            /** Target Distributions */
+            target_distributions: components["schemas"]["GradeDistribution"][];
+            /** Independent Distributions */
+            independent_distributions: components["schemas"]["GradeDistribution"][];
+            /** Contrasts */
+            contrasts: components["schemas"]["Contrast"][];
+            /** Corrected Item Total Correlation */
+            corrected_item_total_correlation: number | null;
+            /** Correlation Count */
+            correlation_count: number;
+            /**
+             * Correlation Status
+             * @enum {string}
+             */
+            correlation_status: "available" | "insufficient_data" | "constant_scores";
+            /** Excluded */
+            excluded?: {
+                [key: string]: number;
+            };
+            /** Warnings */
+            warnings: string[];
+        };
         /** AppealCreate */
         AppealCreate: {
             /**
@@ -1720,6 +2027,31 @@ export interface components {
              */
             reveals_contacts: false;
         };
+        /** Bands */
+        Bands: {
+            /**
+             * Normal From
+             * @default 50
+             */
+            normal_from: number;
+            /**
+             * Good From
+             * @default 80
+             */
+            good_from: number;
+        };
+        /** Bucket */
+        Bucket: {
+            /**
+             * Quality
+             * @enum {string}
+             */
+            quality: "poor" | "normal" | "good";
+            /** Count */
+            count: number;
+            /** Percent */
+            percent: number;
+        };
         /** CalibrationCase */
         CalibrationCase: {
             /**
@@ -1779,6 +2111,24 @@ export interface components {
             competencies: components["schemas"]["Competency"][];
             /** Tasks */
             tasks: components["schemas"]["Task"][];
+        };
+        /** Contrast */
+        Contrast: {
+            lower_grade: components["schemas"]["Grade"];
+            upper_grade: components["schemas"]["Grade"];
+            /** Lower Count */
+            lower_count: number;
+            /** Upper Count */
+            upper_count: number;
+            /** Normal Or Better Difference */
+            normal_or_better_difference: number | null;
+            /** Good Difference */
+            good_difference: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "insufficient_data";
         };
         /** Criterion */
         Criterion: {
@@ -1923,6 +2273,12 @@ export interface components {
         };
         /** DecisionSummary */
         DecisionSummary: {
+            /**
+             * Origin
+             * @default human
+             * @enum {string}
+             */
+            origin: "human" | "automatic";
             /** Specialization */
             specialization: string;
             target_grade: components["schemas"]["Grade"];
@@ -2023,20 +2379,120 @@ export interface components {
             /** Available */
             available: boolean;
         };
-        /** GenerateCommand */
-        GenerateCommand: {
-            /** Parameters */
-            parameters: {
-                [key: string]: string;
-            };
-            /** Family Version */
-            family_version: number;
+        /** GeneratedOffer */
+        GeneratedOffer: {
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+            /** Name */
+            name: string;
+            /** Format */
+            format: string;
+            /** Specialization */
+            specialization: string;
+            grade: components["schemas"]["Grade"];
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Scored */
+            scored: boolean;
+        };
+        /** GeneratedSessionCommand */
+        GeneratedSessionCommand: {
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+            /**
+             * Assessment Consent Id
+             * Format: uuid
+             */
+            assessment_consent_id: string;
+        };
+        /** GeneratedValidationRequest */
+        GeneratedValidationRequest: {
+            /**
+             * Candidate Id
+             * Format: uuid
+             */
+            candidate_id: string;
+            /**
+             * Nonce
+             * Format: uuid
+             */
+            nonce: string;
+            /**
+             * Requester
+             * @default code-runner
+             * @constant
+             */
+            requester: "code-runner";
+            /**
+             * Issued At
+             * Format: date-time
+             */
+            issued_at: string;
+            /**
+             * Purpose
+             * @default generated-validation
+             * @constant
+             */
+            purpose: "generated-validation";
+            /**
+             * Generation Id
+             * Format: uuid
+             */
+            generation_id: string;
+        };
+        /** GenerationView */
+        GenerationView: {
+            /**
+             * Generation Id
+             * Format: uuid
+             */
+            generation_id: string;
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "validating" | "ready" | "rejected" | "technical_failure" | "cancelled";
+            /** Error */
+            error: string | null;
+            task?: components["schemas"]["Task"] | null;
+            /** Revision Id */
+            revision_id?: string | null;
+            /** Plan Version Id */
+            plan_version_id?: string | null;
+            /** Grade Policy Id */
+            grade_policy_id?: string | null;
+            /** Attempts */
+            attempts: number;
         };
         /**
          * Grade
          * @enum {string}
          */
         Grade: "junior" | "middle" | "senior" | "lead";
+        /** GradeDistribution */
+        GradeDistribution: {
+            grade: components["schemas"]["Grade"];
+            /** Count */
+            count: number;
+            /** Mean Score */
+            mean_score: number | null;
+            bands: components["schemas"]["Bands"];
+            /** Buckets */
+            buckets: components["schemas"]["Bucket"][];
+            /** Sufficient */
+            sufficient: boolean;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -2161,11 +2617,17 @@ export interface components {
              * Format: date-time
              */
             issued_at: string;
+            /** Specialization */
+            specialization?: string | null;
             /**
              * Purpose
              * @enum {string}
              */
-            purpose: "profile" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            purpose: "profile" | "task-catalog" | "task-notice" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            /** Catalog After */
+            catalog_after?: string | null;
+            /** Catalog Version Id */
+            catalog_version_id?: string | null;
             /** Assignment Id */
             assignment_id?: string | null;
             /** Result Grant Id */
@@ -2183,7 +2645,7 @@ export interface components {
             /** Consent Id */
             consent_id?: string | null;
             /** Consent Purpose */
-            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
+            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "task_recommendations" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
             /** Allowed */
             allowed: boolean;
             /**
@@ -2218,11 +2680,17 @@ export interface components {
              * Format: date-time
              */
             issued_at: string;
+            /** Specialization */
+            specialization?: string | null;
             /**
              * Purpose
              * @enum {string}
              */
-            purpose: "profile" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            purpose: "profile" | "task-catalog" | "task-notice" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            /** Catalog After */
+            catalog_after?: string | null;
+            /** Catalog Version Id */
+            catalog_version_id?: string | null;
             /** Assignment Id */
             assignment_id?: string | null;
             /** Result Grant Id */
@@ -2240,7 +2708,7 @@ export interface components {
             /** Consent Id */
             consent_id?: string | null;
             /** Consent Purpose */
-            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
+            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "task_recommendations" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
         };
         /** MaterialReceipt */
         MaterialReceipt: {
@@ -2339,6 +2807,17 @@ export interface components {
             description: string;
             source: components["schemas"]["FilesCommand"];
         };
+        /** Observation */
+        Observation: {
+            /** Profile Key */
+            profile_key: string;
+            /** Score */
+            score: number;
+            target_grade: components["schemas"]["Grade"];
+            independent_grade?: components["schemas"]["Grade"] | null;
+            /** Rest Score */
+            rest_score?: number | null;
+        };
         /** PinnedMaterial */
         PinnedMaterial: {
             /** Company Organization Id */
@@ -2418,6 +2897,14 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** PolicyBindingCommand */
+        PolicyBindingCommand: {
+            /**
+             * Grade Policy Id
+             * Format: uuid
+             */
+            grade_policy_id: string;
+        };
         /** PolicyView */
         PolicyView: {
             /**
@@ -2449,6 +2936,39 @@ export interface components {
              * @constant
              */
             demo: true;
+        };
+        /** PreviewCommand */
+        PreviewCommand: {
+            /** Scenario */
+            scenario: string;
+            /** Parameters */
+            parameters?: {
+                [key: string]: string;
+            };
+        };
+        /** PreviewView */
+        PreviewView: {
+            /**
+             * Preview Id
+             * Format: uuid
+             */
+            preview_id: string;
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+            /** Specification */
+            specification: {
+                [key: string]: unknown;
+            };
+            /** Digest */
+            digest: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /** ProbeRecord */
         ProbeRecord: {
@@ -2553,6 +3073,12 @@ export interface components {
         /** QualificationEvidence */
         QualificationEvidence: {
             /**
+             * Origin
+             * @default human
+             * @enum {string}
+             */
+            origin: "human" | "automatic";
+            /**
              * Policy Id
              * Format: uuid
              */
@@ -2595,6 +3121,148 @@ export interface components {
         ReasonCommand: {
             /** Reason */
             reason: string;
+        };
+        /** ReferenceCommand */
+        ReferenceCommand: {
+            /** Stack Tags */
+            stack_tags?: string[];
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "code" | "sql" | "vcv" | "voice" | "whiteboard";
+            /** Specialization */
+            specialization: string;
+            grade: components["schemas"]["Grade"];
+            /** Description */
+            description: string;
+            /** Required Constraints */
+            required_constraints: string[];
+            /** Allowed Variations */
+            allowed_variations: string[];
+            /** Forbidden Changes */
+            forbidden_changes: string[];
+            /** Parameters */
+            parameters?: {
+                [key: string]: string[];
+            };
+            /** Competencies */
+            competencies: components["schemas"]["Competency"][];
+            /** Rubric */
+            rubric: components["schemas"]["Criterion"][];
+            /** Duration Seconds */
+            duration_seconds: number;
+            /**
+             * Pool Size
+             * @default 3
+             */
+            pool_size: number;
+            /**
+             * Max Exposures
+             * @default 100
+             */
+            max_exposures: number;
+            /** Grade Policy Id */
+            grade_policy_id?: string | null;
+        };
+        /** ReferenceView */
+        ReferenceView: {
+            /** Stack Tags */
+            stack_tags?: string[];
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "code" | "sql" | "vcv" | "voice" | "whiteboard";
+            /** Specialization */
+            specialization: string;
+            grade: components["schemas"]["Grade"];
+            /** Description */
+            description: string;
+            /** Required Constraints */
+            required_constraints: string[];
+            /** Allowed Variations */
+            allowed_variations: string[];
+            /** Forbidden Changes */
+            forbidden_changes: string[];
+            /** Parameters */
+            parameters?: {
+                [key: string]: string[];
+            };
+            /** Competencies */
+            competencies: components["schemas"]["Competency"][];
+            /** Rubric */
+            rubric: components["schemas"]["Criterion"][];
+            /** Duration Seconds */
+            duration_seconds: number;
+            /**
+             * Pool Size
+             * @default 3
+             */
+            pool_size: number;
+            /**
+             * Max Exposures
+             * @default 100
+             */
+            max_exposures: number;
+            /** Grade Policy Id */
+            grade_policy_id?: string | null;
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+            /**
+             * Reference Id
+             * Format: uuid
+             */
+            reference_id: string;
+            /** Number */
+            number: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "published" | "retired";
+            /** Version */
+            version: number;
+            /** Digest */
+            digest: string;
+        };
+        /** ReportQuery */
+        ReportQuery: {
+            /**
+             * Scope
+             * @default task
+             * @enum {string}
+             */
+            scope: "task" | "reference_version" | "reference_family";
+            /**
+             * Scope Id
+             * Format: uuid
+             */
+            scope_id: string;
+            /** Task Key */
+            task_key?: string | null;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
+            scale?: components["schemas"]["Scale"];
         };
         /** ResultCriterion */
         ResultCriterion: {
@@ -2737,6 +3405,23 @@ export interface components {
         };
         /** Rules */
         Rules: {
+            /** Generation Reference Id */
+            generation_reference_id?: string | null;
+            /**
+             * Automatic Decisions
+             * @default false
+             */
+            automatic_decisions: boolean;
+            /**
+             * Review Margin
+             * @default 5
+             */
+            review_margin: number;
+            /**
+             * Audit Percent
+             * @default 10
+             */
+            audit_percent: number;
             /** Required Llm Model */
             required_llm_model?: string | null;
             /** Required Llm Prompt Digest */
@@ -2836,6 +3521,18 @@ export interface components {
              * @constant
              */
             scoring_enabled: false;
+        };
+        /** Scale */
+        Scale: {
+            /** By Grade */
+            by_grade?: {
+                [key: string]: components["schemas"]["Bands"];
+            };
+            /**
+             * Minimum Group Size
+             * @default 10
+             */
+            minimum_group_size: number;
         };
         /** ScheduleCommand */
         ScheduleCommand: {
@@ -2994,6 +3691,15 @@ export interface components {
         };
         /** SessionEvaluation */
         SessionEvaluation: {
+            /** Origin */
+            origin?: ("human" | "automatic") | null;
+            /**
+             * Review Required
+             * @default false
+             */
+            review_required: boolean;
+            /** Review Reasons */
+            review_reasons?: string[];
             /**
              * Session Id
              * Format: uuid
@@ -3144,6 +3850,20 @@ export interface components {
             followups?: components["schemas"]["FollowupLink"][];
             selection?: components["schemas"]["SelectionReceipt"] | null;
         };
+        /** Simulation */
+        Simulation: {
+            scale?: components["schemas"]["Scale"];
+            /** Observations */
+            observations: components["schemas"]["Observation"][];
+            /**
+             * Label Source
+             * @default synthetic
+             * @enum {string}
+             */
+            label_source: "synthetic" | "expert";
+            /** Reason */
+            reason: string;
+        };
         /** StageProgress */
         StageProgress: {
             /**
@@ -3214,6 +3934,17 @@ export interface components {
         };
         /** StageScore */
         StageScore: {
+            /**
+             * Additional Verification Required
+             * @default false
+             */
+            additional_verification_required: boolean;
+            /**
+             * Origin
+             * @default human
+             * @enum {string}
+             */
+            origin: "human" | "automatic";
             /** Model Attempt Id */
             model_attempt_id?: string | null;
             /** Llm Model */
@@ -3979,6 +4710,16 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** GenerateCommand */
+        reverse_hr__domains__assessment_generation__GenerateCommand: {
+            /**
+             * Preview Id
+             * Format: uuid
+             */
+            preview_id: string;
+            /** Specification Digest */
+            specification_digest: string;
+        };
         /** PolicyCommand */
         reverse_hr__domains__assessment_grades__PolicyCommand: {
             /**
@@ -3987,6 +4728,15 @@ export interface components {
              */
             plan_version_id: string;
             rules: components["schemas"]["Rules"];
+        };
+        /** GenerateCommand */
+        reverse_hr__domains__assessment_selection__GenerateCommand: {
+            /** Parameters */
+            parameters: {
+                [key: string]: string;
+            };
+            /** Family Version */
+            family_version: number;
         };
         /** PolicyCommand */
         reverse_hr__domains__assessment_selection__PolicyCommand: {
@@ -4873,7 +5623,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GenerateCommand"];
+                "application/json": components["schemas"]["reverse_hr__domains__assessment_selection__GenerateCommand"];
             };
         };
         responses: {
@@ -6314,6 +7064,517 @@ export interface operations {
             };
         };
     };
+    references_v1_assessment_generation_references_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_reference_v1_assessment_generation_references_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_reference_v1_assessment_generation_references__version_id__versions_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "If-Match": string;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_v1_assessment_generation_references__version_id__preview_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_v1_assessment_generation_generate_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["reverse_hr__domains__assessment_generation__GenerateCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    jobs_v1_assessment_generation_references__version_id__jobs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_v1_assessment_generation_references__version_id__publish_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "If-Match": string;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_v1_assessment_generation_references__version_id__retire_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "If-Match": string;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_grading_policy_v1_assessment_generation_references__version_id__grading_policy_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "If-Match": string;
+            };
+            path: {
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PolicyBindingCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    offers_v1_assessment_generation_offers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeneratedOffer"][];
+                };
+            };
+        };
+    };
+    generated_session_v1_assessment_generation_sessions_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeneratedSessionCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    catalog_internal_v1_market_task_catalog_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-HR-Signature"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    queue_v1_assessment_automatic_queue_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recheck_v1_assessment_automatic__session_id__recheck_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generated_validation_internal_v1_generated_validation_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-HR-Signature"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeneratedValidationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_policy_v1_grade_policies_post: {
         parameters: {
             query?: never;
@@ -6542,6 +7803,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PolicyView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_v1_task_analytics_report_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    simulate_v1_task_analytics_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Simulation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsReport"];
                 };
             };
             /** @description Validation Error */

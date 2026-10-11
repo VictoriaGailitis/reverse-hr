@@ -193,7 +193,12 @@ test("проверяющий подтверждает грейд с текущи
 }) => {
   await oauth(page, false, ["assessment_reviewer"]);
   let decided = false;
+  await page.route("**/api/evaluation/v1/evaluation-automatic/queue", (r) =>
+    json(r, []),
+  );
   await page.route("**/api/assessment/**", (route) => {
+    if (route.request().url().includes("assessment-automatic/queue"))
+      return json(route, []);
     if (route.request().url().includes("assessment-appeals"))
       return json(route, []);
     if (route.request().method() === "POST") {
@@ -354,7 +359,11 @@ test.describe("настоящий MediaRecorder с тестовым устрой
         page.locator("video").evaluate((v: HTMLVideoElement) => v.videoWidth),
       )
       .toBeGreaterThan(0);
-    await expect.poll(() => page.locator("video").evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(1);
+    await expect
+      .poll(() =>
+        page.locator("video").evaluate((v: HTMLVideoElement) => v.currentTime),
+      )
+      .toBeGreaterThan(1);
     await page
       .getByRole("button", { name: "Остановить запись", exact: true })
       .click();

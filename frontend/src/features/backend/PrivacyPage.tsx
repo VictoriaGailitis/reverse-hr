@@ -8,6 +8,7 @@ import { missingAsNull, ResourceError, useResource } from "./Resource";
 const purposes: Record<Purpose, string> = {
   achievement_import: "Импорт достижений",
   achievement_publication: "Публикация достижений",
+  task_recommendations: "Подбор подходящих новых заданий",
   company_task_subscription: "Подписка на задания компаний",
   resume_publication: "Публикация резюме",
   external_service_notifications: "Сервисные уведомления по email",

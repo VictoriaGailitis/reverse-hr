@@ -1,3 +1,4 @@
+import { GenerationReferences } from "./GenerationReferences";
 import { useState } from "react";
 import {
   CompanySchedules,
@@ -39,6 +40,7 @@ export function CompanyTasksPage({
         <OrganizationScope>
           {(org) => (
             <>
+              <GenerationReferences organization={org.organization_id} />
               <ProposalEditor organization={org.organization_id} />
               <Proposals organization={org.organization_id} />
               <AssignmentForm organization={org.organization_id} />

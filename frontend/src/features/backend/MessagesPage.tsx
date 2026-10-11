@@ -226,6 +226,7 @@ function MessageList({
   );
 }
 const kinds: Record<string, string> = {
+  task_available: "Новое подходящее задание",
   invitation_sent: "Новое приглашение",
   invitation_accepted: "Приглашение принято",
   invitation_declined: "Приглашение отклонено",
@@ -276,6 +277,7 @@ function NotificationPage({
                   {kinds[notice.kind] ?? "Обновление по вашему действию"}
                 </strong>
                 <p>{notice.read ? "Прочитано" : "Новое"}</p>
+                {notice.kind === "task_available" && <Link to="/candidate/assessment">Посмотреть задания</Link>}
                 {notice.invitation_id && (
                   <Link
                     to={

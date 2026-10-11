@@ -1,3 +1,6 @@
+import { TaskAnalytics } from "./TaskAnalytics";
+import { GenerationReferences } from "./GenerationReferences";
+import { AutomaticQueues } from "./AutomaticQueues";
 import { GradeReview } from "./GradeReview";
 import { RightsRequests } from "./PrivacyExtras";
 import { useState } from "react";
@@ -28,6 +31,8 @@ export function AdminPage() {
     ["vacancies", "Вакансии", "company_moderator"],
     ["complaints", "Жалобы", "company_moderator"],
     ["content", "Задания компаний", "content_admin"],
+    ["generation", "Генерация заданий", "content_admin"],
+    ["analytics", "Качество заданий", "content_admin"],
     ["reviews", "Оценки и апелляции", "assessment_reviewer"],
     ["rights", "Обращения о данных", "privacy_officer"],
   ].filter((x) => session.roles?.includes(x[2]));
@@ -49,7 +54,11 @@ export function AdminPage() {
               </Button>
             ))}
           </div>
-          {active === "rights" ? (
+          {active === "analytics" ? (
+            <TaskAnalytics />
+          ) : active === "generation" ? (
+            <GenerationReferences />
+          ) : active === "rights" ? (
             <RightsRequests officer />
           ) : active === "reviews" ? (
             <>
@@ -70,6 +79,7 @@ export function AdminPage() {
                   </Link>
                 )}
               </form>
+              <AutomaticQueues />
               <GradeReview />
               <AppealQueue />
             </>

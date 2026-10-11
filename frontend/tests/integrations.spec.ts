@@ -291,11 +291,11 @@ test("оценка: создание, этап, сохранение снимк�
   );
   await page.route("**/api/assessment/**", (r) => {
     const path = new URL(r.request().url()).pathname;
-    if (path.endsWith("/assessment-plans"))
+    if (path.endsWith("/assessment-selection-policies"))
       return json(r, [
         {
-          plan_version_id: needId,
-          name: "Тестовый план",
+          policy_id: needId,
+          name: "Тестовое направление",
           specialization: "Python",
           grade: "junior",
           duration_seconds: 600,
@@ -306,12 +306,13 @@ test("оценка: создание, этап, сохранение снимк�
         },
       ]);
     if (
-      path.endsWith("/assessment-sessions") &&
+      path.endsWith("/assessment-selected-sessions") &&
       r.request().method() === "POST"
     ) {
-      expect(r.request().postDataJSON().assessment_consent_id).toBe(consentId);
+      expect(r.request().postDataJSON()).toEqual({selection_policy_id: needId, assessment_consent_id: consentId});
       return json(r, session(), 201);
     }
+    if (path.endsWith("/assessment-task-history")) return json(r, []);
     if (path.endsWith("/evaluation"))
       return json(r, {
         session_id: sessionId,

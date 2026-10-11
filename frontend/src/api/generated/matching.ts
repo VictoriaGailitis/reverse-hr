@@ -304,6 +304,8 @@ export interface components {
              * @enum {string}
              */
             format: "individual" | "team";
+            /** Occurred On */
+            occurred_on?: string | null;
         };
         /** Approval */
         Approval: {
@@ -527,7 +529,7 @@ export interface components {
              * @default confirmed-grade-declared-skills-v1
              * @enum {string}
              */
-            ranking_version: "confirmed-grade-declared-skills-v1" | "confirmed-grade-achievements-v2" | "verified-competencies-demo-v1" | "governed-v1";
+            ranking_version: "confirmed-grade-declared-skills-v1" | "confirmed-grade-achievements-v2" | "confirmed-grade-achievements-v3" | "verified-competencies-demo-v1" | "governed-v1";
             /** Policy Id */
             policy_id?: string | null;
             /** Catalog Id */
@@ -659,6 +661,12 @@ export interface components {
         };
         /** QualificationEvidence */
         QualificationEvidence: {
+            /**
+             * Origin
+             * @default human
+             * @enum {string}
+             */
+            origin: "human" | "automatic";
             /**
              * Policy Id
              * Format: uuid

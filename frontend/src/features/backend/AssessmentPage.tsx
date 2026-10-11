@@ -1,3 +1,4 @@
+import { GeneratedOffers } from "./GeneratedOffers";
 import { CompanyTasksPage } from "./CompanyTasksPage";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -7,14 +8,7 @@ import type { components as R } from "../../api/generated/code-runner";
 import { useBackend } from "../../state/BackendContext";
 import { Button } from "../../components/Button";
 import { useResource } from "./Resource";
-import {
-  CommandStatus,
-  Field,
-  LoadState,
-  useCommand,
-  isUuid,
-  uuidPattern,
-} from "./ApiUI";
+import { CommandStatus, Field, LoadState, useCommand, isUuid } from "./ApiUI";
 import { ConsentGate } from "./ConsentGate";
 import {
   mountBoard,
@@ -55,95 +49,157 @@ export function AssessmentPage() {
           <p role="alert">Некорректная ссылка на сессию.</p>
         )
       ) : (
-        <Plans created={(session) => setParams({ session })} />
+        <>
+          <GeneratedOffers created={(session) => setParams({ session })} />
+          <Plans created={(session) => setParams({ session })} />
+        </>
       )}
     </div>
   );
 }
 function Plans({ created }: { created: (id: string) => void }) {
-  const [params] = useSearchParams();
-  const [policy, setPolicy] = useState(params.get("gradePolicy") ?? "");
   const { api } = useBackend();
   const command = useCommand();
   const resource = useResource((signal) =>
-    api.request<A["schemas"]["PlanView"][]>(
+    api.request<A["schemas"]["SelectionOffer"][]>(
       "assessment",
-      "/v1/assessment-plans",
+      "/v1/assessment-selection-policies",
       { signal },
     ),
   );
   return (
     <>
-      <Field label="Шкала оценки из приглашения (необязательно)">
-        <input
-          placeholder="Идентификатор утверждённой шкалы"
-          pattern={uuidPattern}
-          value={policy}
-          onChange={(e) => setPolicy(e.target.value)}
-        />
-      </Field>
       <p>
-        Для подтверждения грейда нужна утверждённая шкала, переданная
-        организатором. Без неё можно пройти практику; общий грейд не будет
-        подтверждён.
+        Выберите направление оценки. Сервер подберёт вариант задания с учётом
+        предыдущих попыток и ограничений выдачи. Отмена сессии не позволяет
+        обойти эти ограничения. Правила оценки закрепляются при создании сессии.
       </p>
       <LoadState resource={resource} />
       {resource.status === "ready" && (
         <ConsentGate purpose="assessment">
           {(consent) => (
             <>
-              {!resource.data?.length && <p>Опубликованных планов пока нет.</p>}
-              {resource.data
-                ?.filter((x) => x.status === "published")
-                .map((plan) => (
-                  <section className="api-card" key={plan.plan_version_id}>
-                    <h2>{plan.name}</h2>
-                    <p>
-                      {plan.specialization} · {plan.grade} ·{" "}
-                      {Math.ceil(plan.duration_seconds / 60)} мин.
-                    </p>
-                    <p>
-                      Этапы:{" "}
-                      {plan.formats.map((x) => formatNames[x] ?? x).join(", ")}
-                    </p>
-                    {plan.demo && <p>ДЕМО · тестовый план сервера</p>}
-                    <p>
-                      В практических этапах сохраняются технические события
-                      прохождения. Для камеры и микрофона потребуется отдельное
-                      согласие и разрешение устройства.
-                    </p>
-                    <Button
-                      disabled={
-                        command.disabled || (!!policy && !isUuid(policy))
-                      }
-                      onClick={() =>
-                        void command.run(async () => {
-                          const result = await api.request<Session>(
-                            "assessment",
-                            "/v1/assessment-sessions",
-                            {
-                              method: "POST",
-                              body: {
-                                plan_version_id: plan.plan_version_id,
-                                assessment_consent_id: consent,
-                                ...(policy ? { grade_policy_id: policy } : {}),
-                              },
-                              intent: `session:${plan.plan_version_id}`,
+              {!resource.data?.length && (
+                <p>Направления оценки пока недоступны.</p>
+              )}
+              {resource.data?.map((offer) => (
+                <section className="api-card" key={offer.policy_id}>
+                  <h2>{offer.name}</h2>
+                  <p>
+                    {offer.specialization} · {offer.grade}
+                  </p>
+                  {offer.demo && <p>ДЕМО · тестовая оценка</p>}
+                  <p>
+                    Для камеры и микрофона потребуется отдельное согласие и
+                    разрешение устройства.
+                  </p>
+                  <Button
+                    disabled={command.disabled}
+                    onClick={() =>
+                      void command.run(async () => {
+                        const result = await api.request<Session>(
+                          "assessment",
+                          "/v1/assessment-selected-sessions",
+                          {
+                            method: "POST",
+                            body: {
+                              selection_policy_id: offer.policy_id,
+                              assessment_consent_id: consent,
                             },
-                          );
-                          created(result.session_id);
-                        }, "Сессия создана.")
-                      }
-                    >
-                      Начать подготовку
-                    </Button>
-                  </section>
-                ))}
+                            intent: `selected-session:${offer.policy_id}`,
+                          },
+                        );
+                        created(result.session_id);
+                      }, "Сессия создана.")
+                    }
+                  >
+                    Начать подготовку
+                  </Button>
+                </section>
+              ))}
             </>
           )}
         </ConsentGate>
       )}
-      <CommandStatus command={command} />
+      <CommandStatus command={command} refresh={resource.reload} />
+      <TaskHistory created={created} />
+    </>
+  );
+}
+function TaskHistory({ created }: { created: (id: string) => void }) {
+  const [cursors, setCursors] = useState<string[]>([]);
+  const cursor = cursors.at(-1);
+  return (
+    <section className="api-card">
+      <h2>История попыток</h2>
+      <TaskHistoryPage
+        key={cursor ?? "first"}
+        cursor={cursor}
+        created={created}
+        previous={
+          cursor ? () => setCursors((old) => old.slice(0, -1)) : undefined
+        }
+        next={(id) => setCursors((old) => [...old, id])}
+      />
+    </section>
+  );
+}
+function TaskHistoryPage({
+  cursor,
+  created,
+  previous,
+  next,
+}: {
+  cursor?: string;
+  created: (id: string) => void;
+  previous?: () => void;
+  next: (id: string) => void;
+}) {
+  const { api } = useBackend();
+  const resource = useResource((signal) =>
+    api.request<A["schemas"]["HistoryItem"][]>(
+      "assessment",
+      `/v1/assessment-task-history?limit=20${cursor ? `&after=${encodeURIComponent(cursor)}` : ""}`,
+      { signal },
+    ),
+  );
+  return (
+    <>
+      <LoadState resource={resource} />
+      {resource.status === "ready" && (
+        <>
+          {!resource.data?.length && <p>На этой странице нет попыток.</p>}
+          <ul>
+            {resource.data?.map((item) => (
+              <li key={item.session_id}>
+                {new Date(item.issued_at).toLocaleString("ru-RU")} ·{" "}
+                {statusNames[item.status] ?? item.status}{" "}
+                <Button
+                  variant="secondary"
+                  onClick={() => created(item.session_id)}
+                >
+                  Открыть попытку
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <div className="api-actions">
+            {previous && (
+              <Button variant="secondary" onClick={previous}>
+                Более новые попытки
+              </Button>
+            )}
+            {resource.data?.length === 20 && (
+              <Button
+                variant="secondary"
+                onClick={() => next(resource.data![19].session_id)}
+              >
+                Более ранние попытки
+              </Button>
+            )}
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -657,6 +713,15 @@ function SessionResult({ id }: { id: string }) {
       {result && (
         <>
           <p>{labels[result.status]}</p>
+          {result.origin === "automatic" && (
+            <p>
+              Оценка выставлена автоматически по проверяемым доказательствам. Вы
+              можете подать апелляцию.
+            </p>
+          )}
+          {result.review_required && (
+            <p>Результат направлен на перепроверку специалистом.</p>
+          )}
           <p>
             Подтверждённый грейд:{" "}
             {result.confirmed_grade ?? "пока не подтверждён"}

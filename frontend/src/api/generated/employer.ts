@@ -451,11 +451,17 @@ export interface components {
              * Format: date-time
              */
             issued_at: string;
+            /** Specialization */
+            specialization?: string | null;
             /**
              * Purpose
              * @enum {string}
              */
-            purpose: "profile" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            purpose: "profile" | "task-catalog" | "task-notice" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            /** Catalog After */
+            catalog_after?: string | null;
+            /** Catalog Version Id */
+            catalog_version_id?: string | null;
             /** Assignment Id */
             assignment_id?: string | null;
             /** Result Grant Id */
@@ -473,7 +479,7 @@ export interface components {
             /** Consent Id */
             consent_id?: string | null;
             /** Consent Purpose */
-            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
+            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "task_recommendations" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
             /** Allowed */
             allowed: boolean;
             /**
@@ -508,11 +514,17 @@ export interface components {
              * Format: date-time
              */
             issued_at: string;
+            /** Specialization */
+            specialization?: string | null;
             /**
              * Purpose
              * @enum {string}
              */
-            purpose: "profile" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            purpose: "profile" | "task-catalog" | "task-notice" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            /** Catalog After */
+            catalog_after?: string | null;
+            /** Catalog Version Id */
+            catalog_version_id?: string | null;
             /** Assignment Id */
             assignment_id?: string | null;
             /** Result Grant Id */
@@ -530,7 +542,7 @@ export interface components {
             /** Consent Id */
             consent_id?: string | null;
             /** Consent Purpose */
-            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
+            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "task_recommendations" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
         };
         /** MembershipCommand */
         MembershipCommand: {

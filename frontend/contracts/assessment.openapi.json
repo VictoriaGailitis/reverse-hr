@@ -1365,7 +1365,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenerateCommand"
+                "$ref": "#/components/schemas/reverse_hr__domains__assessment_selection__GenerateCommand"
               }
             }
           }
@@ -3850,6 +3850,933 @@
         }
       }
     },
+    "/v1/assessment-generation/references": {
+      "get": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "References",
+        "operationId": "references_v1_assessment_generation_references_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Organization Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReferenceView"
+                  },
+                  "title": "Response References V1 Assessment Generation References Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Create Reference",
+        "operationId": "create_reference_v1_assessment_generation_references_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferenceCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/references/{version_id}/versions": {
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Edit Reference",
+        "operationId": "edit_reference_v1_assessment_generation_references__version_id__versions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferenceCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/references/{version_id}/preview": {
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Preview",
+        "operationId": "preview_v1_assessment_generation_references__version_id__preview_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/generate": {
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Generate",
+        "operationId": "generate_v1_assessment_generation_generate_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/reverse_hr__domains__assessment_generation__GenerateCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/references/{version_id}/jobs": {
+      "get": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Jobs",
+        "operationId": "jobs_v1_assessment_generation_references__version_id__jobs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GenerationView"
+                  },
+                  "title": "Response Jobs V1 Assessment Generation References  Version Id  Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/references/{version_id}/publish": {
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Publish",
+        "operationId": "publish_v1_assessment_generation_references__version_id__publish_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/references/{version_id}/retire": {
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Retire",
+        "operationId": "retire_v1_assessment_generation_references__version_id__retire_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/references/{version_id}/grading-policy": {
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Bind Grading Policy",
+        "operationId": "bind_grading_policy_v1_assessment_generation_references__version_id__grading_policy_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Version Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$",
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyBindingCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-generation/offers": {
+      "get": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Offers",
+        "operationId": "offers_v1_assessment_generation_offers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GeneratedOffer"
+                  },
+                  "type": "array",
+                  "title": "Response Offers V1 Assessment Generation Offers Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/assessment-generation/sessions": {
+      "post": {
+        "tags": [
+          "original-generation"
+        ],
+        "summary": "Generated Session",
+        "operationId": "generated_session_v1_assessment_generation_sessions_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratedSessionCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/market/task-catalog": {
+      "post": {
+        "summary": "Catalog",
+        "operationId": "catalog_internal_v1_market_task_catalog_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-automatic/queue": {
+      "get": {
+        "tags": [
+          "automatic-grades"
+        ],
+        "summary": "Queue",
+        "operationId": "queue_v1_assessment_automatic_queue_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/assessment-automatic/{session_id}/recheck": {
+      "post": {
+        "tags": [
+          "automatic-grades"
+        ],
+        "summary": "Recheck",
+        "operationId": "recheck_v1_assessment_automatic__session_id__recheck_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/v1/generated-validation": {
+      "post": {
+        "tags": [
+          "generated-validation"
+        ],
+        "summary": "Generated Validation",
+        "operationId": "generated_validation_internal_v1_generated_validation_post",
+        "parameters": [
+          {
+            "name": "X-HR-Signature",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Hr-Signature"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratedValidationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/grade-policies": {
       "post": {
         "tags": [
@@ -4278,6 +5205,98 @@
             }
           }
         }
+      }
+    },
+    "/v1/task-analytics/report": {
+      "post": {
+        "tags": [
+          "task-analytics"
+        ],
+        "summary": "Report",
+        "operationId": "report_v1_task_analytics_report_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/task-analytics/simulate": {
+      "post": {
+        "tags": [
+          "task-analytics"
+        ],
+        "summary": "Simulate",
+        "operationId": "simulate_v1_task_analytics_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Simulation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
     "/internal/v1/market/appeal-notice": {
@@ -6729,6 +7748,105 @@
         ],
         "title": "Acceptance"
       },
+      "AnalyticsReport": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "live_demo",
+              "synthetic",
+              "expert"
+            ],
+            "title": "Source"
+          },
+          "scale": {
+            "$ref": "#/components/schemas/Scale"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count"
+          },
+          "independent_label_count": {
+            "type": "integer",
+            "title": "Independent Label Count"
+          },
+          "target_distributions": {
+            "items": {
+              "$ref": "#/components/schemas/GradeDistribution"
+            },
+            "type": "array",
+            "title": "Target Distributions"
+          },
+          "independent_distributions": {
+            "items": {
+              "$ref": "#/components/schemas/GradeDistribution"
+            },
+            "type": "array",
+            "title": "Independent Distributions"
+          },
+          "contrasts": {
+            "items": {
+              "$ref": "#/components/schemas/Contrast"
+            },
+            "type": "array",
+            "title": "Contrasts"
+          },
+          "corrected_item_total_correlation": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Item Total Correlation"
+          },
+          "correlation_count": {
+            "type": "integer",
+            "title": "Correlation Count"
+          },
+          "correlation_status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "insufficient_data",
+              "constant_scores"
+            ],
+            "title": "Correlation Status"
+          },
+          "excluded": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Excluded"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "scale",
+          "sample_count",
+          "independent_label_count",
+          "target_distributions",
+          "independent_distributions",
+          "contrasts",
+          "corrected_item_total_correlation",
+          "correlation_count",
+          "correlation_status",
+          "warnings"
+        ],
+        "title": "AnalyticsReport"
+      },
       "AppealCreate": {
         "properties": {
           "decision_id": {
@@ -7360,6 +8478,56 @@
         ],
         "title": "AssignmentView"
       },
+      "Bands": {
+        "properties": {
+          "normal_from": {
+            "type": "integer",
+            "maximum": 99.0,
+            "minimum": 1.0,
+            "title": "Normal From",
+            "default": 50
+          },
+          "good_from": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 2.0,
+            "title": "Good From",
+            "default": 80
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Bands"
+      },
+      "Bucket": {
+        "properties": {
+          "quality": {
+            "type": "string",
+            "enum": [
+              "poor",
+              "normal",
+              "good"
+            ],
+            "title": "Quality"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "percent": {
+            "type": "number",
+            "title": "Percent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quality",
+          "count",
+          "percent"
+        ],
+        "title": "Bucket"
+      },
       "CalibrationCase": {
         "properties": {
           "case_id": {
@@ -7527,6 +8695,66 @@
           "tasks"
         ],
         "title": "ContentPackage"
+      },
+      "Contrast": {
+        "properties": {
+          "lower_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "upper_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "lower_count": {
+            "type": "integer",
+            "title": "Lower Count"
+          },
+          "upper_count": {
+            "type": "integer",
+            "title": "Upper Count"
+          },
+          "normal_or_better_difference": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normal Or Better Difference"
+          },
+          "good_difference": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Good Difference"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "insufficient_data"
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "lower_grade",
+          "upper_grade",
+          "lower_count",
+          "upper_count",
+          "normal_or_better_difference",
+          "good_difference",
+          "status"
+        ],
+        "title": "Contrast"
       },
       "Criterion": {
         "properties": {
@@ -7807,6 +9035,15 @@
       },
       "DecisionSummary": {
         "properties": {
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human",
+              "automatic"
+            ],
+            "title": "Origin",
+            "default": "human"
+          },
           "specialization": {
             "type": "string",
             "maxLength": 100,
@@ -8049,30 +9286,213 @@
         ],
         "title": "FollowupLink"
       },
-      "GenerateCommand": {
+      "GeneratedOffer": {
         "properties": {
-          "parameters": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "maxProperties": 12,
-            "minProperties": 1,
-            "title": "Parameters"
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
           },
-          "family_version": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "specialization": {
+            "type": "string",
+            "title": "Specialization"
+          },
+          "grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "duration_seconds": {
             "type": "integer",
-            "minimum": 1.0,
-            "title": "Family Version"
+            "title": "Duration Seconds"
+          },
+          "scored": {
+            "type": "boolean",
+            "title": "Scored"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "parameters",
-          "family_version"
+          "version_id",
+          "name",
+          "format",
+          "specialization",
+          "grade",
+          "duration_seconds",
+          "scored"
         ],
-        "title": "GenerateCommand"
+        "title": "GeneratedOffer"
+      },
+      "GeneratedSessionCommand": {
+        "properties": {
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "assessment_consent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assessment Consent Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version_id",
+          "assessment_consent_id"
+        ],
+        "title": "GeneratedSessionCommand"
+      },
+      "GeneratedValidationRequest": {
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Candidate Id"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Nonce"
+          },
+          "requester": {
+            "type": "string",
+            "const": "code-runner",
+            "title": "Requester",
+            "default": "code-runner"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          },
+          "purpose": {
+            "type": "string",
+            "const": "generated-validation",
+            "title": "Purpose",
+            "default": "generated-validation"
+          },
+          "generation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Generation Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "candidate_id",
+          "nonce",
+          "issued_at",
+          "generation_id"
+        ],
+        "title": "GeneratedValidationRequest"
+      },
+      "GenerationView": {
+        "properties": {
+          "generation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Generation Id"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "validating",
+              "ready",
+              "rejected",
+              "technical_failure",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Task"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision Id"
+          },
+          "plan_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Version Id"
+          },
+          "grade_policy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Policy Id"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generation_id",
+          "version_id",
+          "status",
+          "error",
+          "attempts"
+        ],
+        "title": "GenerationView"
       },
       "Grade": {
         "type": "string",
@@ -8083,6 +9503,53 @@
           "lead"
         ],
         "title": "Grade"
+      },
+      "GradeDistribution": {
+        "properties": {
+          "grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "mean_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean Score"
+          },
+          "bands": {
+            "$ref": "#/components/schemas/Bands"
+          },
+          "buckets": {
+            "items": {
+              "$ref": "#/components/schemas/Bucket"
+            },
+            "type": "array",
+            "title": "Buckets"
+          },
+          "sufficient": {
+            "type": "boolean",
+            "title": "Sufficient"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "grade",
+          "count",
+          "mean_score",
+          "bands",
+          "buckets",
+          "sufficient"
+        ],
+        "title": "GradeDistribution"
       },
       "HTTPValidationError": {
         "properties": {
@@ -8313,10 +9780,25 @@
             "format": "date-time",
             "title": "Issued At"
           },
+          "specialization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialization"
+          },
           "purpose": {
             "type": "string",
             "enum": [
               "profile",
+              "task-catalog",
+              "task-notice",
               "membership",
               "affiliation",
               "content-membership",
@@ -8331,6 +9813,30 @@
               "notice"
             ],
             "title": "Purpose"
+          },
+          "catalog_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog After"
+          },
+          "catalog_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Version Id"
           },
           "assignment_id": {
             "anyOf": [
@@ -8439,6 +9945,7 @@
                   "profile_publication",
                   "contact_disclosure",
                   "company_task_subscription",
+                  "task_recommendations",
                   "resume_publication",
                   "external_service_notifications",
                   "external_marketing_notifications"
@@ -8517,10 +10024,25 @@
             "format": "date-time",
             "title": "Issued At"
           },
+          "specialization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialization"
+          },
           "purpose": {
             "type": "string",
             "enum": [
               "profile",
+              "task-catalog",
+              "task-notice",
               "membership",
               "affiliation",
               "content-membership",
@@ -8535,6 +10057,30 @@
               "notice"
             ],
             "title": "Purpose"
+          },
+          "catalog_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog After"
+          },
+          "catalog_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Version Id"
           },
           "assignment_id": {
             "anyOf": [
@@ -8643,6 +10189,7 @@
                   "profile_publication",
                   "contact_disclosure",
                   "company_task_subscription",
+                  "task_recommendations",
                   "resume_publication",
                   "external_service_notifications",
                   "external_marketing_notifications"
@@ -8821,6 +10368,56 @@
           "source"
         ],
         "title": "Mutant"
+      },
+      "Observation": {
+        "properties": {
+          "profile_key": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Profile Key"
+          },
+          "score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Score"
+          },
+          "target_grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "independent_grade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Grade"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rest_score": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rest Score"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile_key",
+          "score",
+          "target_grade"
+        ],
+        "title": "Observation"
       },
       "PinnedMaterial": {
         "properties": {
@@ -9023,6 +10620,21 @@
         ],
         "title": "PlanView"
       },
+      "PolicyBindingCommand": {
+        "properties": {
+          "grade_policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Grade Policy Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "grade_policy_id"
+        ],
+        "title": "PolicyBindingCommand"
+      },
       "PolicyView": {
         "properties": {
           "plan_version_id": {
@@ -9094,6 +10706,69 @@
           "calibrated"
         ],
         "title": "PolicyView"
+      },
+      "PreviewCommand": {
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 10,
+            "pattern": "\\S",
+            "title": "Scenario"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scenario"
+        ],
+        "title": "PreviewCommand"
+      },
+      "PreviewView": {
+        "properties": {
+          "preview_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Preview Id"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "specification": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Specification"
+          },
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "preview_id",
+          "version_id",
+          "specification",
+          "digest",
+          "expires_at"
+        ],
+        "title": "PreviewView"
       },
       "ProbeRecord": {
         "properties": {
@@ -9342,6 +11017,15 @@
       },
       "QualificationEvidence": {
         "properties": {
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human",
+              "automatic"
+            ],
+            "title": "Origin",
+            "default": "human"
+          },
           "policy_id": {
             "type": "string",
             "format": "uuid",
@@ -9430,6 +11114,422 @@
           "reason"
         ],
         "title": "ReasonCommand"
+      },
+      "ReferenceCommand": {
+        "properties": {
+          "stack_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Stack Tags"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Name"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "code",
+              "sql",
+              "vcv",
+              "voice",
+              "whiteboard"
+            ],
+            "title": "Format"
+          },
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Specialization"
+          },
+          "grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 20,
+            "pattern": "\\S",
+            "title": "Description"
+          },
+          "required_constraints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Required Constraints"
+          },
+          "allowed_variations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Allowed Variations"
+          },
+          "forbidden_changes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Forbidden Changes"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "title": "Parameters"
+          },
+          "competencies": {
+            "items": {
+              "$ref": "#/components/schemas/Competency"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Competencies"
+          },
+          "rubric": {
+            "items": {
+              "$ref": "#/components/schemas/Criterion"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Rubric"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "maximum": 3600.0,
+            "minimum": 60.0,
+            "title": "Duration Seconds"
+          },
+          "pool_size": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Pool Size",
+            "default": 3
+          },
+          "max_exposures": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Max Exposures",
+            "default": 100
+          },
+          "grade_policy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Policy Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "format",
+          "specialization",
+          "grade",
+          "description",
+          "required_constraints",
+          "allowed_variations",
+          "forbidden_changes",
+          "competencies",
+          "rubric",
+          "duration_seconds"
+        ],
+        "title": "ReferenceCommand"
+      },
+      "ReferenceView": {
+        "properties": {
+          "stack_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Stack Tags"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Name"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "code",
+              "sql",
+              "vcv",
+              "voice",
+              "whiteboard"
+            ],
+            "title": "Format"
+          },
+          "specialization": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Specialization"
+          },
+          "grade": {
+            "$ref": "#/components/schemas/Grade"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 12000,
+            "minLength": 20,
+            "pattern": "\\S",
+            "title": "Description"
+          },
+          "required_constraints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Required Constraints"
+          },
+          "allowed_variations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Allowed Variations"
+          },
+          "forbidden_changes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Forbidden Changes"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "title": "Parameters"
+          },
+          "competencies": {
+            "items": {
+              "$ref": "#/components/schemas/Competency"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Competencies"
+          },
+          "rubric": {
+            "items": {
+              "$ref": "#/components/schemas/Criterion"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Rubric"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "maximum": 3600.0,
+            "minimum": 60.0,
+            "title": "Duration Seconds"
+          },
+          "pool_size": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Pool Size",
+            "default": 3
+          },
+          "max_exposures": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Max Exposures",
+            "default": 100
+          },
+          "grade_policy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grade Policy Id"
+          },
+          "version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Version Id"
+          },
+          "reference_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reference Id"
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "retired"
+            ],
+            "title": "Status"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "digest": {
+            "type": "string",
+            "title": "Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "format",
+          "specialization",
+          "grade",
+          "description",
+          "required_constraints",
+          "allowed_variations",
+          "forbidden_changes",
+          "competencies",
+          "rubric",
+          "duration_seconds",
+          "version_id",
+          "reference_id",
+          "number",
+          "status",
+          "version",
+          "digest"
+        ],
+        "title": "ReferenceView"
+      },
+      "ReportQuery": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "task",
+              "reference_version",
+              "reference_family"
+            ],
+            "title": "Scope",
+            "default": "task"
+          },
+          "scope_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Scope Id"
+          },
+          "task_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Key"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Until"
+          },
+          "scale": {
+            "$ref": "#/components/schemas/Scale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scope_id",
+          "since",
+          "until"
+        ],
+        "title": "ReportQuery"
       },
       "ResultCriterion": {
         "properties": {
@@ -9749,6 +11849,37 @@
       },
       "Rules": {
         "properties": {
+          "generation_reference_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Reference Id"
+          },
+          "automatic_decisions": {
+            "type": "boolean",
+            "title": "Automatic Decisions",
+            "default": false
+          },
+          "review_margin": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 0.0,
+            "title": "Review Margin",
+            "default": 5
+          },
+          "audit_percent": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Audit Percent",
+            "default": 10
+          },
           "required_llm_model": {
             "anyOf": [
               {
@@ -9951,6 +12082,30 @@
           "reason"
         ],
         "title": "RuntimeDecision"
+      },
+      "Scale": {
+        "properties": {
+          "by_grade": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Bands"
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/Grade"
+            },
+            "type": "object",
+            "title": "By Grade"
+          },
+          "minimum_group_size": {
+            "type": "integer",
+            "maximum": 1000.0,
+            "minimum": 5.0,
+            "title": "Minimum Group Size",
+            "default": 10
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "Scale"
       },
       "ScheduleCommand": {
         "properties": {
@@ -10238,6 +12393,33 @@
       },
       "SessionEvaluation": {
         "properties": {
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "human",
+                  "automatic"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "review_required": {
+            "type": "boolean",
+            "title": "Review Required",
+            "default": false
+          },
+          "review_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Review Reasons"
+          },
           "session_id": {
             "type": "string",
             "format": "uuid",
@@ -10609,6 +12791,43 @@
         ],
         "title": "SessionView"
       },
+      "Simulation": {
+        "properties": {
+          "scale": {
+            "$ref": "#/components/schemas/Scale"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            },
+            "type": "array",
+            "maxItems": 5000,
+            "title": "Observations"
+          },
+          "label_source": {
+            "type": "string",
+            "enum": [
+              "synthetic",
+              "expert"
+            ],
+            "title": "Label Source",
+            "default": "synthetic"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "observations",
+          "reason"
+        ],
+        "title": "Simulation"
+      },
       "StageProgress": {
         "properties": {
           "stage_id": {
@@ -10790,6 +13009,20 @@
       },
       "StageScore": {
         "properties": {
+          "additional_verification_required": {
+            "type": "boolean",
+            "title": "Additional Verification Required",
+            "default": false
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human",
+              "automatic"
+            ],
+            "title": "Origin",
+            "default": "human"
+          },
           "model_attempt_id": {
             "anyOf": [
               {
@@ -12305,6 +14538,27 @@
         ],
         "title": "WithdrawCommand"
       },
+      "reverse_hr__domains__assessment_generation__GenerateCommand": {
+        "properties": {
+          "preview_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Preview Id"
+          },
+          "specification_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Specification Digest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "preview_id",
+          "specification_digest"
+        ],
+        "title": "GenerateCommand"
+      },
       "reverse_hr__domains__assessment_grades__PolicyCommand": {
         "properties": {
           "plan_version_id": {
@@ -12323,6 +14577,31 @@
           "rules"
         ],
         "title": "PolicyCommand"
+      },
+      "reverse_hr__domains__assessment_selection__GenerateCommand": {
+        "properties": {
+          "parameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 12,
+            "minProperties": 1,
+            "title": "Parameters"
+          },
+          "family_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Family Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "parameters",
+          "family_version"
+        ],
+        "title": "GenerateCommand"
       },
       "reverse_hr__domains__assessment_selection__PolicyCommand": {
         "properties": {
