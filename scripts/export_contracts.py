@@ -9,10 +9,10 @@ from fastapi import Depends, FastAPI, Header
 from fastapi import Path as ApiPath
 from fastapi.security import HTTPBearer
 
-from reverse_hr import contracts as dto
-from reverse_hr.app import ErrorResponse, create_app
-from reverse_hr.events import EventEnvelope
-from reverse_hr.settings import SIGNING_SERVICES, Settings
+from reverse_hr.contracts import core as dto
+from reverse_hr.contracts.events import EventEnvelope
+from reverse_hr.platform.app import ErrorResponse, create_app
+from reverse_hr.platform.settings import SIGNING_SERVICES, Settings
 
 root = Path("contracts")
 root.mkdir(exist_ok=True)

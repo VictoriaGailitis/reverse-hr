@@ -141,7 +141,7 @@ services:
     volumes:
       - ./.secrets/identity.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.identity.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   privacy:
     <<: *app
     environment:
@@ -154,7 +154,7 @@ services:
     volumes:
       - ./.secrets/privacy.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.privacy.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   candidate:
     <<: *app
     networks: [backend, antivirus]
@@ -178,7 +178,7 @@ services:
       - pdf-socket:/run/pdf
       - ./.secrets/candidate.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.candidate.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   employer:
     <<: *app
     environment:
@@ -191,11 +191,14 @@ services:
     volumes:
       - ./.secrets/employer.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.employer.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   assessment:
     <<: *app
     environment:
       HR_SERVICE_NAME: assessment
+      HR_ASSESSMENT_GENERATION_ENABLED: ${ASSESSMENT_GENERATION_ENABLED:-false}
+      HR_ASSESSMENT_GENERATION_MODEL: ${ASSESSMENT_GENERATION_MODEL:-}
+      HR_ASSESSMENT_GENERATION_CONFIG: ${ASSESSMENT_GENERATION_CONFIG:-null}
       HR_ROOT_PATH: /assessment
       HR_ASSESSMENT_TRUSTED_RUNTIMES: '${ASSESSMENT_TRUSTED_RUNTIMES:-[]}'
       HR_OIDC_JWKS_URL: http://keycloak:8080/realms/reverse-hr/protocol/openid-connect/certs
@@ -205,7 +208,7 @@ services:
     volumes:
       - ./.secrets/assessment.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.assessment.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   coding-workspace:
     <<: *app
     environment:
@@ -218,7 +221,7 @@ services:
     volumes:
       - ./.secrets/coding-workspace.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.coding_workspace.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   code-runner:
     <<: *app
     environment:
@@ -231,7 +234,7 @@ services:
     volumes:
       - ./.secrets/code-runner.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.code_runner.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   whiteboard:
     <<: *app
     profiles: [all]
@@ -245,7 +248,7 @@ services:
     volumes:
       - ./.secrets/whiteboard.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.whiteboard.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   media:
     <<: *app
     profiles: [all]
@@ -269,7 +272,7 @@ services:
       - media-objects:/var/lib/reverse-hr/media
       - ./.secrets/media.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.media.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   proctoring:
     <<: *app
     profiles: [all]
@@ -283,7 +286,7 @@ services:
     volumes:
       - ./.secrets/proctoring.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.proctoring.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   evaluation:
     <<: *app
     environment:
@@ -298,7 +301,7 @@ services:
     volumes:
       - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.evaluation.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   matching:
     <<: *app
     environment:
@@ -315,7 +318,7 @@ services:
     volumes:
       - ./.secrets/matching.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.matching.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   hiring:
     <<: *app
     environment:
@@ -327,7 +330,7 @@ services:
     volumes:
       - ./.secrets/hiring.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.hiring.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   achievements:
     <<: *app
     profiles: [all]
@@ -341,7 +344,7 @@ services:
     volumes:
       - ./.secrets/achievements.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.achievements.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   integration:
     <<: *app
     profiles: [all]
@@ -355,7 +358,7 @@ services:
     volumes:
       - ./.secrets/integration.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.integration.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   demo-fsp:
     <<: *app
     profiles: [all]
@@ -369,7 +372,7 @@ services:
     volumes:
       - ./.secrets/demo-fsp.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.demo_fsp.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   demo-codenrock:
     <<: *app
     profiles: [all]
@@ -383,7 +386,7 @@ services:
     volumes:
       - ./.secrets/demo-codenrock.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.demo_codenrock.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   demo-ats:
     <<: *app
     profiles: [all]
@@ -397,7 +400,7 @@ services:
     volumes:
       - ./.secrets/demo-ats.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.demo_ats.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   notification:
     <<: *app
     environment:
@@ -409,7 +412,7 @@ services:
     volumes:
       - ./.secrets/notification.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.notification.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   audit:
     <<: *app
     profiles: [all]
@@ -422,7 +425,7 @@ services:
     volumes:
       - ./.secrets/audit.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.migrate upgrade head && exec uvicorn reverse_hr.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.audit.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   candidate-outbox:
     <<: *app
     profiles: [events, all]
@@ -436,7 +439,7 @@ services:
     volumes:
       - ./.secrets/candidate.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       candidate: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -453,7 +456,7 @@ services:
     volumes:
       - ./.secrets/assessment.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       assessment: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -470,7 +473,7 @@ services:
     volumes:
       - ./.secrets/assessment.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, company-dispatch]
+    command: [python, -m, reverse_hr.platform.worker, company-dispatch]
     depends_on:
       assessment: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -489,7 +492,7 @@ services:
     volumes:
       - ./.secrets/assessment.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       assessment: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -506,7 +509,7 @@ services:
     volumes:
       - ./.secrets/coding-workspace.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       coding-workspace: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -523,7 +526,7 @@ services:
     volumes:
       - ./.secrets/coding-workspace.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       coding-workspace: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -540,7 +543,7 @@ services:
     volumes:
       - ./.secrets/code-runner.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       code-runner: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -557,7 +560,7 @@ services:
     volumes:
       - ./.secrets/code-runner.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       code-runner: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -574,7 +577,7 @@ services:
     volumes:
       - ./.secrets/code-runner.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, diagnose]
+    command: [python, -m, reverse_hr.platform.worker, diagnose]
     depends_on:
       code-runner: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -593,7 +596,7 @@ services:
       - candidate-resumes:/var/lib/reverse-hr/resumes
       - ./.secrets/candidate.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       candidate: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -610,7 +613,7 @@ services:
     volumes:
       - ./.secrets/employer.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       employer: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -627,7 +630,7 @@ services:
     volumes:
       - ./.secrets/employer.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       employer: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -644,7 +647,7 @@ services:
     volumes:
       - ./.secrets/privacy.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       privacy: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -661,7 +664,7 @@ services:
     volumes:
       - ./.secrets/privacy.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       privacy: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -678,7 +681,7 @@ services:
     volumes:
       - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       evaluation: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -695,7 +698,7 @@ services:
     volumes:
       - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       evaluation: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -711,7 +714,7 @@ services:
     volumes:
       - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, prepare]
+    command: [python, -m, reverse_hr.platform.worker, prepare]
     depends_on:
       evaluation: {condition: service_healthy}
       assessment: {condition: service_healthy}
@@ -728,7 +731,7 @@ services:
     volumes:
       - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, collect]
+    command: [python, -m, reverse_hr.platform.worker, collect]
     depends_on:
       evaluation: {condition: service_healthy}
       assessment: {condition: service_healthy}
@@ -747,7 +750,7 @@ services:
     volumes:
       - ./.secrets/matching.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       matching: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -764,7 +767,7 @@ services:
     volumes:
       - ./.secrets/matching.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       matching: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -781,7 +784,7 @@ services:
     volumes:
       - ./.secrets/hiring.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       hiring: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -798,7 +801,7 @@ services:
     volumes:
       - ./.secrets/hiring.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       hiring: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -815,7 +818,7 @@ services:
     volumes:
       - ./.secrets/audit.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       audit: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -832,7 +835,7 @@ services:
     volumes:
       - ./.secrets/audit.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       audit: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -849,7 +852,7 @@ services:
     volumes:
       - ./.secrets/audit.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, audit-retention]
+    command: [python, -m, reverse_hr.platform.worker, audit-retention]
     depends_on:
       audit: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -866,7 +869,7 @@ services:
     volumes:
       - ./.secrets/notification.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       notification: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -883,7 +886,7 @@ services:
     volumes:
       - ./.secrets/notification.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       notification: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -900,7 +903,7 @@ services:
     volumes:
       - ./.secrets/media.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       media: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -919,7 +922,7 @@ services:
       - media-objects:/var/lib/reverse-hr/media
       - ./.secrets/media.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       media: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -936,7 +939,7 @@ services:
     volumes:
       - ./.secrets/whiteboard.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       whiteboard: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -953,7 +956,7 @@ services:
     volumes:
       - ./.secrets/whiteboard.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       whiteboard: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -970,7 +973,7 @@ services:
     volumes:
       - ./.secrets/proctoring.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       proctoring: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -987,7 +990,7 @@ services:
     volumes:
       - ./.secrets/proctoring.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       proctoring: {condition: service_healthy}
       rabbitmq: {condition: service_healthy}
@@ -1011,9 +1014,88 @@ services:
       - ./.secrets/media.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
       - ./.secrets/media-transcription.key:/run/secrets/transcription.key:ro
-    command: [python, -m, reverse_hr.worker, transcribe]
+    command: [python, -m, reverse_hr.platform.worker, transcribe]
     depends_on:
       media: {condition: service_healthy}
+  evaluation-automatic:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: evaluation
+      HR_DATABASE_URL: postgresql+psycopg://evaluation:${EVALUATION_DB_PASSWORD:?Generate .env first}@postgres:5432/evaluation
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+      HR_EVALUATION_AUTOMATIC_PROPOSALS: ${EVALUATION_AUTOMATIC_PROPOSALS:-2}
+      HR_EVALUATION_AUTOMATIC_DISAGREEMENT: ${EVALUATION_AUTOMATIC_DISAGREEMENT:-10}
+      HR_EVALUATION_AUTOMATIC_ENABLED: ${EVALUATION_AUTOMATIC_ENABLED:-true}
+      HR_EVALUATION_LLM_ENABLED: ${EVALUATION_LLM_ENABLED:-false}
+      HR_EVALUATION_LLM_MODEL: ${EVALUATION_LLM_MODEL:-}
+      HR_EVALUATION_LLM_CONFIG: ${EVALUATION_LLM_CONFIG:-null}
+    volumes:
+      - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.platform.worker, automatic-evaluate]
+    depends_on:
+      evaluation: {condition: service_healthy}
+      privacy: {condition: service_healthy}
+  candidate-task-discovery:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: candidate
+      HR_DATABASE_URL: postgresql+psycopg://candidate:${CANDIDATE_DB_PASSWORD:?Generate .env first}@postgres:5432/candidate
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/candidate.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.platform.worker, recommend-tasks]
+    depends_on:
+      candidate: {condition: service_healthy}
+      assessment: {condition: service_healthy}
+      privacy: {condition: service_healthy}
+  assessment-automatic:
+    <<: *app
+    profiles: [all]
+    healthcheck: {disable: true}
+    environment:
+      HR_SERVICE_NAME: assessment
+      HR_ASSESSMENT_TRUSTED_RUNTIMES: ${ASSESSMENT_TRUSTED_RUNTIMES:-[]}
+      HR_DATABASE_URL: postgresql+psycopg://assessment:${ASSESSMENT_DB_PASSWORD:?Generate .env first}@postgres:5432/assessment
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+    volumes:
+      - ./.secrets/assessment.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+    command: [python, -m, reverse_hr.platform.worker, automatic-grade]
+    depends_on:
+      assessment: {condition: service_healthy}
+      privacy: {condition: service_healthy}
+  assessment-generation:
+    <<: *app
+    profiles: [generation]
+    healthcheck: {disable: true}
+    networks: [backend, llm-egress]
+    environment:
+      HR_SERVICE_NAME: assessment
+      HR_DATABASE_URL: postgresql+psycopg://assessment:${ASSESSMENT_DB_PASSWORD:?Generate .env first}@postgres:5432/assessment
+      HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
+      HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
+      HR_ASSESSMENT_GENERATION_ENABLED: ${ASSESSMENT_GENERATION_ENABLED:-false}
+      HR_ASSESSMENT_GENERATION_MODEL: ${ASSESSMENT_GENERATION_MODEL:-}
+      HR_ASSESSMENT_GENERATION_CONFIG: ${ASSESSMENT_GENERATION_CONFIG:-null}
+      HR_ASSESSMENT_GENERATION_KEY_FILE: /run/secrets/llm-api-key
+      HR_ASSESSMENT_TRUSTED_RUNTIMES: ${ASSESSMENT_TRUSTED_RUNTIMES:-[]}
+    volumes:
+      - ./.secrets/assessment.key:/run/secrets/signing.key:ro
+      - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
+      - ./.secrets/llm-api-key:/run/secrets/llm-api-key:ro
+    command: [python, -m, reverse_hr.platform.worker, generate-content]
+    depends_on:
+      assessment: {condition: service_healthy}
+      privacy: {condition: service_healthy}
   evaluation-llm:
     <<: *app
     profiles: [llm]
@@ -1033,7 +1115,7 @@ services:
       - ./.secrets/evaluation.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
       - ./.secrets/llm-api-key:/run/secrets/llm-api-key:ro
-    command: [python, -m, reverse_hr.worker, evaluate]
+    command: [python, -m, reverse_hr.platform.worker, evaluate]
     depends_on:
       evaluation: {condition: service_healthy}
       assessment: {condition: service_healthy}
@@ -1051,7 +1133,7 @@ services:
     volumes:
       - ./.secrets/privacy.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, purge-backups]
+    command: [python, -m, reverse_hr.platform.worker, purge-backups]
     depends_on:
       privacy: {condition: service_healthy}
   resume-import-worker:
@@ -1072,7 +1154,7 @@ services:
       - pdf-socket:/run/pdf
       - ./.secrets/candidate.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, resume-import]
+    command: [python, -m, reverse_hr.platform.worker, resume-import]
     depends_on:
       candidate: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1082,7 +1164,7 @@ services:
     build: {context: ., dockerfile: infra/Dockerfile.resume-pdf}
     network_mode: none
     read_only: true
-    tmpfs: [/tmp:size=128m,mode=1777]
+    tmpfs: ['/tmp:size=128m,mode=1777']
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     mem_limit: 512m
@@ -1091,7 +1173,7 @@ services:
     restart: unless-stopped
     volumes: [pdf-socket:/run/pdf]
     healthcheck:
-      test: [CMD, python, -c, "from reverse_hr.media_decoder import UnixConnection; c=UnixConnection('/run/pdf/pdf.sock', 2); c.request('GET', '/ready'); assert c.getresponse().status == 200"]
+      test: [CMD, python, -c, "from reverse_hr.services.media.media_decoder import UnixConnection; c=UnixConnection('/run/pdf/pdf.sock', 2); c.request('GET', '/ready'); assert c.getresponse().status == 200"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -1100,7 +1182,7 @@ services:
     profiles: [all]
     network_mode: none
     read_only: true
-    tmpfs: [/tmp:size=128m,mode=1777]
+    tmpfs: ['/tmp:size=128m,mode=1777']
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     mem_limit: 512m
@@ -1110,9 +1192,9 @@ services:
     volumes: [decoder-socket:/run/decoder]
     environment:
       HR_MEDIA_VALIDATION_TIMEOUT_SECONDS: 20
-    command: [uvicorn, reverse_hr.media_decoder:create_app, --factory, --uds, /run/decoder/decoder.sock, --workers, "1", --no-access-log]
+    command: [uvicorn, reverse_hr.services.media.media_decoder:create_app, --factory, --uds, /run/decoder/decoder.sock, --workers, "1", --no-access-log]
     healthcheck:
-      test: [CMD, python, -c, "from reverse_hr.media_decoder import UnixConnection; c=UnixConnection('/run/decoder/decoder.sock', 2); c.request('GET', '/ready'); assert c.getresponse().status == 200"]
+      test: [CMD, python, -c, "from reverse_hr.services.media.media_decoder import UnixConnection; c=UnixConnection('/run/decoder/decoder.sock', 2); c.request('GET', '/ready'); assert c.getresponse().status == 200"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -1159,7 +1241,7 @@ services:
     volumes:
       - ./.secrets/achievements.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, achievement-import]
+    command: [python, -m, reverse_hr.platform.worker, achievement-import]
     depends_on:
       achievements: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1176,7 +1258,7 @@ services:
     volumes:
       - ./.secrets/integration.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, integrate]
+    command: [python, -m, reverse_hr.platform.worker, integrate]
     depends_on:
       integration: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1193,7 +1275,7 @@ services:
     volumes:
       - ./.secrets/demo-ats.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, ats-callback]
+    command: [python, -m, reverse_hr.platform.worker, ats-callback]
     depends_on:
       demo-ats: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1211,7 +1293,7 @@ services:
     volumes:
       - ./.secrets/achievements.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       achievements: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1230,7 +1312,7 @@ services:
     volumes:
       - ./.secrets/achievements.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       achievements: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1249,7 +1331,7 @@ services:
     volumes:
       - ./.secrets/integration.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, publish]
+    command: [python, -m, reverse_hr.platform.worker, publish]
     depends_on:
       integration: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1268,7 +1350,7 @@ services:
     volumes:
       - ./.secrets/integration.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, consume]
+    command: [python, -m, reverse_hr.platform.worker, consume]
     depends_on:
       integration: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1286,7 +1368,7 @@ services:
     volumes:
       - ./.secrets/hiring.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, review-sla]
+    command: [python, -m, reverse_hr.platform.worker, review-sla]
     depends_on:
       hiring: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1303,7 +1385,7 @@ services:
     volumes:
       - ./.secrets/employer.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, review-sla]
+    command: [python, -m, reverse_hr.platform.worker, review-sla]
     depends_on:
       employer: {condition: service_healthy}
       privacy: {condition: service_healthy}
@@ -1319,7 +1401,7 @@ services:
     volumes:
       - ./.secrets/assessment.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [python, -m, reverse_hr.worker, review-sla]
+    command: [python, -m, reverse_hr.platform.worker, review-sla]
     depends_on:
       assessment: {condition: service_healthy}
       privacy: {condition: service_healthy}

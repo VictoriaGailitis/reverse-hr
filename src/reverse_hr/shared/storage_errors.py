@@ -1,0 +1,2 @@
+class BlobUnavailable(Exception):
+    pass

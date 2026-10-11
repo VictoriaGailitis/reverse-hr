@@ -9,9 +9,9 @@ import pytest
 from dotenv import dotenv_values
 from sqlalchemy import text
 
-from reverse_hr.db import make_engine
-from reverse_hr.event_transport import connect
-from reverse_hr.settings import Settings
+from reverse_hr.platform.settings import Settings
+from reverse_hr.shared.db import make_engine
+from reverse_hr.shared.event_transport import connect
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--postgres-port", type=int, default=55329)

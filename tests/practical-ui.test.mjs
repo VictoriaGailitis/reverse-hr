@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
-import {mountBoard, mountRecording} from '../src/reverse_hr/assets/practical.mjs';
+import {mountBoard, mountRecording} from '../src/reverse_hr/shared/assets/practical.mjs';
 
 Object.defineProperty(globalThis,'crypto',{configurable:true,value:webcrypto});
 class Element {
@@ -171,7 +171,7 @@ test('recording replaces an invalid upload and recovers a lost restart response'
 });
 
 test('proctoring retries the identical batch, supports later flushes and never reads clipboard data', async () => {
-  const {mountProctoring}=await import('../src/reverse_hr/assets/practical.mjs');
+  const {mountProctoring}=await import('../src/reverse_hr/shared/assets/practical.mjs');
   class Target {
     constructor() { this.listeners=new Map(); this.hidden=false; }
     addEventListener(name,handler) { this.listeners.set(name,handler); }
@@ -205,7 +205,7 @@ test('proctoring retries the identical batch, supports later flushes and never r
 });
 
 test('proctoring buffers are bounded and overflow leaves explicit sequence gaps and a technical marker', async () => {
-  const {mountProctoring}=await import('../src/reverse_hr/assets/practical.mjs');
+  const {mountProctoring}=await import('../src/reverse_hr/shared/assets/practical.mjs');
   const target={addEventListener(){},removeEventListener(){},hidden:false};
   let offline=true;const delivered=[];
   const proctor=await mountProctoring({api:async (_,path,cmd)=>{

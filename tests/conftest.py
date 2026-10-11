@@ -9,9 +9,9 @@ from alembic import command
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from reverse_hr.app import create_app
-from reverse_hr.migrate import migration_config
-from reverse_hr.settings import Settings
+from reverse_hr.platform.app import create_app
+from reverse_hr.platform.migrate import migration_config
+from reverse_hr.platform.settings import Settings
 
 
 @pytest.fixture(scope="module")

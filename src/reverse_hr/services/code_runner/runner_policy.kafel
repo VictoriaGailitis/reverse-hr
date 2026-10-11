@@ -1,0 +1,18 @@
+// Linux x86_64, single-process Python/SQLite demo; all other syscalls kill the process.
+POLICY runner {
+    ALLOW {
+        read, write, readv, writev, close, lseek, pread64,
+        openat, newfstatat, newfstat, statx, readlink, readlinkat, getdents64,
+        access, faccessat, faccessat2, fcntl, ioctl,
+        mmap, mprotect, munmap, mremap, madvise, brk,
+        rt_sigaction, rt_sigprocmask, rt_sigreturn, sigaltstack,
+        futex, set_tid_address, set_robust_list, rseq, arch_prctl,
+        getpid, getppid, gettid, getuid, geteuid, getgid, getegid,
+        getcwd, chdir, newuname, sysinfo, getrandom,
+        clock_gettime, gettimeofday, time, clock_nanosleep, nanosleep,
+        sched_getaffinity, sched_yield, prlimit64, getrlimit, getrusage,
+        mkdir, mkdirat, unlink, unlinkat, rename, renameat, renameat2,
+        fsync, fdatasync, ftruncate, umask, execve, exit, exit_group
+    }
+}
+USE runner DEFAULT KILL

@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from dotenv import dotenv_values
 
-from reverse_hr.settings import SERVICES, SIGNING_SERVICES
+from reverse_hr.platform.settings import SERVICES, SIGNING_SERVICES
 
 root = Path(".secrets")
 root.mkdir(mode=0o700, exist_ok=True)
@@ -138,6 +138,16 @@ for service in SIGNING_SERVICES:
     )
 bindings.append(
     {
+        "source": "events.assessment",
+        "vhost": "/",
+        "destination": "code-runner.incoming",
+        "destination_type": "queue",
+        "routing_key": "assessment.generated_validation_requested.v1",
+        "arguments": {},
+    }
+)
+bindings.append(
+    {
         "source": "events.hiring",
         "vhost": "/",
         "destination": "privacy.incoming",
@@ -229,6 +239,16 @@ bindings.append(
         "destination": "notification.incoming",
         "destination_type": "queue",
         "routing_key": "assessment.company_notification_requested.v1",
+        "arguments": {},
+    }
+)
+bindings.append(
+    {
+        "source": "events.candidate",
+        "vhost": "/",
+        "destination": "notification.incoming",
+        "destination_type": "queue",
+        "routing_key": "candidate.task_notification_requested.v1",
         "arguments": {},
     }
 )

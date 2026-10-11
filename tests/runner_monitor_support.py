@@ -1,11 +1,11 @@
 """Finish actual signed RPC checks around instant fake execution and migrated SQLite."""
 
-from reverse_hr.runner_monitor import StopMonitor as BaseStopMonitor
+from reverse_hr.services.code_runner.runner_monitor import StopMonitor as BaseStopMonitor
 
 
 def drain_monitors(monkeypatch):
-    import reverse_hr.runner_monitor as monitoring
-    import reverse_hr.submitted_runner as submitted
+    import reverse_hr.services.code_runner.runner_monitor as monitoring
+    import reverse_hr.services.code_runner.submitted_runner as submitted
 
     class DrainedMonitor(BaseStopMonitor):
         def __init__(self, check, **kwargs):

@@ -9,9 +9,10 @@ import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from pathlib import Path
 
-from reverse_hr.runner_readiness import ProbeRecord, fingerprint, read_record
-from reverse_hr.sandbox import NsjailExecutor
-from reverse_hr.settings import Settings
+from reverse_hr.contracts.probe import ProbeRecord
+from reverse_hr.platform.settings import Settings
+from reverse_hr.services.code_runner.runner_readiness import fingerprint, read_record
+from reverse_hr.services.code_runner.sandbox import NsjailExecutor
 
 
 def main():
@@ -43,7 +44,7 @@ def main():
                     sys.executable,
                     "-m",
                     "pytest",
-                    "tests/test_sandbox_live.py",
+                    "tests/services/code_runner/test_sandbox_live.py",
                     "-q",
                     "-o",
                     "addopts=",

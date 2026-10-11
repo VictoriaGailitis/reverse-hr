@@ -6,8 +6,8 @@ import psycopg
 from alembic import command
 from dotenv import dotenv_values
 
-from reverse_hr.migrate import migration_config
-from reverse_hr.settings import Settings
+from reverse_hr.platform.migrate import migration_config
+from reverse_hr.platform.settings import Settings
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--port", type=int, default=55329)

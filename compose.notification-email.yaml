@@ -34,7 +34,7 @@ services:
       - ./.secrets/notification-provider-key:/run/secrets/notification-provider-key:ro
       - ./.secrets/notification-callback.pub:/run/secrets/notification-callback.pub:ro
       - ./.secrets/notification-challenge.key:/run/secrets/notification-challenge.key:ro
-    command: [python, -m, reverse_hr.worker, notification-delivery]
+    command: [python, -m, reverse_hr.platform.worker, notification-delivery]
     depends_on:
       notification: {condition: service_healthy}
       postgres: {condition: service_healthy}
