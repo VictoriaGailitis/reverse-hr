@@ -29,7 +29,7 @@ SERVICES = (
 )
 
 
-EXTERNAL_SERVICES = ("demo-fsp", "demo-codenrock", "demo-ats")
+EXTERNAL_SERVICES = ("demo-fsp", "demo-hackathon-platform", "demo-ats")
 SIGNING_SERVICES = SERVICES + EXTERNAL_SERVICES
 
 
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     achievements_api_url: str = "http://achievements:8000"
     integration_api_url: str = "http://integration:8000"
     demo_fsp_api_url: str = "http://demo-fsp:8000"
-    demo_codenrock_api_url: str = "http://demo-codenrock:8000"
+    demo_hackathon_platform_api_url: str = "http://demo-hackathon-platform:8000"
     demo_ats_api_url: str = "http://demo-ats:8000"
     demo_source_scenario: Literal["normal", "empty", "updated", "revoked", "unavailable"] = "normal"
     matching_achievements_enabled: bool = False
@@ -176,7 +176,7 @@ class Settings(BaseSettings):
             self.achievements_api_url,
             self.integration_api_url,
             self.demo_fsp_api_url,
-            self.demo_codenrock_api_url,
+            self.demo_hackathon_platform_api_url,
             self.demo_ats_api_url,
         ):
             self.validate_origin(origin)

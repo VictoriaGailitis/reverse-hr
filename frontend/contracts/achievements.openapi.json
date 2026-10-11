@@ -2032,7 +2032,7 @@
             "enum": [
               "partner",
               "demo-fsp",
-              "demo-codenrock"
+              "demo-hackathon-platform"
             ],
             "title": "Adapter"
           },
@@ -2093,7 +2093,7 @@
               "self",
               "partner",
               "demo-fsp",
-              "demo-codenrock"
+              "demo-hackathon-platform"
             ],
             "title": "Adapter"
           },

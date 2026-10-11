@@ -39,7 +39,7 @@ services:
       NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Generate .env first}
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?Generate .env first}
       DEMO_FSP_DB_PASSWORD: ${DEMO_FSP_DB_PASSWORD:?Generate .env first}
-      DEMO_CODENROCK_DB_PASSWORD: ${DEMO_CODENROCK_DB_PASSWORD:?Generate .env first}
+      DEMO_HACKATHON_PLATFORM_DB_PASSWORD: ${DEMO_HACKATHON_PLATFORM_DB_PASSWORD:?Generate .env first}
       DEMO_ATS_DB_PASSWORD: ${DEMO_ATS_DB_PASSWORD:?Generate .env first}
       KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Generate .env first}
     volumes:
@@ -373,20 +373,20 @@ services:
       - ./.secrets/demo-fsp.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
     command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.demo_fsp.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
-  demo-codenrock:
+  demo-hackathon-platform:
     <<: *app
     profiles: [all]
     environment:
-      HR_SERVICE_NAME: demo-codenrock
-      HR_ROOT_PATH: /demo-codenrock
+      HR_SERVICE_NAME: demo-hackathon-platform
+      HR_ROOT_PATH: /demo-hackathon-platform
       HR_DEPLOYMENT_MODE: demo
-      HR_DATABASE_URL: postgresql+psycopg://demo_codenrock:${DEMO_CODENROCK_DB_PASSWORD:?Generate .env first}@postgres:5432/demo_codenrock
+      HR_DATABASE_URL: ${DEMO_HACKATHON_PLATFORM_DATABASE_URL:-postgresql+psycopg://demo_hackathon_platform:${DEMO_HACKATHON_PLATFORM_DB_PASSWORD:?Generate .env first}@postgres:5432/demo_hackathon_platform}
       HR_EVENT_PRIVATE_KEY_FILE: /run/secrets/signing.key
       HR_EVENT_PUBLIC_KEYS_FILE: /run/secrets/public-keys.json
     volumes:
-      - ./.secrets/demo-codenrock.key:/run/secrets/signing.key:ro
+      - ./.secrets/demo-hackathon-platform.key:/run/secrets/signing.key:ro
       - ./.secrets/public-keys.json:/run/secrets/public-keys.json:ro
-    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.demo_codenrock.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
+    command: [sh, -c, 'python -m reverse_hr.platform.migrate upgrade head && exec uvicorn reverse_hr.services.demo_hackathon_platform.app:create_app --factory --host 0.0.0.0 --port 8000 --no-access-log']
   demo-ats:
     <<: *app
     profiles: [all]

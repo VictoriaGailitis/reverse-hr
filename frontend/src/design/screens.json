@@ -2704,7 +2704,7 @@
             },
             {
               "id": "405:3933",
-              "name": "Codenrock",
+              "name": "Hackathon Platform",
               "type": "layout",
               "w": 552,
               "h": 243,
@@ -2729,7 +2729,7 @@
               "children": [
                 {
                   "id": "405:4113",
-                  "name": "Codenrock",
+                  "name": "Hackathon Platform",
                   "type": "text",
                   "w": 504,
                   "h": 31,
@@ -2741,7 +2741,7 @@
                     "whiteSpace": "pre-wrap"
                   },
                   "dir": "column",
-                  "text": "Codenrock",
+                  "text": "Hackathon Platform",
                   "variant": "secondary",
                   "children": []
                 },

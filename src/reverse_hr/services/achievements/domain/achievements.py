@@ -108,7 +108,7 @@ class SourceEnabled(Contract):
 class SourceCreate(Contract):
     key: str = Field(pattern=r"^[a-z][a-z0-9-]{1,63}$")
     name: str = Field(min_length=1, max_length=100)
-    adapter: Literal["partner", "demo-fsp", "demo-codenrock"]
+    adapter: Literal["partner", "demo-fsp", "demo-hackathon-platform"]
     partner_id: UUID | None = None
 
     @model_validator(mode="after")
@@ -181,7 +181,7 @@ class SourceView(Contract):
     source_id: UUID
     key: str
     name: str
-    adapter: Literal["self", "partner", "demo-fsp", "demo-codenrock"]
+    adapter: Literal["self", "partner", "demo-fsp", "demo-hackathon-platform"]
     demo: bool
     enabled: bool
     version: int

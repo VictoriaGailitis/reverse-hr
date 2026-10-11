@@ -50,7 +50,7 @@ def setup(service, token, signatures):
         name: getattr(s, name)
         for name in ("privacy", "candidate", "employer", "hiring", "matching")
     }
-    for name in ("achievements", "integration", "demo-fsp", "demo-codenrock", "demo-ats"):
+    for name in ("achievements", "integration", "demo-fsp", "demo-hackathon-platform", "demo-ats"):
         targets[name] = service(name)
         setattr(s, name.replace("-", "_"), targets[name])
 
@@ -207,8 +207,8 @@ def test_demo_sources_import_dedup_visibility_and_matching(setup):
 )
 def test_demo_source_scenarios(setup, scenario, status, count):
     s = setup
-    s.demo_codenrock.app.state.settings.demo_source_scenario = scenario
-    result = synchronize(s, connect(s, "demo-codenrock"))
+    s.demo_hackathon_platform.app.state.settings.demo_source_scenario = scenario
+    result = synchronize(s, connect(s, "demo-hackathon-platform"))
     assert result["status"] == status, result
     assert len(rows(s)) == count
     if scenario == "revoked":
@@ -485,7 +485,10 @@ def test_signed_exchange_replay_cross_identity_and_demo_separation(setup):
     )
     assert s.demo_fsp.client.post("/internal/v1/exchange/pull", **args).status_code == 200
     assert s.demo_fsp.client.post("/internal/v1/exchange/pull", **args).status_code == 409
-    assert s.demo_codenrock.client.post("/internal/v1/exchange/pull", **args).status_code == 401
+    assert (
+        s.demo_hackathon_platform.client.post("/internal/v1/exchange/pull", **args).status_code
+        == 401
+    )
     s.integration.app.state.settings.deployment_mode = "production"
     assert (
         s.integration.client.post(
@@ -722,7 +725,7 @@ def test_publication_revocation_and_source_pause_remove_matching_evidence(setup)
 def test_mirrored_result_does_not_multiply_bonus_across_sources(setup):
     s = setup
     synchronize(s, connect(s))
-    synchronize(s, connect(s, "demo-codenrock"))
+    synchronize(s, connect(s, "demo-hackathon-platform"))
     for row in rows(s):
         publish(s, row)
     with Session(s.achievements.app.state.engine) as db, db.begin():

@@ -63,7 +63,7 @@ HR_SERVICE_NAME=candidate PYTHONPATH=src uv run python \
   -m reverse_hr.platform.worker consume
 ```
 
-Alembic берёт `0001_transport` из `platform/migrations/versions/` и цепочку выбранного сервиса из `services/<service>/migrations/`. Существующие revision IDs и таблицы сохранены: пересоздавать БД для этой реорганизации не нужно. Credentials, RabbitMQ и остальные зависимости подготавливаются по [инструкции Linux](linux-deployment.md).
+Alembic берёт `0001_transport` из `platform/migrations/versions/` и цепочку выбранного сервиса из `services/<service>/migrations/`. Существующие revision IDs и таблицы сохранены: пересоздавать БД для этой реорганизации не нужно. Credentials, RabbitMQ и остальные зависимости подготавливаются по [основному README](../README.md#запуск-через-docker-на-linux).
 
 ## Проверки и обновление стенда
 
@@ -79,4 +79,4 @@ docker compose --profile all config --quiet
 
 Образ содержит новые пакеты и миграции внутри `src/`. Старые контейнеры продолжают работать со своим прежним образом до пересборки и перезапуска. Реорганизация сама по себе не обновляет работающий стенд.
 
-Для Linux Runner обновлены supervisor/systemd, provision script, пути гостевого runtime и реальных probes. После обновления исходников на узле нужно повторить проверку и оформить новый допуск runtime: изменение расположения файлов меняет fingerprint. Инструкции — [Runner](../infra/runner/README.md); перенос не отключает проверки изоляции и не продлевает допуск автоматически.
+Для Linux Runner обновлены supervisor/systemd, provision script, пути гостевого runtime и реальных probes. После обновления исходников на узле нужно повторить проверку и оформить новый допуск runtime: изменение расположения файлов меняет fingerprint. Provisioning — `scripts/provision_runner.py` и `infra/runner/`; перенос не отключает проверки изоляции и не продлевает допуск автоматически.

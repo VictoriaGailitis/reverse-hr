@@ -511,7 +511,10 @@ def run_one(request):
                 UUID(row.job_id),
                 connection_id=row.connection_id,
             )
-            if binding["adapter"] not in {"demo-fsp", "demo-codenrock"} or not binding["demo"]:
+            if (
+                binding["adapter"] not in {"demo-fsp", "demo-hackathon-platform"}
+                or not binding["demo"]
+            ):
                 raise HTTPException(409)
             data = exchange.call(
                 binding["adapter"],

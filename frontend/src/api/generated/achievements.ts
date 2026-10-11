@@ -677,7 +677,7 @@ export interface components {
              * Adapter
              * @enum {string}
              */
-            adapter: "partner" | "demo-fsp" | "demo-codenrock";
+            adapter: "partner" | "demo-fsp" | "demo-hackathon-platform";
             /** Partner Id */
             partner_id?: string | null;
         };
@@ -701,7 +701,7 @@ export interface components {
              * Adapter
              * @enum {string}
              */
-            adapter: "self" | "partner" | "demo-fsp" | "demo-codenrock";
+            adapter: "self" | "partner" | "demo-fsp" | "demo-hackathon-platform";
             /** Demo */
             demo: boolean;
             /** Enabled */

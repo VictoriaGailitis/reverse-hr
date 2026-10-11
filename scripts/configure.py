@@ -23,7 +23,7 @@ SERVICES = (
     "notification",
     "audit",
     "demo_fsp",
-    "demo_codenrock",
+    "demo_hackathon_platform",
     "demo_ats",
     "keycloak",
 )

@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Reverse HR / demo-codenrock",
+    "title": "Reverse HR / demo-hackathon-platform",
     "description": "Service API; implemented routes are listed below.",
     "version": "0.1.0"
   },

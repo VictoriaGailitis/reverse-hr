@@ -20,5 +20,5 @@ def upgrade():
 def downgrade():
     bind = op.get_bind()
     if bind.execute(sa.text("SELECT 1 FROM demo_source_nonces LIMIT 1")).first():
-        raise RuntimeError("Cannot downgrade populated demo-codenrock data")
+        raise RuntimeError("Cannot downgrade populated demo-hackathon-platform data")
     op.drop_table("demo_source_nonces")

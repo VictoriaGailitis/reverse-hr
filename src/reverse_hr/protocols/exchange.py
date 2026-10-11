@@ -21,7 +21,7 @@ from reverse_hr.shared.event_transport import Signatures
 from reverse_hr.shared.signing import canonical, fresh, sign, verify
 
 MAX_BYTES = 262144
-OWNERS = {"achievements", "integration", "demo-fsp", "demo-codenrock", "demo-ats"}
+OWNERS = {"achievements", "integration", "demo-fsp", "demo-hackathon-platform", "demo-ats"}
 
 
 class ExchangeRequest(Contract):

@@ -1,4 +1,4 @@
-"""Stateless synthetic FSP/Codenrock adapters; this is our demo API, not a real provider API."""
+"""Synthetic FSP/Hackathon Platform adapters, not a real provider API."""
 
 from uuid import NAMESPACE_URL, uuid5
 
@@ -21,6 +21,12 @@ class DemoSourceNonce(NonceColumns, DemoSourceBase):
 router = APIRouter(prefix="/internal/v1/exchange", tags=["synthetic-demo-source"])
 
 
+def external_record_id(provider, candidate_id):
+    # Keep synthetic record IDs stable across the adapter rename to prevent duplicate imports.
+    namespace = "demo-codenrock" if provider == "demo-hackathon-platform" else provider
+    return str(uuid5(NAMESPACE_URL, namespace + ":" + str(candidate_id)))
+
+
 @router.post("/pull", response_model=ExchangeReceipt)
 def pull(request: Request, body: ExchangeRequest, signature: Signature = None):
     if body.operation != "pull" or request.app.state.settings.deployment_mode != "demo":
@@ -38,7 +44,7 @@ def pull(request: Request, body: ExchangeRequest, signature: Signature = None):
             if scenario == "empty"
             else [
                 dict(
-                    external_id=str(uuid5(NAMESPACE_URL, provider + ":" + str(body.candidate_id))),
+                    external_id=external_record_id(provider, body.candidate_id),
                     external_account=str(body.candidate_id),
                     external_version=2 if scenario in {"updated", "revoked"} else 1,
                     event="Synthetic " + provider + " demonstration",

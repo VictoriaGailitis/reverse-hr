@@ -20,7 +20,7 @@ def check_ready(app, config, engine, connection):
         "integration": "IntegrationBase",
         "demo-ats": "DemoATSBase",
         "demo-fsp": "DemoSourceBase",
-        "demo-codenrock": "DemoSourceBase",
+        "demo-hackathon-platform": "DemoSourceBase",
     }["demo-fsp"]
     for table in getattr(domain, base).metadata.sorted_tables:
         connection.execute(text(f"SELECT 1 FROM {table.name} LIMIT 0"))
