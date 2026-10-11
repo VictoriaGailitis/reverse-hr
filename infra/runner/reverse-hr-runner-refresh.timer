@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh real Runner isolation probes before their 24-hour expiry
+
+[Timer]
+OnActiveSec=12h
+OnUnitActiveSec=12h
+Unit=reverse-hr-runner-refresh.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,34 @@
+[Unit]
+Description=Reverse HR isolated execution, suite validation and hidden tests
+After=network-online.target
+After=reverse-hr-runner-scope.service
+Requires=reverse-hr-runner-scope.service
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=2
+
+[Service]
+Type=simple
+User=runner
+Group=runner
+Slice=reverse-hr-runner.slice
+WorkingDirectory=/opt/reverse-hr-runner
+EnvironmentFile=/etc/reverse-hr-runner/node.env
+EnvironmentFile=-/etc/reverse-hr-runner/service.env
+Environment=PYTHONPATH=/opt/reverse-hr-runner/src
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/reverse-hr-runner/.venv/bin/python -m reverse_hr.services.code_runner.runner_node
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/reverse-hr-runner
+PrivateTmp=true
+Restart=on-failure
+RestartSec=30
+KillMode=control-group
+TimeoutStopSec=30
+StandardInput=null
+
+[Install]
+WantedBy=multi-user.target

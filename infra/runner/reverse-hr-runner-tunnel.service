@@ -1,0 +1,22 @@
+[Unit]
+Description=Authenticated local OrbStack tunnel for the dedicated Runner
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=runner
+Group=runner
+Slice=reverse-hr-runner.slice
+ExecStart=/opt/reverse-hr-runner/.venv/bin/python /opt/reverse-hr-runner/infra/runner/orbstack_tunnel.py client --certificates /var/lib/reverse-hr-runner/tls
+Environment=PYTHONDONTWRITEBYTECODE=1
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+CapabilityBoundingSet=
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

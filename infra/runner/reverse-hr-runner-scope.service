@@ -1,0 +1,26 @@
+[Unit]
+Description=Stable delegated cgroup scope for Reverse HR Runner cleanup
+
+[Service]
+Type=notify
+User=runner
+Group=runner
+Slice=reverse-hr-runner.slice
+WorkingDirectory=/opt/reverse-hr-runner
+EnvironmentFile=/etc/reverse-hr-runner/node.env
+Environment=PYTHONPATH=/opt/reverse-hr-runner/src
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/reverse-hr-runner/.venv/bin/python -m reverse_hr.services.code_runner.runner_node --hold-scope
+ExecStartPre=+/opt/reverse-hr-runner/.venv/bin/python /opt/reverse-hr-runner/scripts/delegate_runner_slice.py
+Delegate=cpu memory pids
+DelegateSubgroup=anchor
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/reverse-hr-runner
+KillMode=control-group
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

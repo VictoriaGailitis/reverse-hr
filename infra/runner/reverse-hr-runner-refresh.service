@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart isolated Runner with fresh real probes
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl restart reverse-hr-runner.service

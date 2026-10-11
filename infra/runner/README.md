@@ -1,276 +1,229 @@
-# Экспериментальный Linux sandbox (BE-06)
+# Изолированный Linux Runner
 
-NsjailExecutor подключён к opt-in worker execute, выключенному по умолчанию.
-Сервис продолжает выдавать technical_error/executor_unavailable. Default
-HR_RUNNER_BACKEND=disabled; нет fallback в Python/SQL interpreter хоста, Docker
-socket или privileged Compose service. На macOS/ARM64 адаптер запрещает запуск.
-Текущий профиль предназначен только для отдельного Linux x86_64 worker/VM.
+Runner работает на отдельном нативном Linux AMD64/ARM64 узле. API в обычном
+Compose не исполняет код. Docker socket, privileged-контейнер и интерпретатор
+хоста не используются. Платформа также разворачивается на Linux; Runner размещается
+на выделенном узле или в отдельной Linux-VM на Linux-хосте. Общая инструкция —
+[развёртывание на Linux](../../docs/linux-deployment.md).
 
-Реализован обязательный профиль namespaces/RO mounts/seccomp/cgroup v2. Защиты и
-формат конфигурации сверены с первичными источниками NsJail:
-[config.proto](https://github.com/google/nsjail/blob/master/config.proto),
-[supervisor](https://github.com/google/nsjail/blob/master/nsjail.cc),
-[cgroup2](https://github.com/google/nsjail/blob/master/cgroup2.cc).
-Это проект профиля и адаптер, а не подтверждённая изоляция: Linux probes ещё не
-выполнены. Необходимо проверить профиль на конкретном kernel/build NsJail и
-подготовленном rootfs, затем отдельно проверить защиту от выхода из sandbox.
+Узел запускает три worker: `execute`, `validate`, `grade-tests`. Перед каждым
+запуском supervisor выполняет все 12 проверок `tests/services/code_runner/test_sandbox_live.py` и
+сохраняет приватную запись проверки, связанную с UUID узла, исходниками,
+зависимостями, kernel, NsJail, rootfs и cgroup. Пропуск проверки, ошибка или
+изменение отпечатка закрывает исполнение. Таймер повторяет запуск через 12 часов.
 
-Профиль фиксирован сервером: Python 3.12/SQLite demo, вход main.py либо query.sql;
-2 CPU секунды, 3 секунды jail wall time, host watchdog 5 секунд; 128 MiB cgroup
-memory без swap, address-space 192 MiB; один процесс, не более 32 FD, файл до
-1 MiB; tmpfs 8 MiB/128 inodes; общий UTF-8 stdout+stderr до 64 KiB. Эти значения
-не принимаются от кандидата. Fork/threads/socket/ptrace/mount/bpf и другие
-неразрешённые syscalls завершают процесс; deny-by-default Kafel policy приложена
-к исходникам. Namespace NET не имеет активного loopback, /proc не монтируется.
-Rootfs и workspace read-only, writable только tmpfs; stdin=/dev/null; env задан
-явно, лишние FD закрыты, shell не используется. Пользовательский код/SQL
-запускается только через Python внутри подготовленного jail.
+Профиль: Python 3.12/SQLite; read-only rootfs и workspace; user/pid/net/mount/
+ipc/uts namespaces; deny-by-default seccomp; память 128 MiB без swap, один
+процесс, CPU 2 секунды, wall time 3 секунды, watchdog 5 секунд, файл до 1 MiB,
+32 FD, tmpfs 8 MiB/128 inodes, совокупный вывод до 64 KiB. Код кандидата не
+управляет этими параметрами. Системные вызовы для AMD64 и ARM64 заданы отдельными
+политиками Kafel.
 
-SQL demo использует собственную in-memory demo_items таблицу с тремя синтетическими
-строками; ATTACH/DETACH/PRAGMA/load_extension запрещены, максимум 20 statements и
-100 rows на результат. Это не PostgreSQL runtime и не проверка реального набора
-заданий. Hidden tests, калиброванные наборы и оценка ещё не реализованы.
+## Установка
 
-## Подготовка артефактов на отдельном Linux worker
-
-Rootfs.Dockerfile — только шаблон минимального rootfs, без сервисного кода/ключей
-платформы. Здесь image не собирался, не скачивался и не экспортировался. Собрать
-linux/amd64 образ и извлечь файловую систему следует отдельно, без mounts/API
-secrets/socket. Runtime rootfs должен содержать /usr/local/bin/python3.12,
-/runner/guest.py (точная копия src/reverse_hr/sandbox_guest.py), /workspace и /tmp.
-Бинарник Python/guest не должен быть symlink. NsJail устанавливается отдельно;
-адаптер требует SHA-256 его проверенного бинарника, без поиска через PATH.
-
-После проверки состава rootfs создайте manifest вне rootfs:
+Нужны выделенный Linux с systemd 255+, cgroup v2 (cpu/memory/pids), Python 3.12,
+пользователь `runner` без root и проверенная сборка NsJail. Базовая конфигурация —
+Ubuntu 24.04; используется закреплённая сборка официального [NsJail](https://github.com/google/nsjail) commit
+`4ff54a6e0d5b65a0e1633d6e2fd1425ba6c882ce`, с закреплённым submodule Kafel.
+Собирайте на той же архитектуре, на которой будет работать узел:
 
 ```sh
-PYTHONPATH=src python scripts/runner_inventory.py \
-  --rootfs /srv/hr-runtime/rootfs --output /srv/hr-runtime/rootfs-manifest.json
+sudo apt-get update
+sudo apt-get install build-essential git pkg-config bison flex libprotobuf-dev \
+  protobuf-compiler libnl-route-3-dev python3.12-venv
+git clone https://github.com/google/nsjail.git /tmp/nsjail-reviewed
+git -C /tmp/nsjail-reviewed checkout 4ff54a6e0d5b65a0e1633d6e2fd1425ba6c882ce
+git -C /tmp/nsjail-reviewed submodule update --init --recursive
+make -C /tmp/nsjail-reviewed -j2
+ sha256sum /tmp/nsjail-reviewed/nsjail
 ```
 
-Генератор не запускает артефакты и не утверждает их безопасность: review содержимого
-предшествует pinning. Не перезаписывает существующий manifest. Адаптер проверяет
-SHA-256 manifest, перечень/hash всех обычных файлов и targets symlinks, hash guest,
-architecture, executable path, cgroup controllers CPU/memory/pids и cgroup.kill.
-Symlinks не разыменовываются в host FS; devices/FIFOs/sockets запрещены. Артефакты
-должны быть неизменяемыми для непривилегированных клиентов и обслуживаться
-оператором; проверка hash не устраняет race с изменением оператором во время запуска.
-
-Настройки отдельного процесса:
-HR_RUNNER_BACKEND=nsjail, HR_RUNNER_NSJAIL_BINARY, HR_RUNNER_NSJAIL_SHA256,
-HR_RUNNER_ROOTFS, HR_RUNNER_ROOTFS_MANIFEST, HR_RUNNER_ROOTFS_MANIFEST_SHA256,
-HR_RUNNER_CGROUP_PARENT (выделенное delegated cgroup v2 subtree), HR_RUNNER_SCRATCH
-(приватный каталог worker). Не указывать root filesystem или общий корень cgroup.
-NsJail должен уметь устанавливать обязательные namespaces/cgroups без ослабления
-профиля. Никакие новые права/Docker privileged настройки автоматически не выдаются.
-
-## Проверка и очистка
-
-На подготовленном Linux worker выполнить:
+Перед установкой создайте системного пользователя, если его ещё нет:
 
 ```sh
-HR_TEST_ENABLE_SANDBOX=1 PYTHONPATH=src python -m pytest tests/test_sandbox_live.py -q
+id runner >/dev/null 2>&1 || sudo useradd --system --user-group --home-dir /var/lib/reverse-hr-runner --shell /usr/sbin/nologin runner
 ```
 
-Probe fixture требует успешный baseline перед отрицательными проверками. Проверки
-включают env, отсутствие /app и host /proc, отказ networking/fork/threads,
-memory/file limits, deadline/output flood, cleanup и отдельный SQL demo. Пока они
-пропущены. Unit tests с fake process/cgroups проверяют протокол адаптера; проверки
-collector с фиксированными trusted host programs не являются тестом sandbox.
-Пробелы в syscall policy на нужном runtime не следует обходить DEFAULT ALLOW.
-
-Каждый run использует приватные scratch и собственный свежий cgroup. После
-завершения adapter посылает cgroup.kill, ждёт populated=0, удаляет свой subtree и
-source/config. Если очистка не подтверждена, Outcome не выдаётся; CleanupUnconfirmed
-сохраняет scratch для восстановления. Ошибки supervisor не выдают его логи как
-stdout/stderr кандидата. Exit 255 консервативно считается техническим сбоем;
-прочие nonzero/signal exits не объявляются автоматически ресурсным лимитом.
-Результат исполнения не является score/pass решения, даже при exit 0.
-
-## Журнал попыток и recovery
-
-Migration Code Runner 0003_attempts хранит попытку до создания файлов: UUID попытки,
-исходного run, кандидата, стабильного узла, состояние и hash области очистки.
-В hash входят абсолютные scratch/cgroup пути, device и inode обоих каталогов.
-Смена каталога/монтирования не позволяет другому worker подтвердить очистку старой
-области. Потеря узла или смена каталога оставляет обязательство незавершённым;
-нужна проверенная оператором процедура восстановления, автоматического ACK нет.
-
-Внутренний reserve_attempt проверяет актуальный signed manifest и резервирует
-одну попытку на run транзакционно. execution_scope держит постоянный per-attempt
-flock, повторно проверяет состояние, tombstone и исходный manifest, фиксирует active
-до возможного запуска. Подготовлен deterministic execute(attempt_id=...); использовать
-его можно только внутри execution_scope. Внутренний execute_reserved теперь связывает
-этот протокол с приватным результатом; сервисный executor worker пока не подключён.
-
-Recovery получает тот же неблокирующий flock, фиксирует cleaning, выполняет cgroup.kill,
-ждёт populated=0 и удаляет временные файлы. Только затем фиксирует cleaned.
-Падение до commit оставляет повторяемую очистку; пустые уже очищенные пути допустимы.
-Реально работающий worker удерживает lock, поэтому recovery его не опережает.
-Запоздалый worker после cleaned или deletion не получает execution_scope.
-Время/lease expiry не считается доказательством прекращения процесса.
-
-Privacy deletion сразу блокирует доступ и удаляет jobs/рабочий outbox. Пока есть
-хотя бы одна неочищенная попытка на любом узле, отправляется data_restricted.v1.
-После последней подтверждённой очистки журнал кандидата удаляется и в той же
-транзакции создаётся data_deleted.v1. Оба события version=1, как требует текущий
-Privacy ACK контракт; producer/candidate/request/correlation сохраняются.
-Постоянный tombstone и технические Inbox/Outbox записи остаются.
-
-На отдельно подготовленном Linux-узле cleanup-only worker можно включить явно:
+Оператор должен проверить исходники и результат сборки, затем передать конкретный
+SHA-256 установщику из checkout проекта на выделенном Linux-узле:
 
 ```sh
-HR_SERVICE_NAME=code-runner HR_RUNNER_NODE_ID=<stable-node-uuid> python -m reverse_hr.worker recover
+sudo python3.12 scripts/provision_runner.py \
+  --nsjail /tmp/nsjail-reviewed/nsjail --nsjail-sha256 <проверенный-sha256>
+sudo mkdir -p /run/systemd/system/reverse-hr-runner.service.d
+sudo tee /run/systemd/system/reverse-hr-runner.service.d/verify.conf >/dev/null <<'UNIT'
+[Service]
+ExecStart=
+ExecStart=/opt/reverse-hr-runner/.venv/bin/python -m reverse_hr.services.code_runner.runner_node --verify-only
+Restart=no
+UNIT
+sudo systemctl daemon-reload
+sudo systemctl start reverse-hr-runner.service
+sudo journalctl -u reverse-hr-runner.service --no-pager
 ```
 
-Также нужны DB/event-signing настройки и все pins/runtime настройки выше.
-HR_RUNNER_SCRATCH должен принадлежать worker и иметь mode 0700, UUID узла должен
-сохраняться между рестартами. Lock-файлы остаются вне source scratch и не содержат
-кода/результатов: их нельзя unlink при работающих worker из-за inode ABA.
-Режим recover закрыт по умолчанию, не включён в Compose и никогда не запускает код.
+Установщик создаёт root-owned артефакты, минимальный rootfs без site-packages,
+закреплённый manifest, зависимости по hash lock, приватный scratch и постоянный
+UUID узла. Он не переносит ключи платформы и не включает очереди автоматически.
+Повторная установка поверх существующих артефактов запрещена.
 
-Следующий этап — проверка Linux isolation, подключение исполнения и hidden tests.
-BE-06 ещё не завершён.
+Отдельная `reverse-hr-runner-scope.service` удерживает стабильный inode cgroup.
+Обе службы находятся в выделенном `reverse-hr-runner.slice`. Root pre-start
+выдаёт пользователю runner разрешение переноса процессов только внутри этой slice
+(`cgroup.procs` и `cgroup.threads`), не затрагивая system.slice, корень cgroup или
+контроллеры ресурсов. Перезапуск workers сохраняет scope для очистки незавершённых
+попыток. Останавливать scope при активных попытках нельзя.
 
+## Подключение платформы
 
-## Приватный результат и terminal status
+После проверки оператор задаёт `/etc/reverse-hr-runner/service.env` (root, 0600):
 
-Migration 0004_results хранит один result на run/attempt только после подтверждённой
-очистки. Внутренний execute_reserved проверяет signed manifest до выполнения,
-получает Outcome, повторяет идемпотентную очистку и проверяет доступ перед записью.
-В случае deletion вывод отбрасывается, cleaned/ACK фиксируются без результата.
-При отзыве admission пишется cancelled/access_withdrawn с пустым выводом.
-Недоступность source или ошибка commit удерживает obligation для recovery.
+```dotenv
+HR_DATABASE_URL=postgresql+psycopg://code_runner:<password>@<private-db>:5432/code_runner
+HR_EVENT_PRIVATE_KEY_FILE=/var/lib/reverse-hr-runner/signing.key
+HR_EVENT_PUBLIC_KEYS_FILE=/var/lib/reverse-hr-runner/public-keys.json
+HR_PRIVACY_API_URL=http://<private-privacy>:8000
+HR_ASSESSMENT_API_URL=http://<private-assessment>:8000
+HR_WORKSPACE_API_URL=http://<private-workspace>:8000
+HR_EVALUATION_API_URL=http://<private-evaluation>:8000
+```
 
-Status running/version=2 и run_started.v1 создаются до возможного execute. Result,
-terminal Job/version=3 и run_finished.v1 (либо run_cancelled.v1) создаются вместе. Эти события содержат
-только UUID исходного run/workspace/snapshot/candidate, без stdout/stderr/status/score.
-Workspace проецирует running/runner_finished, игнорируя запоздавшие старые версии.
-Новые bindings подготовлены configure_events.py, но не применены к брокеру.
+Signing key и public-keys должны принадлежать runner, иметь mode 0600 и находиться
+в приватном каталоге состояния. Нужны ключ только Code Runner и доступ только к
+его БД; ключи других сервисов не передаются. API вызываются по внутренним адресам
+без gateway; запросы и ответы проверяются существующим протоколом подписи.
 
-GET /code-runner/v1/runs/{run_id}/result доступен владельцу-кандидату с живой
-processing/stage admission; чужой/отсутствующий result — 404, закрытый доступ — 409,
-недоступный source — 503. JSON содержит исходные snapshot ID/version, UTC completion,
-status, exit_code, reason и stdout/stderr. Cache-Control: no-store. Вывод — недоверенный
-текст: клиент отображает его как текст, не исполняет HTML/ANSI/код из него.
-Combined stdout/stderr ограничен 64 KiB UTF-8, exit_code и сочетания status/reason
-валидируются перед записью. Technical failures не содержат supervisor/host diagnostics.
-Executed/exit=0 не означает pass решения, grade или успешный hidden test.
+Режим БД переключается существующим CLI `reverse_hr.services.code_runner.runner_control execution
+--if-match-version <актуальная-версия>` с окружением Code Runner. CLI блокирует
+переключение при неочищенных попытках или конфликте версии. Diagnostic worker в
+Compose не исполняет задания в режиме execution. Outbox и consumer платформы
+продолжают работать в Compose с настроенным RabbitMQ.
 
-Recovery активной попытки после подтверждённой очистки сохраняет technical_error/
-executor_interrupted без output и публикует terminal event. Потерянный при crash
-вывод не восстанавливается и исходное решение повторно не выполняется. Для reserved
-попытки без запуска прежняя диагностика остаётся доступной после cleanup.
-Deletion удаляет results немедленно вместе с jobs и рабочими событиями, затем ждёт
-оставшиеся sandbox; tombstone не даёт восстановить результат поздним worker.
+Для допуска закреплённых скрытых тестов Assessment требует отдельной записи
+`ASSESSMENT_TRUSTED_RUNTIMES`: policy_id, node_id и fingerprint из probes.json,
+approved_at и expires_at (не более семи дней). После изменения артефактов нужна
+новая явная проверка и новая политика; неподходящий отпечаток закрывает допуск.
+Запись probe сама по себе не утверждает runtime policy и не калибрует грейды.
 
-Opt-in execution worker подключён, но реальное исполнение и Linux probes здесь не включались.
-Unit orchestration tests используют doubles для executor и реальные SQLite/flock/
-signed admission. Для подключения остаются отдельные Linux/runtime/isolation проверки,
-integration/concurrency и реальное прекращение при отмене/отзыве на Linux.
+После настройки удалить только временный verify.conf, выполнить daemon-reload,
+запустить Runner и включить refresh.timer. Supervisor прекращает остальные
+очереди при падении любого worker. Секреты и диагностические исключения не
+печатаются в журнал. Экспортируйте архивные logs без приватных конфигураций.
 
+## Результаты и восстановление
 
-## Отмена владельцем и проверка доступа во время исполнения
+Попытка привязана к конкретному подписанному снимку и admission. Отмена, отзыв
+доступа и Privacy deletion блокируют дальнейшее выполнение. Результат сохраняется
+только после физически подтверждённой очистки; technical_error не становится
+нулевым баллом. Recovery использует постоянные flock и тот же cgroup scope,
+останавливает процессы и фиксирует cleanup до ACK Privacy. Lease expiry не
+считается доказательством очистки. При сбое недоступный вывод не восстанавливается
+повторным выполнением исходного кода.
 
-Migration 0005_cancellation добавляет durable cancel_requested (default false).
-POST /code-runner/v1/runs/{run_id}/cancel требует JWT кандидата-владельца,
-Idempotency-Key и If-Match версии Job. Чужой run — 404, устаревшая версия/завершённый
-результат — 409. Source admission для остановки не нужна; processing tombstone
-проверяется до эффекта и replay. Replay возвращает текущий Job, не старый running.
-Если sandbox/obligation ещё нет, Job сразу cancelled/user_cancelled/version=2.
-При reserved/active попытке ответ 202 содержит cancel_requested=true; статус остаётся
-pending_executor/running до физической очистки. Флаг — монотонный сигнал управления,
-сам запрос не увеличивает execution event version. Повторная cancellation не
-заменяет уже завершённый результат. Deletion удаляет также cached cancellation replies.
+На каждом целевом Linux-узле нужно выполнить все реальные probes и оформить
+допуск для его архитектуры и fingerprint. Проверка другого узла не переносится
+на новый сервер. [Исторический отчёт проверки](LOCAL-VERIFICATION.md) фиксирует
+результаты конкретного тестового стенда; это не допуск текущего развёртывания
+и не независимый аудит возможности выхода из sandbox.
 
-execution_scope не допускает старт отменённой reserved попытки. Recovery после
-очистки завершает её run_cancelled.v1/version=2 без ExecutionResult, поскольку
-исполнения не было. Для active попытки после cleanup сохраняется пустой cancelled
-result и run_cancelled.v1/version=3. Workspace принимает обе версии cancellation,
-проецирует runner_cancelled и игнорирует старые/повторные события. Binding подготовлен,
-но к существующему RabbitMQ не применён.
+## Подключение к закрытой Docker-сети на Linux
 
-Внутренний execute_reserved использует StopMonitor: отдельный поток с паузой 250 ms между проверками
-проверяет tombstone/cancel intent и свежую signed source admission. DB transaction
-закрывается до удалённого запроса. Getter для collector не делает I/O и не блокирует
-watchdog. При отказе — access_withdrawn, при ошибке/проверке старше 1 секунды —
-admission_unavailable. Это консервативная политика: медленный источник останавливает
-запуск как технический сбой, не нулевая оценка. Отзыв/отмена sticky для данной попытки.
-В процессе допускается только один незавершённый monitor; если проверка зависла,
-следующие попытки закрыты до её возврата. Exit join ограничен 50 ms, late read не
-публикует результат и не выполняет код; detached поток удерживает слот до завершения.
+Сеть `backend` в Compose остаётся internal. Runner на другом Linux-узле не может
+обращаться к Docker DNS напрямую. Для него настройте закрытый mTLS-мост на
+Linux-хосте платформы. Если внутренняя инфраструктура уже предоставляет защищённые
+адреса БД и четырёх API, можно использовать их напрямую в `service.env` вместо моста.
 
-Adapter проверяет stop signal до Popen и во время bounded collector, включая
-ситуацию, когда программа закрыла обе трубы, но продолжает работать. Supervisor
-останавливается, затем обычный cgroup.kill/cleanup; stdout/stderr отменённой попытки
-отбрасываются. Неподтверждённая cleanup сохраняет running/obligation. Перед финальным
-commit владелец cancellation проверяется под subject lock, так что поздний Outcome
-не превращает отмену в success. При deletion всё равно сохраняется restricted до
-cleanup и затем deleted, без приватного результата.
+Мост допускает TLS 1.3 с клиентским сертификатом и точным SHA-256 сертификата
+Runner. Назначения фиксированы: PostgreSQL 15432, Privacy 18001, Assessment 18002,
+Workspace 18003, Evaluation 18004. На стороне Runner клиент слушает только
+127.0.0.1; гостевой код изолирован своим network namespace и seccomp.
 
-Это протокол в opt-in execution orchestration, по умолчанию выключенном. Unit tests
-проверяют реальные local locks/SQLite и trusted фиксированные collector programs;
-исходники кандидата на host не запускаются. Фактические NsJail/cgroup остановка,
-PostgreSQL гонки cancellation/completion/deletion, runtime compatibility и escapes
-остаются непроверенными до возобновления стендовых проверок.
-
-
-## Opt-in worker исполнения и запись Linux probes
-
-Worker execute теперь соединяет intake/reservation, execution_scope, StopMonitor,
-private result и recovery. Каждая итерация сначала проверяет готовность и очищает
-одну незавершённую попытку своего узла, затем резервирует новый run. Busy lock или
-неподтверждённая cleanup не позволяют перейти к новой попытке; несовпадающий scope
-незавершённой попытки этого узла блокирует новые claims. Reserved crash после cleanup
-теперь technical_error/executor_interrupted/version2 с run_diagnosed, без result.
-Исходное решение никогда автоматически не повторяется, даже если crash был до spawn.
-
-Migration 0006_control хранит singleton mode/version. Первый diagnostic/execute
-worker привязывает diagnostic/execution; дальше противоположный режим запрещён.
-Diagnostics и execution claim сериализуются через контрольную строку той же БД.
-Каждый diagnostic tick и execution claim проверяет mode, поэтому старый процесс
-не продолжает диагностировать очередь после её явного переключения.
-Operator CLI reverse_hr.runner_control меняет mode по ожидаемой версии только
-при отсутствии любых незавершённых cleanup obligations; pending jobs сохраняются.
-Это операторская команда с DB credentials, не публичный endpoint кандидата.
-
-Запуск execute требует HR_RUNNER_EXECUTION_ENABLED=true, backend=nsjail, стабильный
-HR_RUNNER_NODE_ID, private scratch 0700 и HR_RUNNER_VERIFICATION_FILE. Запись JSON
-принадлежит uid worker, mode 0600, regular/non-symlink, без hardlinks, до 32 KiB,
-срок <=24 часов и ровно 12 успешных live probes. Fingerprint связывает node,
-scratch/cgroup path/device/inode, binary/rootfs pins, kernel/machine, host Python/
-версии используемых библиотек, исходники backend/migrations, policy, live tests,
-conftest, verifier, pyproject/uv.lock. Изменение среды/кода или истечение срока
-закрывает новые claims. Cleanup-only recover не требует этой записи.
-
-Запись создаётся только отдельной командой, которая реально запускает полный
-sandbox_live suite в NsJail, без pytest addopts/plugin/deselection overrides. При
-любом skipped/failed/error/неполном наборе, timeout или изменении fingerprint запись
-не выдаётся. Повторная проверка убирает предыдущую valid-schema запись до probes;
-произвольные существующие файлы и symlinks не заменяются. Это локальное свидетельство
-перечисленных проверок под доверенным оператором, не криптографический сертификат,
-не доказательство отсутствия escapes и не замена отдельной проверки безопасности.
-Здесь настоящая запись не создавалась и live suite не запускался.
-
-После provisioning и применения миграций на выделенном Linux/AMD64 worker
-(все pins, DB, event signing, source origins и node settings из предыдущих разделов
-уже заданы в окружении) подготовлены команды:
+На Linux-хосте платформы подготовьте сертификаты:
 
 ```sh
-PYTHONPATH=src python scripts/verify_runner.py --output /private/runner/probes.json
-PYTHONPATH=src python -m reverse_hr.runner_control execution --if-match-version 1
-HR_RUNNER_EXECUTION_ENABLED=true HR_RUNNER_VERIFICATION_FILE=/private/runner/probes.json PYTHONPATH=src python -m reverse_hr.worker execute
+PYTHONPATH=src uv run python scripts/configure_runner_tls.py --node-id <uuid-из-probes>
 ```
 
-Для смены mode использовать фактическую control version, не повторять автоматически
-пример version1; при outstanding attempts сначала завершить cleanup. Проверки
-обновляются до истечения суток; writer выполняется под тем же uid, что worker.
-Source origins должны быть доступны по доверенной внутренней сети: Gateway закрывает
-internal Workspace/Assessment routes. Не выдавать дополнительный доступ кандидатам.
-Обычный Compose остаётся diagnostic, execute service/privileges туда не добавлены.
-HR_RUNNER_BACKEND=disabled и HR_RUNNER_EXECUTION_ENABLED=false — defaults.
+Настройте в `.env` `RUNNER_BIND_IP` — частный адрес Linux-хоста, достижимый с Runner,
+и `RUNNER_LINUX_UID`/`RUNNER_LINUX_GID` — числовые UID/GID владельца серверных TLS-файлов.
+Сгенерированный `RUNNER_CLIENT_CERT_SHA256` сохраняется установщиком конфигурации.
+Создайте локальный `compose.runner-linux.yaml`:
 
-Unit tests проверяют worker/gates/record writer с synthetic proof и doubles, без
-candidate execution на host. 12 Linux probes, runtime compatibility, escapes и
-PostgreSQL mode/claim/cleanup races ещё не проверены. Hidden tests, содержательная
-оценка и привязка завершения к Assessment/Evaluation остаются впереди.
+```yaml
+services:
+  runner-bridge:
+    image: python:3.12.12-slim
+    user: "${RUNNER_LINUX_UID:?}:${RUNNER_LINUX_GID:?}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 16
+    restart: unless-stopped
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      RUNNER_CLIENT_CERT_SHA256: ${RUNNER_CLIENT_CERT_SHA256:?}
+    volumes:
+      - ./infra/runner/orbstack_tunnel.py:/tunnel.py:ro
+      - ./.secrets/runner-tls-server:/certificates:ro
+    command: [python, /tunnel.py, server, --certificates, /certificates]
+    networks: [backend, runner-link]
+    ports:
+      - "${RUNNER_BIND_IP:?}:15432:15432"
+      - "${RUNNER_BIND_IP:?}:18001:18001"
+      - "${RUNNER_BIND_IP:?}:18002:18002"
+      - "${RUNNER_BIND_IP:?}:18003:18003"
+      - "${RUNNER_BIND_IP:?}:18004:18004"
+networks:
+  runner-link: {}
+```
+
+Имя `orbstack_tunnel.py` сохранено в коде исторически: это обычный Python TLS-мост,
+для Linux используется явный `--bridge-host`, без зависимости от среды разработки.
+Доступ к опубликованным портам разрешите только с адреса Runner, включая правила
+фильтрации Docker forwarding. Не публикуйте их на общедоступном интерфейсе.
+Сертификаты имеют срок действия 30 дней; существующие сертификаты установщик не заменяет.
+
+```sh
+docker compose -f compose.yaml -f compose.runner-linux.yaml --profile all config --quiet
+docker compose -f compose.yaml -f compose.runner-linux.yaml up -d runner-bridge
+```
+
+На узел Runner скопируйте только `ca.crt`, `client.crt`, `client.key` из
+`.secrets/runner-tls-client` в `/var/lib/reverse-hr-runner/tls`: владелец runner,
+каталог 0700, файлы 0600. Ключ CA и серверный ключ на Runner не передаются.
+Установите [unit клиента](reverse-hr-runner-tunnel.service) в `/etc/systemd/system/`
+и добавьте `/etc/systemd/system/reverse-hr-runner-tunnel.service.d/linux.conf`:
+
+```ini
+[Service]
+ExecStart=
+ExecStart=/opt/reverse-hr-runner/.venv/bin/python /opt/reverse-hr-runner/infra/runner/orbstack_tunnel.py client --certificates /var/lib/reverse-hr-runner/tls --bridge-host <частный-IP-платформы>
+```
+
+Для `reverse-hr-runner.service` добавьте постоянный drop-in:
+
+```ini
+[Unit]
+Requires=reverse-hr-runner-tunnel.service
+After=reverse-hr-runner-tunnel.service
+```
+
+В `service.env` БД использует `127.0.0.1:15432`, а API Privacy/Assessment/Workspace/
+Evaluation — соответственно `http://127.0.0.1:18001`…`http://127.0.0.1:18004`.
+Туннель шифрует и аутентифицирует соединение до выхода с узла; подписи API и
+авторизация PostgreSQL продолжают проверяться.
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now reverse-hr-runner-tunnel.service
+```
+
+После подключения проверьте БД и readiness API, повторите реальные probes,
+оформите допуск Assessment, выполните CAS-переключение режима и запустите три
+workers по инструкции выше. Проверьте работу refresh timer.
+
+`tests/services/code_runner/test_runner_tunnel.py` проверяет обмен на временных TLS peers,
+отказ без сертификата, отказ чужому CA и незакреплённому сертификату, приватные
+permissions и запрет ротации. Эти тесты не заменяют проверку соединения на вашем Linux-стенде.

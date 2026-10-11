@@ -1,0 +1,22 @@
+# Local OrbStack only: no host/LAN port publication. Every remote client needs mTLS.
+services:
+  runner-bridge:
+    image: python:3.12.12-slim
+    user: "${RUNNER_LOCAL_UID:-501}:${RUNNER_LOCAL_GID:-20}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 16
+    restart: unless-stopped
+    environment:
+      PYTHONDONTWRITEBYTECODE: "1"
+      RUNNER_CLIENT_CERT_SHA256: ${RUNNER_CLIENT_CERT_SHA256:?Approve exact Runner TLS client certificate first}
+    volumes:
+      - ./infra/runner/orbstack_tunnel.py:/tunnel.py:ro
+      - ./.secrets/runner-tls-server:/certificates:ro
+    command: [python, /tunnel.py, server, --certificates, /certificates]
+    networks: [backend, runner-link]
+networks:
+  runner-link: {}
