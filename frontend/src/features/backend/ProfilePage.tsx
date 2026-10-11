@@ -18,6 +18,9 @@ function ProfileForm({ initial }: { initial: Profile | null }) {
   const [grade, setGrade] = useState<Grade>(
     initial?.declared_grade ?? "junior",
   );
+  const [additional, setAdditional] = useState(
+    () => initial?.additional_specializations ?? [],
+  );
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState<unknown>();
@@ -34,6 +37,10 @@ function ProfileForm({ initial }: { initial: Profile | null }) {
           display_name: name.trim(),
           specialization: specialization.trim(),
           declared_grade: grade,
+          additional_specializations: additional.map((item) => ({
+            specialization: item.specialization.trim(),
+            declared_grade: item.declared_grade,
+          })),
         },
         profile?.version,
       );
@@ -41,6 +48,7 @@ function ProfileForm({ initial }: { initial: Profile | null }) {
       setName(saved.display_name);
       setSpecialization(saved.specialization);
       setGrade(saved.declared_grade);
+      setAdditional(saved.additional_specializations ?? []);
       setNotice(`Профиль сохранён на сервере · версия ${saved.version}`);
     } catch (next) {
       setError(next);
@@ -105,6 +113,36 @@ function ProfileForm({ initial }: { initial: Profile | null }) {
           Подтверждённый уровень:{" "}
           {profile?.confirmed_grade ?? "ещё не подтверждён"}
         </p>
+        <p className="api-muted">Каждое направление подтверждается отдельно. Можно добавить ещё девять специализаций.</p>
+        {additional.map((item, index) => (
+          <fieldset key={index}>
+            <legend>Дополнительное направление {index + 1}</legend>
+            <label className="form-field">
+              <span>Специализация</span>
+              <input required maxLength={100} value={item.specialization}
+                onChange={(event) => setAdditional((rows) => rows.map((row, position) =>
+                  position === index ? { ...row, specialization: event.target.value } : row))} />
+            </label>
+            <label className="form-field">
+              <span>Заявленный уровень</span>
+              <select value={item.declared_grade}
+                onChange={(event) => setAdditional((rows) => rows.map((row, position) =>
+                  position === index ? { ...row, declared_grade: event.target.value as Grade } : row))}>
+                {grades.map((value) => <option key={value}>{value}</option>)}
+              </select>
+            </label>
+            <p>Подтверждённый уровень: {profile?.specializations?.find((row) =>
+              row.specialization === item.specialization)?.confirmed_grade ?? "ещё не подтверждён"}</p>
+            <Button type="button" variant="secondary" disabled={busy}
+              onClick={() => setAdditional((rows) => rows.filter((_, position) => position !== index))}>
+              Удалить направление
+            </Button>
+          </fieldset>
+        ))}
+        <Button type="button" variant="secondary" disabled={busy || additional.length >= 9}
+          onClick={() => setAdditional((rows) => [...rows, { specialization: "", declared_grade: "junior" }])}>
+          Добавить специализацию
+        </Button>
         {profile && (
           <p className="api-muted">Версия профиля: {profile.version}</p>
         )}

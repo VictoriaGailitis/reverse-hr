@@ -1,4 +1,21 @@
 export interface paths {
+    "/internal/v1/market/task-notice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Task Notice */
+        post: operations["task_notice_internal_v1_market_task_notice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/candidates/me/resume-imports": {
         parameters: {
             query?: never;
@@ -294,6 +311,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/candidates/me/task-subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Subscription */
+        get: operations["get_subscription_v1_candidates_me_task_subscription_get"];
+        /** Update Subscription */
+        put: operations["update_subscription_v1_candidates_me_task_subscription_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/candidates/me/task-recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recommendations */
+        get: operations["recommendations_v1_candidates_me_task_recommendations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health/live": {
         parameters: {
             query?: never;
@@ -409,6 +461,12 @@ export interface components {
         };
         /** HistoryItem */
         HistoryItem: {
+            /**
+             * Origin
+             * @default human
+             * @enum {string}
+             */
+            origin: "human" | "automatic";
             /** Specialization */
             specialization: string;
             target_grade: components["schemas"]["Grade"];
@@ -510,11 +568,17 @@ export interface components {
              * Format: date-time
              */
             issued_at: string;
+            /** Specialization */
+            specialization?: string | null;
             /**
              * Purpose
              * @enum {string}
              */
-            purpose: "profile" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            purpose: "profile" | "task-catalog" | "task-notice" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            /** Catalog After */
+            catalog_after?: string | null;
+            /** Catalog Version Id */
+            catalog_version_id?: string | null;
             /** Assignment Id */
             assignment_id?: string | null;
             /** Result Grant Id */
@@ -532,7 +596,7 @@ export interface components {
             /** Consent Id */
             consent_id?: string | null;
             /** Consent Purpose */
-            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
+            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "task_recommendations" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
             /** Allowed */
             allowed: boolean;
             /**
@@ -567,11 +631,17 @@ export interface components {
              * Format: date-time
              */
             issued_at: string;
+            /** Specialization */
+            specialization?: string | null;
             /**
              * Purpose
              * @enum {string}
              */
-            purpose: "profile" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            purpose: "profile" | "task-catalog" | "task-notice" | "membership" | "affiliation" | "content-membership" | "need" | "purpose-permission" | "contact-permission" | "resume-permission" | "company-result-permission" | "company-notice" | "appeal-notice" | "contacts" | "notice";
+            /** Catalog After */
+            catalog_after?: string | null;
+            /** Catalog Version Id */
+            catalog_version_id?: string | null;
             /** Assignment Id */
             assignment_id?: string | null;
             /** Result Grant Id */
@@ -589,7 +659,7 @@ export interface components {
             /** Consent Id */
             consent_id?: string | null;
             /** Consent Purpose */
-            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
+            consent_purpose?: ("achievement_import" | "achievement_publication" | "ats_export" | "profile_publication" | "contact_disclosure" | "company_task_subscription" | "task_recommendations" | "resume_publication" | "external_service_notifications" | "external_marketing_notifications") | null;
         };
         /** MonthlySalary */
         MonthlySalary: {
@@ -622,6 +692,8 @@ export interface components {
             /** Specialization */
             specialization: string;
             declared_grade: components["schemas"]["Grade"];
+            /** Additional Specializations */
+            additional_specializations?: components["schemas"]["SpecializationChoice"][];
             /**
              * Candidate Id
              * Format: uuid
@@ -630,6 +702,8 @@ export interface components {
             confirmed_grade?: components["schemas"]["Grade"] | null;
             /** Version */
             version: number;
+            /** Specializations */
+            specializations?: components["schemas"]["SpecializationProfile"][];
         };
         /** ProfileUpdate */
         ProfileUpdate: {
@@ -638,6 +712,8 @@ export interface components {
             /** Specialization */
             specialization: string;
             declared_grade: components["schemas"]["Grade"];
+            /** Additional Specializations */
+            additional_specializations?: components["schemas"]["SpecializationChoice"][];
         };
         /** PublicationCommand */
         PublicationCommand: {
@@ -704,6 +780,12 @@ export interface components {
         /** QualificationEvidence */
         QualificationEvidence: {
             /**
+             * Origin
+             * @default human
+             * @enum {string}
+             */
+            origin: "human" | "automatic";
+            /**
              * Policy Id
              * Format: uuid
              */
@@ -751,6 +833,8 @@ export interface components {
             /** Specialization */
             specialization: string;
             declared_grade: components["schemas"]["Grade"];
+            /** Additional Specializations */
+            additional_specializations?: components["schemas"]["SpecializationChoice"][];
             /**
              * Summary
              * @default
@@ -773,6 +857,8 @@ export interface components {
             /** Specialization */
             specialization: string;
             declared_grade: components["schemas"]["Grade"];
+            /** Additional Specializations */
+            additional_specializations?: components["schemas"]["SpecializationChoice"][];
             /**
              * Summary
              * @default
@@ -849,6 +935,19 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** SpecializationChoice */
+        SpecializationChoice: {
+            /** Specialization */
+            specialization: string;
+            declared_grade: components["schemas"]["Grade"];
+        };
+        /** SpecializationProfile */
+        SpecializationProfile: {
+            /** Specialization */
+            specialization: string;
+            declared_grade: components["schemas"]["Grade"];
+            confirmed_grade?: components["schemas"]["Grade"] | null;
+        };
         /** StartWindow */
         StartWindow: {
             /**
@@ -861,6 +960,20 @@ export interface components {
              * Format: date
              */
             latest: string;
+        };
+        /** SubscriptionCommand */
+        SubscriptionCommand: {
+            /** Declared Skills */
+            declared_skills?: string[];
+            /** Enabled */
+            enabled: boolean;
+            /** Consent Id */
+            consent_id?: string | null;
+            /**
+             * Interval Hours
+             * @default 24
+             */
+            interval_hours: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -884,6 +997,41 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    task_notice_internal_v1_market_task_notice_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-HR-Signature"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     imports_v1_candidates_me_resume_imports_get: {
         parameters: {
             query?: {
@@ -1996,6 +2144,237 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContactsCommand"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_subscription_v1_candidates_me_task_subscription_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_subscription_v1_candidates_me_task_subscription_put: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "If-Match": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscriptionCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    recommendations_v1_candidates_me_task_recommendations_get: {
+        parameters: {
+            query?: {
+                after?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Unauthorized */

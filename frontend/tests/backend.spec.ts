@@ -30,6 +30,7 @@ test("PKCE-вход, чтение и сохранение профиля по а
       display_name: "Новый тестовый кандидат",
       specialization: "Frontend",
       declared_grade: "senior",
+      additional_specializations: [],
     });
     puts++;
     saved = { ...saved, ...route.request().postDataJSON(), version: 4 };
@@ -87,6 +88,7 @@ test("404 профиля открывает создание через POST, б
       display_name: "Новый",
       specialization: "SQL",
       declared_grade: "junior",
+      additional_specializations: [],
     });
     return json(
       route,
@@ -679,4 +681,29 @@ test("приглашения: 503 выдачи показывает ошибку
   await expect(
     page.getByRole("link", { name: "Посмотреть приглашение" }),
   ).toHaveCount(0);
+});
+
+
+test("несколько направлений сохраняются с независимыми заявленными уровнями", async ({ page }) => {
+  await oauth(page);
+  let saved = { ...profile, additional_specializations: [], specializations: [] };
+  await page.route("**/api/candidate/v1/candidates/me", async (route) => {
+    if (route.request().method() === "GET") return json(route, saved);
+    const body = route.request().postDataJSON();
+    expect(body.additional_specializations).toEqual([{ specialization: "Security", declared_grade: "middle" }]);
+    saved = { ...saved, ...body, version: 4, specializations: [
+      { specialization: "Security", declared_grade: "middle", confirmed_grade: "junior" }
+    ] };
+    return json(route, saved);
+  });
+  await login(page);
+  await page.getByRole("button", { name: "Добавить специализацию", exact: true }).click();
+  const direction = page.getByRole("group", { name: "Дополнительное направление 1" });
+  await direction.getByLabel("Специализация", { exact: true }).fill("Security");
+  await direction.getByLabel("Заявленный уровень").selectOption("middle");
+  await page.getByRole("button", { name: "Сохранить профиль", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("версия 4");
+  await expect(direction).toContainText("Подтверждённый уровень: junior");
+  await direction.getByRole("button", { name: "Удалить направление" }).click();
+  await expect(direction).toHaveCount(0);
 });
